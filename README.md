@@ -11,10 +11,10 @@ C++ port of EternalModLoader by proteh, coded specifically for Linux users.
 ## Compiling
 The project uses Cmake to compile, and requires the zlib library to be installed.
 
-First clone the repo:
+First clone the repo and all submodules by running:
 
 ```
-https://github.com/PowerBall253/EternalModLoaderCpp.git
+https://github.com/PowerBall253/EternalModLoaderCpp.git --recurse-submodules
 ```
 
 Then, generate the makefile by running:
