@@ -2,7 +2,7 @@
 C++ port of EternalModLoader by proteh, coded specifically for Linux users.
 
 ## Features
-* Smaller file size (only around ~300 kb).
+* Smaller file size (only around ~300 KB).
 
 * Faster mod loading times.
 
