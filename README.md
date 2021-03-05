@@ -6,7 +6,7 @@ C++ port of EternalModLoader by proteh, coded specifically for Linux users.
 
 * Faster mod loading times.
 
-* Portability (should solve issues for people having problems with the C# port).
+* Better Linux compatibility (should solve issues for people having problems with the C# port).
 
 ## Compiling
 The project uses Cmake to compile, and requires the zlib library to be installed.
