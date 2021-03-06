@@ -15,7 +15,7 @@ file(GLOB SOURCES
         ./ReplaceChunks.cpp
         ./Utils.cpp
         ./VectorUtils.cpp
-        ./mmap_allocator/*
+        ./mmap_allocator/mmap*
         )
 
 set (CMAKE_CXX_FLAGS "-Ofast -DNDEBUG -ftree-vectorize -msse2")
