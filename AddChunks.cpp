@@ -51,7 +51,7 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, int r
         nameIds.resize(nameIds.size() + 8);
         nameIdOffset = (long) nameIds.size() / 8 - 1;
         nameIds.resize(nameIds.size() + 8);
-        auto nameIdsVector = LongToVector(nameId, 8);
+        std::vector<std::byte> nameIdsVector = LongToVector(nameId, 8);
         std::copy(nameIdsVector.begin(), nameIdsVector.end(), nameIds.end() - 8);
         std::vector<std::byte> nameOffsetsBytes(8);
         std::copy(nameOffsets.end() - 8, nameOffsets.end(), nameOffsetsBytes.begin());
@@ -59,7 +59,7 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, int r
         long lastNameOffset = 0;
 
         for (int i = (int) lastOffset; i < names.size(); i++) {
-            if (static_cast<int>(names[i]) == 0) {
+            if ((int)(names[i]) == 0) {
                 lastNameOffset = i + 1;
                 break;
             }
@@ -67,7 +67,7 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, int r
 
         std::vector<char> nameChars(mod.Name.begin(), mod.Name.end());
         std::vector<std::byte> nameBytes;
-        nameBytes.insert(nameBytes.begin(), (std::byte *)nameChars.data(), (std::byte *)nameChars.data() + nameChars.size());
+        nameBytes.insert(nameBytes.begin(), (std::byte*)nameChars.data(), (std::byte*)nameChars.data() + nameChars.size());
         names.resize(names.size() + nameChars.size() + 1);
         std::copy(nameBytes.begin(), nameBytes.end(), names.begin() + lastNameOffset);
 
@@ -75,39 +75,35 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, int r
         std::copy(newCount.begin(), newCount.end(), nameOffsets.begin());
         nameOffsets.resize(nameOffsets.size() + 8);
 
-        auto lastNameOffsetVector = LongToVector(lastNameOffset, 8);
+        std::vector<std::byte> lastNameOffsetVector = LongToVector(lastNameOffset, 8);
         std::copy(lastNameOffsetVector.begin(), lastNameOffsetVector.end(), nameOffsets.end() - 8);
 
         std::vector<std::byte> lastInfo(0x90);
         std::copy(info.end() - 0x90, info.end(), lastInfo.begin());
         info.resize(info.size() + 0x90);
         std::copy(lastInfo.begin(), lastInfo.end(), info.end() - 0x90);
-        auto nameIdOffsetVector = LongToVector(nameIdOffset, 8);
+        std::vector<std::byte> nameIdOffsetVector = LongToVector(nameIdOffset, 8);
         std::copy(nameIdOffsetVector.begin(), nameIdOffsetVector.end(), info.end() - 0x70);
-        auto fileOffsetVector = LongToVector(fileOffset, 8);
+        std::vector<std::byte> fileOffsetVector = LongToVector(fileOffset, 8);
         std::copy(fileOffsetVector.begin(), fileOffsetVector.end(), info.end() - 0x58);
 
-        auto FileBytesSizeVector = LongToVector((long)mod.FileBytes.size(), 8);
-
+        std::vector<std::byte> FileBytesSizeVector = LongToVector((long)mod.FileBytes.size(), 8);
 
         std::copy(FileBytesSizeVector.begin(), FileBytesSizeVector.end(), info.begin() + (long) info.size() - 0x50);
         std::copy(FileBytesSizeVector.begin(), FileBytesSizeVector.end(), info.begin() + (long) info.size() - 0x48);
 
-
-
-        info[info.size() - 0x20] = static_cast<std::byte>(0);
+        info[info.size() - 0x20] = (std::byte)0;
 
         ResourceChunk newChunk(mod.Name, fileOffset);
         newChunk.NameId = nameId;
         newChunk.Size = (long)mod.FileBytes.size();
         newChunk.SizeZ = (long)mod.FileBytes.size();
-        newChunk.CompressionMode = static_cast<std::byte>(0);
+        newChunk.CompressionMode = (std::byte)0;
 
         newChunks.push_back(newChunk);
 
         std::cout << "\tAdded " << mod.Name << std::endl;
         ResourceList[resourceIndex].NamesList.push_back(mod.Name);
-
     }
 
     long namesOffsetAdd = (long)info.size() - infoOldLength;
@@ -118,31 +114,31 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, int r
     long idclAdd = (long)nameIdsAdd + (long)(nameIds.size() - nameIdsOldLength);
     long dataAdd = idclAdd;
 
-    auto fileCountAddVector = LongToVector((long)(ResourceList[resourceIndex].FileCount + newChunks.size()), 4);
+    std::vector<std::byte> fileCountAddVector = LongToVector((long)(ResourceList[resourceIndex].FileCount + newChunks.size()), 4);
     std::copy(fileCountAddVector.begin(), fileCountAddVector.end(), header.begin() + 0x20);
 
-    auto fileCount2AddVector = LongToVector((long)ResourceList[resourceIndex].FileCount2 + (long)(newChunks.size() * 2), 4);
+    std::vector<std::byte> fileCount2AddVector = LongToVector((long)ResourceList[resourceIndex].FileCount2 + (long)(newChunks.size() * 2), 4);
     std::copy(fileCount2AddVector.begin(), fileCount2AddVector.end(), header.begin() + 0x2C);
 
-    auto newSizeVector = LongToVector(newSize, 4);
+    std::vector<std::byte> newSizeVector = LongToVector(newSize, 4);
     std::copy(newSizeVector.begin(), newSizeVector.end(), header.begin() + 0x38);
 
-    auto nameOffsetAddVector = LongToVector(ResourceList[resourceIndex].NamesOffset + namesOffsetAdd, 8);
+    std::vector<std::byte> nameOffsetAddVector = LongToVector(ResourceList[resourceIndex].NamesOffset + namesOffsetAdd, 8);
     std::copy(nameOffsetAddVector.begin(), nameOffsetAddVector.end(), header.begin() + 0x40);
 
-    auto unknownOffsetAddVector = LongToVector(ResourceList[resourceIndex].UnknownOffset + unknownAdd, 8);
+    std::vector<std::byte> unknownOffsetAddVector = LongToVector(ResourceList[resourceIndex].UnknownOffset + unknownAdd, 8);
     std::copy(unknownOffsetAddVector.begin(), unknownOffsetAddVector.end(), header.begin() + 0x48);
 
-    auto unknownOffsetAdd2Vector = LongToVector(ResourceList[resourceIndex].UnknownOffset2 + unknownAdd, 8);
+    std::vector<std::byte> unknownOffsetAdd2Vector = LongToVector(ResourceList[resourceIndex].UnknownOffset2 + unknownAdd, 8);
     std::copy(unknownOffsetAdd2Vector.begin(), unknownOffsetAdd2Vector.end(), header.begin() + 0x58);
 
-    auto dummy7OffsetAddVector = LongToVector(ResourceList[resourceIndex].Dummy7Offset + typeIdsAdd, 8);
+    std::vector<std::byte> dummy7OffsetAddVector = LongToVector(ResourceList[resourceIndex].Dummy7Offset + typeIdsAdd, 8);
     std::copy(dummy7OffsetAddVector.begin(), dummy7OffsetAddVector.end(), header.begin() + 0x60);
 
-    auto dataOffsetAddVector = LongToVector(ResourceList[resourceIndex].DataOffset + dataAdd, 8);
+    std::vector<std::byte> dataOffsetAddVector = LongToVector(ResourceList[resourceIndex].DataOffset + dataAdd, 8);
     std::copy(dataOffsetAddVector.begin(), dataOffsetAddVector.end(), header.begin() + 0x68);
 
-    auto idclOffsetAdd = LongToVector(ResourceList[resourceIndex].IdclOffset + idclAdd, 8);
+    std::vector<std::byte> idclOffsetAdd = LongToVector(ResourceList[resourceIndex].IdclOffset + idclAdd, 8);
     std::copy(idclOffsetAdd.begin(), idclOffsetAdd.end(), header.begin() + 0x74);
 
     std::vector<std::byte> newOffsetBuffer(16);
@@ -153,7 +149,7 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, int r
     {
         int fileOffset = 0x38 + (i * 0x90);
         std::copy(info.begin() + fileOffset, info.begin() + fileOffset + 8, newOffsetBuffer.begin());
-        auto newOffsetBufferPlusDataAdd = VectorIntegralAdd(newOffsetBuffer, 8, dataAdd);
+        std::vector<std::byte> newOffsetBufferPlusDataAdd = VectorIntegralAdd(newOffsetBuffer, 8, dataAdd);
         std::copy(newOffsetBufferPlusDataAdd.begin(), newOffsetBufferPlusDataAdd.end(), info.begin() + fileOffset);
     }
 

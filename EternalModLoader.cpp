@@ -98,8 +98,25 @@ int main(int argc, char *argv[]) {
                     std::vector<std::byte> unzipped_entry_bytes;
                     modZip.extractEntryToMemory(zipEntry.name, unzipped_entry);
                     unzipped_entry_bytes.reserve(unzipped_entry.size());
-                    unzipped_entry_bytes.insert(unzipped_entry_bytes.begin(), (std::byte *)unzipped_entry.data(), (std::byte *)unzipped_entry.data() + unzipped_entry.size());
+                    unzipped_entry_bytes.insert(unzipped_entry_bytes.begin(), (std::byte*)unzipped_entry.data(), (std::byte*)unzipped_entry.data() + unzipped_entry.size());
                     mod.FileBytes = unzipped_entry_bytes;
+
+                    std::string modFilePathPart1ToLower = ToLower(modFilePathParts[1]);
+                    std::string modFilePathPart2ToLower = ToLower(modFilePathParts[2]);
+                    if (modFilePathPart1ToLower == "eternalmod") {
+                        if (modFilePathParts.size() == 4
+                        && modFilePathPart2ToLower == "strings"
+                        && std::filesystem::path(modFilePathParts[3]).extension() == ".json")
+                        {
+                            mod.isBlangJson = true;
+                        }
+                        else {
+                            continue;
+                        }
+                    }
+                    else {
+                        mod.isBlangJson = false;
+                    }
 
                     ResourceList[resourceIndex].ModList.push_back(mod);
                     zippedModCount++;
@@ -166,9 +183,26 @@ int main(int argc, char *argv[]) {
                 }
                 stream.seekg(0, std::ios::beg);
                 std::vector<std::byte> streamVector(streamSize);
-                stream.read((char *)streamVector.data(), (long)streamSize);
+                stream.read((char*)streamVector.data(), (long)streamSize);
                 stream.close();
                 mod.FileBytes = streamVector;
+
+                std::string modFilePathPart3ToLower = ToLower(modFilePathParts[3]);
+                std::string modFilePathPart4ToLower = ToLower(modFilePathParts[4]);
+                if (modFilePathPart3ToLower == "eternalmod") {
+                    if (modFilePathParts.size() == 6
+                    && modFilePathPart4ToLower == "strings"
+                    && std::filesystem::path(modFilePathParts[5]).extension() == ".json")
+                    {
+                        mod.isBlangJson = true;
+                    }
+                    else {
+                        continue;
+                    }
+                }
+                else {
+                    mod.isBlangJson = false;
+                }
 
                 ResourceList[resourceIndex].ModList.push_back(mod);
                 unzippedModCount++;

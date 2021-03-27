@@ -7,14 +7,11 @@
 std::string PathToRes(std::string name) {
     std::string resourcePath;
 
-    std::string nameToLower = name;
-    std::transform(nameToLower.begin(), nameToLower.end(), nameToLower.begin(),
-                   [](unsigned char c){ return std::tolower(c); });
-    if (nameToLower.find("dlc_hub", 0) == 0) {
+    if (ToLower(name).find("dlc_hub", 0) == 0) {
         std::string dlcHubFileName = name.substr(4, name.size() -4);
         resourcePath = "./base/game/dlc/hub/" + dlcHubFileName + ".resources";
     }
-    else if (nameToLower.find("hub", 0) == 0) {
+    else if (ToLower(name).find("hub", 0) == 0) {
         resourcePath = "./base/game/hub/" + name + ".resources";
     }
     else {

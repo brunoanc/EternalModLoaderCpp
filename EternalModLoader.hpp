@@ -15,9 +15,9 @@ class Mod {
 public:
     std::string Name;
     std::vector<std::byte> FileBytes;
+    bool isBlangJson;
     explicit Mod(std::string name) {
         Name = name;
-        FileBytes;
     }
 };
 
@@ -37,7 +37,7 @@ public:
         SizeOffset = 0;
         SizeZ = 0;
         Size = 0;
-        CompressionMode = static_cast<std::byte>(0);
+        CompressionMode = (std::byte)(0);
     }
 };
 
@@ -77,13 +77,32 @@ public:
         FileCount2 = 0;
         NamesOffsetEnd = 0;
         UnknownOffset = 0;
-        UnknownOffset2 = 0;
-        ModList;
-        ModListNew;
-        NamesList;
-        ChunkList;
-
     }
+};
+
+class BlangString {
+public:
+    unsigned int Hash;
+    std::string Identifier;
+    std::string Text;
+    std::vector<std::byte> Unknown;
+    BlangString() {
+        Hash = 0;
+        Identifier = "";
+        Text = "";
+    }
+    BlangString(unsigned int hash, std::string identifier, std::string text, std::vector<std::byte> unknown) {
+        Hash = hash;
+        Identifier = identifier;
+        Text = text;
+        Unknown = unknown;
+    }
+};
+
+class BlangFile {
+public:
+    long UnknownData;
+    std::vector<BlangString> Strings;
 };
 
 inline bool operator == (ResourceChunk &chunk1, const ResourceChunk &chunk2)
@@ -107,5 +126,10 @@ int GetResourceInfo(std::string resourceName);
 std::vector<std::byte> LongToVector(long number, int numberOfBytes);
 std::vector<std::byte> VectorIntegralAdd(std::vector<std::byte>& vect, int numberOfBytes, long numbertoAdd);
 long VectorToNumber(std::vector<std::byte>& vect, int numberOfBytes);
+std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string internalPath, bool decrypt);
+BlangFile ParseBlang(std::vector<std::byte>& blangBytes, std::string& resourceName);
+std::vector<std::byte> WriteBlangToVector(BlangFile blangFile, std::string& resourceName);
+std::string RemoveWhitespace(std::string& stringWithWhitespace);
+std::string ToLower(std::string& str);
 
 #endif

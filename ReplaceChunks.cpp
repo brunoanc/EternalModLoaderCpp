@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <algorithm>
 
+#include "json/single_include/nlohmann/json.hpp"
 #include "EternalModLoader.hpp"
 
 void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, int resourceIndex) {
@@ -10,10 +11,23 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, i
     int fileCount = 0;
 
     for (auto& mod : ResourceList[resourceIndex].ModList) {
-        int chunkIndex = GetChunk(mod.Name, resourceIndex);
-        if (chunkIndex == -1) {
-            ResourceList[resourceIndex].ModListNew.push_back(mod);
-            continue;
+        int chunkIndex;
+
+        if (mod.isBlangJson) {
+            mod.Name = mod.Name.substr(mod.Name.find('/') + 1);
+            mod.Name = std::filesystem::path(mod.Name).replace_extension(".blang");
+
+            chunkIndex = GetChunk(mod.Name, resourceIndex);
+            if (chunkIndex == -1) {
+                continue;
+            }
+        }
+        else {
+            chunkIndex = GetChunk(mod.Name, resourceIndex);
+            if (chunkIndex == -1) {
+                ResourceList[resourceIndex].ModListNew.push_back(mod);
+                continue;
+            }
         }
 
         long fileOffset, size;
@@ -21,6 +35,79 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, i
         std::copy(mem.begin() + ResourceList[resourceIndex].ChunkList[chunkIndex].FileOffset + 8, mem.begin() + ResourceList[resourceIndex].ChunkList[chunkIndex].FileOffset + 16, (std::byte *)&size);
 
         long sizeDiff = (long) mod.FileBytes.size() - size;
+
+        if (mod.isBlangJson) {
+            nlohmann::json blangJson;
+            try {
+                blangJson = nlohmann::json::parse(std::string((char *)mod.FileBytes.data(), mod.FileBytes.size()));
+
+                if (blangJson == NULL || blangJson["strings"].empty()) {
+                    throw std::exception();
+                }
+
+                for (auto& blangJsonString : blangJson["strings"]) {
+                    if (blangJsonString == NULL || blangJsonString["name"].empty() || blangJsonString["text"].empty()) {
+                        throw std::exception();
+                    }
+                }
+            }
+            catch (const std::exception& e) {
+                std::cout << RED << "ERROR: " << RESET << "Failed to parse EternalMod/strings/" << std::filesystem::path(mod.Name).replace_extension(".json").string() << std::endl;
+                continue;
+            }
+
+            std::vector<std::byte> blangFileBytes(size);
+            std::copy(mem.begin() + fileOffset, mem.begin() + fileOffset + size, blangFileBytes.begin());
+
+            std::vector<std::byte> decryptedBlangFileBytes = IdCrypt(blangFileBytes, mod.Name, true);
+            if (decryptedBlangFileBytes.empty()) {
+                std::cout << RED << "ERROR: " << RESET << "Failed to decrypt " << ResourceList[resourceIndex].Name << "/" << mod.Name << std::endl;
+                continue;
+            }
+
+            BlangFile blangFile;
+            try {
+                blangFile = ParseBlang(decryptedBlangFileBytes, ResourceList[resourceIndex].Name);
+            }
+            catch (const std::exception& e) {
+                std::cout << RED << "ERROR: " << RESET << "Failed to parse " << ResourceList[resourceIndex].Name << "/" << mod.Name << std::endl;
+                continue;
+            }
+
+            for (auto& blangJsonString : blangJson["strings"]) {
+                bool stringFound = false;
+
+                for (auto& blangString : blangFile.Strings) {
+                    if (blangJsonString["name"] == blangString.Identifier) {
+                        stringFound = true;
+                        blangString.Text = blangJsonString["text"];
+
+                        std::cout << "\tReplaced " << blangString.Identifier << " in " << mod.Name << std::endl;
+                        break;
+                    }
+                }
+
+                if (stringFound) {
+                    continue;
+                }
+                
+                BlangString newBlangString;
+                newBlangString.Identifier = blangJsonString["name"];
+                newBlangString.Text = blangJsonString["text"];
+
+                std::cout << "\tAdded " << blangJsonString["name"].get<std::string>() << " in " << mod.Name << std::endl;
+            }
+
+            std::vector<std::byte> cryptDataBuffer = WriteBlangToVector(blangFile, ResourceList[resourceIndex].Name);
+
+            std::vector<std::byte> encryptedBlangFileBytes = IdCrypt(cryptDataBuffer, mod.Name, false);
+            if (encryptedBlangFileBytes.empty()) {
+                std::cout << RED << "ERROR: " << RESET << "Failed to re-encrypt " << ResourceList[resourceIndex].Name << "/" << mod.Name << std::endl;
+                continue;
+            }
+
+            mod.FileBytes = encryptedBlangFileBytes;
+        }
 
         if (sizeDiff > 0) {
             long length = (long)std::filesystem::file_size(ResourceList[resourceIndex].Path);
@@ -55,7 +142,7 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, i
         std::copy(modFileBytesSizeVector.begin(), modFileBytesSizeVector.begin() + 8, mem.begin() + ResourceList[resourceIndex].ChunkList[chunkIndex].SizeOffset);
         std::copy(modFileBytesSizeVector.begin(), modFileBytesSizeVector.begin() + 8, mem.begin() + ResourceList[resourceIndex].ChunkList[chunkIndex].SizeOffset + 8);
 
-        mem[ResourceList[resourceIndex].ChunkList[chunkIndex].SizeOffset + 0x30] = static_cast<std::byte>(0);
+        mem[ResourceList[resourceIndex].ChunkList[chunkIndex].SizeOffset + 0x30] = (std::byte)0;
 
         if (sizeDiff > 0) {
             auto x = std::find(ResourceList[resourceIndex].ChunkList.begin(), ResourceList[resourceIndex].ChunkList.end(), ResourceList[resourceIndex].ChunkList[chunkIndex]);
@@ -67,7 +154,10 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, i
             }
         }
 
-        std::cout << "\tReplaced " << mod.Name << std::endl;
+        if (!mod.isBlangJson) {
+            std::cout << "\tReplaced " << mod.Name << std::endl;
+        }
+
         fileCount++;
     }
     if (fileCount > 0) {

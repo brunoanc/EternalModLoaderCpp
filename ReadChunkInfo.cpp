@@ -11,20 +11,20 @@ void ReadChunkInfo(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, i
     std::string name;
 
     for (int i = 0; i < ResourceList[resourceIndex].FileCount; i++) {
-        std::copy(mem.begin() + 0x20 + ResourceList[resourceIndex].InfoOffset + (0x90 * i), mem.begin() + 0x20 + ResourceList[resourceIndex].InfoOffset + (0x90 * i) + 8, (std::byte *)&nameId);
+        std::copy(mem.begin() + 0x20 + ResourceList[resourceIndex].InfoOffset + (0x90 * i), mem.begin() + 0x20 + ResourceList[resourceIndex].InfoOffset + (0x90 * i) + 8, (std::byte*)&nameId);
 
-        std::copy(mem.begin() + 0x38 + ResourceList[resourceIndex].InfoOffset + (0x90 * i), mem.begin() + 0x38 + ResourceList[resourceIndex].InfoOffset + (0x90 * i) + 8, (std::byte *)&fileOffset);
+        std::copy(mem.begin() + 0x38 + ResourceList[resourceIndex].InfoOffset + (0x90 * i), mem.begin() + 0x38 + ResourceList[resourceIndex].InfoOffset + (0x90 * i) + 8, (std::byte*)&fileOffset);
 
         sizeOffset = 0x38 + ResourceList[resourceIndex].InfoOffset + (0x90 * i) + 8;
 
-        std::copy(mem.begin() + 0x38 + ResourceList[resourceIndex].InfoOffset + (0x90 * i) + 8, mem.begin() + 0x38 + ResourceList[resourceIndex].InfoOffset + (0x90 * i) + 16, (std::byte *)&sizeZ);
+        std::copy(mem.begin() + 0x38 + ResourceList[resourceIndex].InfoOffset + (0x90 * i) + 8, mem.begin() + 0x38 + ResourceList[resourceIndex].InfoOffset + (0x90 * i) + 16, (std::byte*)&sizeZ);
 
-        std::copy(mem.begin() + 0x38 + ResourceList[resourceIndex].InfoOffset + (0x90 * i) + 16, mem.begin() + 0x38 + ResourceList[resourceIndex].InfoOffset + (0x90 * i) + 24, (std::byte *)&size);
+        std::copy(mem.begin() + 0x38 + ResourceList[resourceIndex].InfoOffset + (0x90 * i) + 16, mem.begin() + 0x38 + ResourceList[resourceIndex].InfoOffset + (0x90 * i) + 24, (std::byte*)&size);
 
         compressionMode = mem[0x70 + ResourceList[resourceIndex].InfoOffset + 0x90 * i];
 
         nameId = ((nameId + 1) * 8) + dummy7Off;
-        std::copy(mem.begin() + nameId, mem.begin() + nameId + 8, (std::byte *)&nameId);
+        std::copy(mem.begin() + nameId, mem.begin() + nameId + 8, (std::byte*)&nameId);
         name = ResourceList[resourceIndex].NamesList[nameId];
 
         ResourceChunk chunk(name, fileOffset);
