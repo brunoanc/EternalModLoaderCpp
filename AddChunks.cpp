@@ -58,8 +58,8 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, int r
         long lastOffset = VectorToNumber(nameOffsetsBytes, 8);
         long lastNameOffset = 0;
 
-        for (int i = (int) lastOffset; i < names.size(); i++) {
-            if ((int)(names[i]) == 0) {
+        for (int i = (int)lastOffset; i < names.size(); i++) {
+            if (names[i] == (std::byte)0) {
                 lastNameOffset = i + 1;
                 break;
             }
