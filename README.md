@@ -9,7 +9,7 @@ C++ port of EternalModLoader by proteh, coded specifically for Linux users.
 * Better Linux compatibility (should solve issues for people having problems with the C# port).
 
 ## Compiling
-The project uses Cmake to compile, and requires the zlib library to be installed.
+The project uses Cmake to compile, and requires the zlib and OpenSSL libraries to be installed.
 
 First clone the repo and all submodules by running:
 
