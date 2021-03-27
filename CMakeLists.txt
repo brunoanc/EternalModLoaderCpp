@@ -25,9 +25,12 @@ file(GLOB SOURCES
 set (CMAKE_CXX_FLAGS "-Ofast -DNDEBUG -ftree-vectorize -msse2 -lcrypto")
 add_executable(DEternal_loadMods ${SOURCES})
 
+find_package(OpenSSL REQUIRED)
+
 target_link_libraries(
         DEternal_loadMods
         PUBLIC
         staticZipper
         nlohmann_json::nlohmann_json
+        OpenSSL::Crytpto
 )
