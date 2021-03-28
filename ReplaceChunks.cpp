@@ -131,7 +131,7 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, i
         else {
             std::copy(mod.FileBytes.begin(), mod.FileBytes.begin() + (long)mod.FileBytes.size(), mem.begin() + fileOffset);
 
-            std::byte emptyArray[-sizeDiff];
+            std::byte emptyArray[-sizeDiff] = {};
 
             if (sizeDiff < 0) {
                 std::copy(emptyArray, emptyArray - sizeDiff, mem.begin() + fileOffset + (long)mod.FileBytes.size());

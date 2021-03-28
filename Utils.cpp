@@ -39,27 +39,22 @@ std::vector<std::byte> VectorIntegralAdd(std::vector<std::byte>& vect, int numbe
     long a;
     std::copy(vect.begin(), vect.begin() + numberOfBytes, (std::byte*)&a);
     a += numberToAdd;
-    auto arrayOfBytes = (char*)&a;
 
     std::vector<std::byte> vectorResult(numberOfBytes);
-    for (int i = 0; i < numberOfBytes; i++) {
-        vectorResult.push_back(static_cast<const std::byte>(arrayOfBytes[i]));
-    }
+    std::copy((std::byte*)&a, (std::byte*)&a + numberOfBytes, vectorResult.begin());
+
     return vectorResult;
 }
 
 long VectorToNumber(std::vector<std::byte>& vect, int numberOfBytes) {
     long a;
-    std::copy(vect.begin(), vect.end(), (std::byte*)&a);
+    std::copy(vect.begin(), vect.begin() + numberOfBytes, (std::byte*)&a);
     return a;
 }
 
 std::vector<std::byte> LongToVector(long number, int numberOfBytes) {
-    auto arrayOfBytes  = (char*)&number;
-    std::vector<std::byte> vectorResult;
-    vectorResult.reserve(numberOfBytes);
-    for (int i = 0; i < numberOfBytes; i++) {
-        vectorResult.push_back(static_cast<const std::byte>(arrayOfBytes[i]));
-    }
+    std::vector<std::byte> vectorResult(numberOfBytes);
+    std::copy((std::byte*)&number, (std::byte*)&number + numberOfBytes, vectorResult.begin());
+
     return vectorResult;
 }

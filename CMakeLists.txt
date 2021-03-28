@@ -32,5 +32,5 @@ target_link_libraries(
         PUBLIC
         staticZipper
         nlohmann_json::nlohmann_json
-        OpenSSL::Crytpto
+        OpenSSL::Crypto
 )

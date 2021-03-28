@@ -3,6 +3,7 @@
 #include <fstream>
 #include <filesystem>
 #include <algorithm>
+#include <cstdlib>
 
 #include "zipper/unzipper.h"
 #include "EternalModLoader.hpp"
@@ -244,7 +245,10 @@ int main(int argc, char *argv[]) {
 
         ReadResource(mem, i);
         ReplaceChunks(mem, i);
-        AddChunks(mem, i);
+
+        if (std::getenv("ETERNALMODLOADER_SKIP_ADDCHUNKS") == NULL) {
+            AddChunks(mem, i);
+        }
 
         mem.munmap_file();
     }

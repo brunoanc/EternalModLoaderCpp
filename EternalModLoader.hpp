@@ -77,6 +77,7 @@ public:
         FileCount2 = 0;
         NamesOffsetEnd = 0;
         UnknownOffset = 0;
+        UnknownOffset2 = 0;
     }
 };
 
