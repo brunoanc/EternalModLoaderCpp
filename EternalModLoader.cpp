@@ -103,8 +103,9 @@ int main(int argc, char *argv[]) {
                     mod.FileBytes = unzipped_entry_bytes;
 
                     std::string modFilePathPart1ToLower = ToLower(modFilePathParts[1]);
-                    std::string modFilePathPart2ToLower = ToLower(modFilePathParts[2]);
                     if (modFilePathPart1ToLower == "eternalmod") {
+                        std::string modFilePathPart2ToLower = ToLower(modFilePathParts[2]);
+                        
                         if (modFilePathParts.size() == 4
                         && modFilePathPart2ToLower == "strings"
                         && std::filesystem::path(modFilePathParts[3]).extension() == ".json")
