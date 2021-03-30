@@ -148,7 +148,7 @@ int main(int argc, char *argv[]) {
             }
             modFilePathParts.push_back(unzippedModParts);
 
-            if (modFilePathParts.size() <= 4) continue;
+            if (modFilePathParts.size() < 4) continue;
 
             std::string resourceName = modFilePathParts[2];
             std::string fileName;
