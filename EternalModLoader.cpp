@@ -72,7 +72,7 @@ int main(int argc, char *argv[]) {
 
                 std::string resourceName = modFilePathParts[0];
 
-                if (resourceName == "generated") {
+                if (ToLower(resourceName) == "generated") {
                     resourceName = "gameresources";
                 }
                 else {
@@ -153,10 +153,7 @@ int main(int argc, char *argv[]) {
             std::string resourceName = modFilePathParts[2];
             std::string fileName;
 
-            std::string resourceNameToLower = resourceName;
-            std::transform(resourceNameToLower.begin(), resourceNameToLower.end(), resourceNameToLower.begin(),
-                           [](unsigned char c){ return std::tolower(c); });
-            if (resourceNameToLower == "generated") {
+            if (ToLower(resourceName) == "generated") {
                 resourceName = "gameresources";
                 fileName = unzippedModPath.substr(modFilePathParts[1].size() + 3, unzippedModPath.size() - modFilePathParts[1].size() - 3);
             }
