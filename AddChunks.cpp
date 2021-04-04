@@ -7,9 +7,9 @@
 #include "EternalModLoader.hpp"
 
 void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, int resourceIndex) {
-    long fileSize = (long)std::filesystem::file_size(ResourceList[resourceIndex].Path);
-
     std::ios::sync_with_stdio(false);
+    
+    long fileSize = (long)std::filesystem::file_size(ResourceList[resourceIndex].Path);
 
     if (ResourceList[resourceIndex].ModListNew.empty()) return;
 

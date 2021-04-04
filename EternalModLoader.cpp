@@ -11,9 +11,22 @@
 std::string BasePath;
 std::vector<ResourceInfo> ResourceList;
 
-int main(int argc, char *argv[]) {
+std::string RESET = "";
+std::string RED = "";
+std::string GREEN = "";
+std::string YELLOW = "";
+std::string BLUE = "";
 
+int main(int argc, char *argv[]) {
     std::ios::sync_with_stdio(false);
+
+    if (std::getenv("ETERNALMODLOADER_NO_COLORS") == NULL) {
+        RESET = "\033[0m";
+        RED = "\033[31m";
+        GREEN = "\033[32m";
+        YELLOW = "\033[33m";
+        BLUE = "\033[34m";
+    }
 
     std::vector<int> maxSize;
 

@@ -5,12 +5,6 @@
 
 #include "mmap_allocator/mmappable_vector.h"
 
-#define RESET   "\033[0m"
-#define RED     "\033[31m"
-#define GREEN   "\033[32m"
-#define YELLOW  "\033[33m"
-#define BLUE    "\033[34m"
-
 class Mod {
 public:
     std::string Name;
@@ -116,6 +110,12 @@ inline bool operator == (ResourceChunk &chunk1, const ResourceChunk &chunk2)
 
 extern std::string BasePath;
 extern std::vector<ResourceInfo> ResourceList;
+
+extern std::string RESET;
+extern std::string RED;
+extern std::string GREEN;
+extern std::string YELLOW;
+extern std::string BLUE;
 
 std::string PathToRes(std::string name);
 void ReadChunkInfo(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, int resourceIndex);
