@@ -16,8 +16,8 @@
 * along with EternalModLoaderCpp. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef ETERNALMODLOADER_H
-#define ETERNALMODLOADER_H
+#ifndef ETERNALMODLOADER_HPP
+#define ETERNALMODLOADER_HPP
 
 #include <vector>
 
