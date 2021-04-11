@@ -246,11 +246,11 @@ int main(int argc, char *argv[]) {
     }
 
     if (listResources) {
-
         for (auto& resource : ResourceList) {
             if (resource.Path.empty()) continue;
             std::cout << resource.Path << std::endl;
         }
+        
         return 0;
     }
 
