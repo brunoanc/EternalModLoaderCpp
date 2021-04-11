@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
     ResourceList.reserve(80);
 
     if (argc == 1 || argc > 3) {
-	std::cout << "EternalModLoaderCpp by PowerBall253, based on EternalModLoader by proteh\n" << std::endl;
+        std::cout << "EternalModLoaderCpp by PowerBall253, based on EternalModLoader by proteh\n" << std::endl;
         std::cout << "Loads mods from ZIPs or loose files in 'Mods' folder into the .resources files in the specified directory.\n" << std::endl;
         std::cout << "USAGE: " << argv[0] << " <game path> [OPTIONS]\n" << std::endl;
         std::cout << "OPTIONS:" << std::endl;
