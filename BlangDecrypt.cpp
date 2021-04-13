@@ -58,8 +58,7 @@ std::byte* HashData(const std::byte* data1, size_t data1Len, const std::byte* da
     
 }
 
-int EncryptData(unsigned char *plaintext, int plaintext_len, unsigned char *key, unsigned char *iv, unsigned char *ciphertext)
-{
+int EncryptData(unsigned char *plaintext, int plaintext_len, unsigned char *key, unsigned char *iv, unsigned char *ciphertext) {
     int len;
     int ciphertext_len;
 
@@ -74,8 +73,7 @@ int EncryptData(unsigned char *plaintext, int plaintext_len, unsigned char *key,
     return ciphertext_len;
 }
 
-int DecryptData(unsigned char *ciphertext, int ciphertext_len, unsigned char *key, unsigned char *iv, unsigned char *plaintext)
-{
+int DecryptData(unsigned char *ciphertext, int ciphertext_len, unsigned char *key, unsigned char *iv, unsigned char *plaintext) {
     int len;
     int plaintext_len;
 
