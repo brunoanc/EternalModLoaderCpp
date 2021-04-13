@@ -32,7 +32,8 @@
 
 #include "EternalModLoader.hpp"
 
-std::byte* HashData(const std::byte* data1, size_t data1Len, const std::byte* data2, size_t data2Len, const std::byte* data3, size_t data3Len, const std::byte* hmacKey, size_t hmacKeyLen) {
+std::byte* HashData(const std::byte* data1, size_t data1Len, const std::byte* data2, size_t data2Len, const std::byte* data3, size_t data3Len, const std::byte* hmacKey, size_t hmacKeyLen)
+{
     if (hmacKey == NULL) {
         SHA256_CTX sha256;
         SHA256_Init(&sha256);
@@ -45,7 +46,7 @@ std::byte* HashData(const std::byte* data1, size_t data1Len, const std::byte* da
     }
     else {
         unsigned int md_len;
-        HMAC_CTX *ctx = HMAC_CTX_new();
+        HMAC_CTX* ctx = HMAC_CTX_new();
         HMAC_Init_ex(ctx, hmacKey, hmacKeyLen, EVP_sha256(), NULL);
         std::byte* md = (std::byte*)malloc(HMAC_size(ctx));
         HMAC_Update(ctx, (uint8_t*)data1, data1Len);
@@ -55,14 +56,14 @@ std::byte* HashData(const std::byte* data1, size_t data1Len, const std::byte* da
         HMAC_CTX_free(ctx);
         return md;
     }
-    
 }
 
-int EncryptData(unsigned char *plaintext, int plaintext_len, unsigned char *key, unsigned char *iv, unsigned char *ciphertext) {
+int EncryptData(unsigned char* plaintext, int plaintext_len, unsigned char* key, unsigned char* iv, unsigned char* ciphertext)
+{
     int len;
     int ciphertext_len;
 
-    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
+    EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
     EVP_EncryptInit_ex(ctx, EVP_aes_128_cbc(), NULL, key, iv);
     EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintext_len);
     ciphertext_len = len;
@@ -73,11 +74,12 @@ int EncryptData(unsigned char *plaintext, int plaintext_len, unsigned char *key,
     return ciphertext_len;
 }
 
-int DecryptData(unsigned char *ciphertext, int ciphertext_len, unsigned char *key, unsigned char *iv, unsigned char *plaintext) {
+int DecryptData(unsigned char* ciphertext, int ciphertext_len, unsigned char* key, unsigned char* iv, unsigned char* plaintext)
+{
     int len;
     int plaintext_len;
 
-    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
+    EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
     EVP_DecryptInit_ex(ctx, EVP_aes_128_cbc(), NULL, key, iv);
     EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len);
     plaintext_len = len;
@@ -88,7 +90,8 @@ int DecryptData(unsigned char *ciphertext, int ciphertext_len, unsigned char *ke
     return plaintext_len;
 }
 
-std::vector<std::byte> CryptData(bool decrypt, std::byte* inputData, size_t inputDataLen, std::byte* key, std::byte* iv) {
+std::vector<std::byte> CryptData(bool decrypt, std::byte* inputData, size_t inputDataLen, std::byte* key, std::byte* iv)
+{
     unsigned char* output = (unsigned char*)malloc(inputDataLen + (inputDataLen % 16 == 0 ? 0 : (16 - inputDataLen % 16)));
     unsigned long newSize;
     if (decrypt) {
@@ -102,7 +105,8 @@ std::vector<std::byte> CryptData(bool decrypt, std::byte* inputData, size_t inpu
     return outputVector;
 }
 
-std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string internalPath, bool decrypt) {
+std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string internalPath, bool decrypt)
+{
     std::vector<std::byte> emptyVector;
 
     std::string keyDeriveStatic = "swapTeam\n";
@@ -167,7 +171,6 @@ std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string inte
         std::byte realKey[0x10];
         std::copy(encKey, encKey + 0x10, realKey);
         cryptedText = CryptData(decrypt, fileText.data(), fileText.size(), realKey, fileIV);
-        
     }
     catch (const std::exception& e) {
         return emptyVector;

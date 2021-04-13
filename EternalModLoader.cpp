@@ -35,7 +35,8 @@ std::string GREEN = "";
 std::string YELLOW = "";
 std::string BLUE = "";
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[])
+{
     std::ios::sync_with_stdio(false);
 
     if (std::getenv("ETERNALMODLOADER_NO_COLORS") == NULL) {
@@ -51,18 +52,22 @@ int main(int argc, char *argv[]) {
     ResourceList.reserve(80);
 
     if (argc == 1 || argc > 3) {
-        std::cout << "EternalModLoaderCpp by PowerBall253, based on EternalModLoader by proteh\n" << std::endl;
-        std::cout << "Loads mods from ZIPs or loose files in 'Mods' folder into the .resources files in the specified directory.\n" << std::endl;
-        std::cout << "USAGE: " << argv[0] << " <game path> [OPTIONS]\n" << std::endl;
+        std::cout << "EternalModLoaderCpp by PowerBall253, based on EternalModLoader by proteh\n"
+                  << std::endl;
+        std::cout << "Loads mods from ZIPs or loose files in 'Mods' folder into the .resources files in the specified directory.\n"
+                  << std::endl;
+        std::cout << "USAGE: " << argv[0] << " <game path> [OPTIONS]\n"
+                  << std::endl;
         std::cout << "OPTIONS:" << std::endl;
-        std::cout << "\t--list-res - List the .resources files that will be modified and exit.\n" << std::endl;
+        std::cout << "\t--list-res - List the .resources files that will be modified and exit.\n"
+                  << std::endl;
         return 1;
     }
 
     std::string argv1(argv[1]);
     BasePath = argv1 + "/base/";
 
-    if(!(std::filesystem::exists(BasePath))) {
+    if (!(std::filesystem::exists(BasePath))) {
         std::cout << RED << "ERROR: " << RESET << "Game directory does not exist!" << std::endl;
         return 1;
     }
@@ -86,7 +91,8 @@ int main(int argc, char *argv[]) {
             zipper::Unzipper modZip(zippedMod.path());
 
             for (auto& zipEntry : modZip.entries()) {
-                if (0 == zipEntry.name.compare(zipEntry.name.length() -1, 1, "/")) continue;
+                if (0 == zipEntry.name.compare(zipEntry.name.length() - 1, 1, "/"))
+                    continue;
                 std::string modFileName = zipEntry.name;
 
                 std::string modFileParts = modFileName;
@@ -100,7 +106,8 @@ int main(int argc, char *argv[]) {
                 }
                 modFilePathParts.push_back(modFileParts);
 
-                if (modFilePathParts.size() < 2) continue;
+                if (modFilePathParts.size() < 2)
+                    continue;
 
                 std::string resourceName = modFilePathParts[0];
 
@@ -139,8 +146,7 @@ int main(int argc, char *argv[]) {
                         std::string modFilePathPart2ToLower = ToLower(modFilePathParts[2]);
                         if (modFilePathParts.size() == 4
                         && modFilePathPart2ToLower == "strings"
-                        && std::filesystem::path(modFilePathParts[3]).extension() == ".json")
-                        {
+                        && std::filesystem::path(modFilePathParts[3]).extension() == ".json") {
                             mod.isBlangJson = true;
                         }
                         else {
@@ -160,7 +166,8 @@ int main(int argc, char *argv[]) {
             }
             modZip.close();
         }
-        else continue;
+        else
+            continue;
     }
 
     int unzippedModCount = 0;
@@ -180,7 +187,8 @@ int main(int argc, char *argv[]) {
             }
             modFilePathParts.push_back(unzippedModParts);
 
-            if (modFilePathParts.size() < 4) continue;
+            if (modFilePathParts.size() < 4)
+                continue;
 
             std::string resourceName = modFilePathParts[2];
             std::string fileName;
@@ -196,7 +204,8 @@ int main(int argc, char *argv[]) {
             int resourceIndex = GetResourceInfo(resourceName);
 
             if (resourceIndex == -1) {
-                if (PathToRes(resourceName).empty()) continue;
+                if (PathToRes(resourceName).empty())
+                    continue;
                 ResourceInfo resource(resourceName, PathToRes(resourceName));
                 ResourceList.push_back(resource);
                 resourceIndex = (int)ResourceList.size() - 1;
@@ -222,8 +231,7 @@ int main(int argc, char *argv[]) {
                 if (modFilePathPart3ToLower == "eternalmod") {
                     if (modFilePathParts.size() == 6
                     && modFilePathPart4ToLower == "strings"
-                    && std::filesystem::path(modFilePathParts[5]).extension() == ".json")
-                    {
+                    && std::filesystem::path(modFilePathParts[5]).extension() == ".json") {
                         mod.isBlangJson = true;
                     }
                     else {
@@ -238,7 +246,8 @@ int main(int argc, char *argv[]) {
                 unzippedModCount++;
             }
         }
-        else continue;
+        else
+            continue;
     }
 
     if (unzippedModCount > 0 && !(listResources)) {
@@ -247,10 +256,11 @@ int main(int argc, char *argv[]) {
 
     if (listResources) {
         for (auto& resource : ResourceList) {
-            if (resource.Path.empty()) continue;
+            if (resource.Path.empty())
+                continue;
             std::cout << resource.Path << std::endl;
         }
-        
+
         return 0;
     }
 
@@ -265,8 +275,8 @@ int main(int argc, char *argv[]) {
         fileSize = (long)std::filesystem::file_size(ResourceList[i].Path);
 
         if (fileSize == 0) {
-                std::cout << RED << "ERROR: " << RESET << "Failed to open " << YELLOW << ResourceList[i].Path << RESET << " for writing!" << std::endl;
-                continue;
+            std::cout << RED << "ERROR: " << RESET << "Failed to open " << YELLOW << ResourceList[i].Path << RESET << " for writing!" << std::endl;
+            continue;
         }
 
         mmap_allocator_namespace::mmappable_vector<std::byte> mem;

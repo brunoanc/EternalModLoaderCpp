@@ -23,7 +23,8 @@
 
 #include "EternalModLoader.hpp"
 
-BlangFile ParseBlang(std::vector<std::byte>& blangBytes, std::string& resourceName) {
+BlangFile ParseBlang(std::vector<std::byte>& blangBytes, std::string& resourceName)
+{
     BlangFile blangFile;
     std::vector<BlangString> blangStrings;
     int pos;
@@ -83,7 +84,8 @@ BlangFile ParseBlang(std::vector<std::byte>& blangBytes, std::string& resourceNa
     return blangFile;
 }
 
-std::vector<std::byte> WriteBlangToVector(BlangFile blangFile, std::string& resourceName) {
+std::vector<std::byte> WriteBlangToVector(BlangFile blangFile, std::string& resourceName)
+{
     std::vector<std::byte> blangBytes;
 
     for (int i = 0; i < blangFile.Strings.size(); i++) {
@@ -110,7 +112,7 @@ std::vector<std::byte> WriteBlangToVector(BlangFile blangFile, std::string& reso
     for (auto& blangString : blangFile.Strings) {
         std::string identifierToLower = ToLower(blangString.Identifier);
         identifierBytes.resize(identifierToLower.size());
-        std::copy((std::byte*)identifierToLower.c_str(), (std::byte*)identifierToLower.c_str() + identifierToLower.size(),identifierBytes.begin());
+        std::copy((std::byte*)identifierToLower.c_str(), (std::byte*)identifierToLower.c_str() + identifierToLower.size(), identifierBytes.begin());
         unsigned int fnvPrime = 0x01000193;
         blangString.Hash = 0x811C9DC5;
 
@@ -129,7 +131,7 @@ std::vector<std::byte> WriteBlangToVector(BlangFile blangFile, std::string& reso
         int identifierBytesLength = identifierBytes.size();
         blangBytes.insert(blangBytes.end(), (std::byte*)&identifierBytesLength, (std::byte*)&identifierBytesLength + 4);
         blangBytes.insert(blangBytes.end(), identifierBytesNew.begin(), identifierBytesNew.end());
-        
+
 
         std::replace(blangString.Text.begin(), blangString.Text.end(), '\r', '\n');
 

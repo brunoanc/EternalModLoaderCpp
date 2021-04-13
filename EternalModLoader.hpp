@@ -28,7 +28,8 @@ public:
     std::string Name;
     std::vector<std::byte> FileBytes;
     bool isBlangJson;
-    explicit Mod(std::string name) {
+    explicit Mod(std::string name)
+    {
         Name = name;
     }
 };
@@ -42,7 +43,8 @@ public:
     long SizeZ;
     long Size;
     std::byte CompressionMode;
-    ResourceChunk(std::string name, long fileOffset) {
+    ResourceChunk(std::string name, long fileOffset)
+    {
         Name = name;
         NameId = 0;
         FileOffset = fileOffset;
@@ -74,7 +76,8 @@ public:
     std::vector<Mod> ModListNew;
     std::vector<std::string> NamesList;
     std::vector<ResourceChunk> ChunkList;
-    ResourceInfo(std::string name, std::string path) {
+    ResourceInfo(std::string name, std::string path)
+    {
         Name = name;
         Path = path;
         FileCount = 0;
@@ -99,12 +102,14 @@ public:
     std::string Identifier;
     std::string Text;
     std::vector<std::byte> Unknown;
-    BlangString() {
+    BlangString()
+    {
         Hash = 0;
         Identifier = "";
         Text = "";
     }
-    BlangString(unsigned int hash, std::string identifier, std::string text, std::vector<std::byte> unknown) {
+    BlangString(unsigned int hash, std::string identifier, std::string text, std::vector<std::byte> unknown)
+    {
         Hash = hash;
         Identifier = identifier;
         Text = text;
@@ -118,12 +123,12 @@ public:
     std::vector<BlangString> Strings;
 };
 
-inline bool operator == (ResourceChunk &chunk1, const ResourceChunk &chunk2)
+inline bool operator==(ResourceChunk& chunk1, const ResourceChunk& chunk2)
 {
-    if(chunk1.Name == chunk2.Name)
-    return true;
+    if (chunk1.Name == chunk2.Name)
+        return true;
     else
-    return false;
+        return false;
 }
 
 extern std::string BasePath;

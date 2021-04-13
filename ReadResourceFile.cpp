@@ -21,7 +21,8 @@
 
 #include "EternalModLoader.hpp"
 
-void ReadResource(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, int resourceIndex) {
+void ReadResource(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, int resourceIndex)
+{
     int fileCount;
     std::copy(mem.begin() + 0x20, mem.begin() + 0x24, (std::byte*)&fileCount);
 
@@ -74,9 +75,10 @@ void ReadResource(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, in
         currentByte = mem[namesOffset + (namesNum + 1) * 8 + i];
 
         if (currentByte == (std::byte)0 || i == namesSize - 1) {
-            if (currentNameBytes.empty()) continue;
+            if (currentNameBytes.empty())
+                continue;
 
-            std::string name((char *)currentNameBytes.data());
+            std::string name((char*)currentNameBytes.data());
 
             if (name.find_first_of('$') != std::string::npos) {
                 name = name.substr(0, name.find_first_of('$'));

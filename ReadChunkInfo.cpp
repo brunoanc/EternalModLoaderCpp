@@ -21,7 +21,8 @@
 
 #include "EternalModLoader.hpp"
 
-void ReadChunkInfo(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, int resourceIndex) {
+void ReadChunkInfo(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, int resourceIndex)
+{
     long dummy7Off = ResourceList[resourceIndex].Dummy7Offset + (ResourceList[resourceIndex].TypeCount * 4);
 
     long nameId, fileOffset, sizeOffset, sizeZ, size;

@@ -23,7 +23,8 @@
 #include "json/single_include/nlohmann/json.hpp"
 #include "EternalModLoader.hpp"
 
-void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, int resourceIndex) {
+void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, int resourceIndex)
+{
     std::ios::sync_with_stdio(false);
 
     int fileCount = 0;
@@ -49,15 +50,15 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, i
         }
 
         long fileOffset, size;
-        std::copy(mem.begin() + ResourceList[resourceIndex].ChunkList[chunkIndex].FileOffset, mem.begin() + ResourceList[resourceIndex].ChunkList[chunkIndex].FileOffset + 8, (std::byte *)&fileOffset);
-        std::copy(mem.begin() + ResourceList[resourceIndex].ChunkList[chunkIndex].FileOffset + 8, mem.begin() + ResourceList[resourceIndex].ChunkList[chunkIndex].FileOffset + 16, (std::byte *)&size);
+        std::copy(mem.begin() + ResourceList[resourceIndex].ChunkList[chunkIndex].FileOffset, mem.begin() + ResourceList[resourceIndex].ChunkList[chunkIndex].FileOffset + 8, (std::byte*)&fileOffset);
+        std::copy(mem.begin() + ResourceList[resourceIndex].ChunkList[chunkIndex].FileOffset + 8, mem.begin() + ResourceList[resourceIndex].ChunkList[chunkIndex].FileOffset + 16, (std::byte*)&size);
 
-        long sizeDiff = (long) mod.FileBytes.size() - size;
+        long sizeDiff = (long)mod.FileBytes.size() - size;
 
         if (mod.isBlangJson) {
             nlohmann::json blangJson;
             try {
-                blangJson = nlohmann::json::parse(std::string((char *)mod.FileBytes.data(), mod.FileBytes.size()));
+                blangJson = nlohmann::json::parse(std::string((char*)mod.FileBytes.data(), mod.FileBytes.size()));
 
                 if (blangJson == NULL || blangJson["strings"].empty()) {
                     throw std::exception();
@@ -108,7 +109,7 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, i
                 if (stringFound) {
                     continue;
                 }
-                
+
                 BlangString newBlangString;
                 newBlangString.Identifier = blangJsonString["name"];
                 newBlangString.Text = blangJsonString["text"];
@@ -166,7 +167,7 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, i
             auto x = std::find(ResourceList[resourceIndex].ChunkList.begin(), ResourceList[resourceIndex].ChunkList.end(), ResourceList[resourceIndex].ChunkList[chunkIndex]);
             int index = (int)std::distance(ResourceList[resourceIndex].ChunkList.begin(), x);
             for (int i = index + 1; i < ResourceList[resourceIndex].ChunkList.size(); i++) {
-                std::copy(mem.begin() + ResourceList[resourceIndex].ChunkList[i].FileOffset, mem.begin() + ResourceList[resourceIndex].ChunkList[i].FileOffset + 8, (std::byte *)&fileOffset);
+                std::copy(mem.begin() + ResourceList[resourceIndex].ChunkList[i].FileOffset, mem.begin() + ResourceList[resourceIndex].ChunkList[i].FileOffset + 8, (std::byte*)&fileOffset);
                 auto fileOffsetSizeDirVector = LongToVector(fileOffset + sizeDiff, 8);
                 std::copy(fileOffsetSizeDirVector.begin(), fileOffsetSizeDirVector.begin() + 8, mem.begin() + ResourceList[resourceIndex].ChunkList[i].FileOffset);
             }

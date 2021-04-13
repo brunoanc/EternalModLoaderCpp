@@ -22,11 +22,12 @@
 
 #include "EternalModLoader.hpp"
 
-std::string PathToRes(std::string name) {
+std::string PathToRes(std::string name)
+{
     std::string resourcePath;
 
     if (ToLower(name).find("dlc_hub", 0) == 0) {
-        std::string dlcHubFileName = name.substr(4, name.size() -4);
+        std::string dlcHubFileName = name.substr(4, name.size() - 4);
         resourcePath = "./base/game/dlc/hub/" + dlcHubFileName + ".resources";
     }
     else if (ToLower(name).find("hub", 0) == 0) {
@@ -42,7 +43,8 @@ std::string PathToRes(std::string name) {
         if (base_filename == resourcePath || path == resourcePath) {
             return path;
         }
-        else continue;
+        else
+            continue;
     }
     std::string emptyString;
     return emptyString;
