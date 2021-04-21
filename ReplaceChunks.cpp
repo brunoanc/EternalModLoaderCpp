@@ -135,11 +135,11 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, i
             mem.mmap_file(ResourceList[resourceIndex].Path, mmap_allocator_namespace::READ_WRITE_SHARED, 0, length + sizeDiff, mmap_allocator_namespace::MAP_WHOLE_FILE | mmap_allocator_namespace::ALLOW_REMAP);
             int toRead;
 
-            const int BufferSize = 4096;
-            std::byte buffer[BufferSize];
+            const int bufferSize = 4096;
+            std::byte buffer[bufferSize];
 
             while (length > (fileOffset + size)) {
-                toRead = length - BufferSize >= (fileOffset + size) ? BufferSize : (int)(length - fileOffset - size);
+                toRead = length - bufferSize >= (fileOffset + size) ? bufferSize : (int)(length - fileOffset - size);
                 length -= toRead;
                 std::copy(mem.begin() + length, mem.begin() + length + toRead, buffer);
                 std::copy(buffer, buffer + toRead, mem.begin() + length + sizeDiff);
