@@ -58,29 +58,3 @@ std::string ToLower(std::string& str)
     std::transform(lowercase.begin(), lowercase.end(), lowercase.begin(), [](unsigned char c) { return std::tolower(c); });
     return lowercase;
 }
-
-std::vector<std::byte> VectorIntegralAdd(std::vector<std::byte>& vect, int numberOfBytes, long numberToAdd)
-{
-    long a;
-    std::copy(vect.begin(), vect.begin() + numberOfBytes, (std::byte*)&a);
-    a += numberToAdd;
-
-    std::vector<std::byte> vectorResult(numberOfBytes);
-    std::copy((std::byte*)&a, (std::byte*)&a + numberOfBytes, vectorResult.begin());
-
-    return vectorResult;
-}
-
-long VectorToNumber(std::vector<std::byte>& vect, int numberOfBytes)
-{
-    long a;
-    std::copy(vect.begin(), vect.begin() + numberOfBytes, (std::byte*)&a);
-    return a;
-}
-
-std::vector<std::byte> LongToVector(long number, int numberOfBytes)
-{
-    std::vector<std::byte> vectorResult(numberOfBytes);
-    std::copy((std::byte*)&number, (std::byte*)&number + numberOfBytes, vectorResult.begin());
-    return vectorResult;
-}

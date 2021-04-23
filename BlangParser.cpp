@@ -33,13 +33,14 @@ BlangFile ParseBlang(std::vector<std::byte>& blangBytes, std::string& resourceNa
         std::vector<std::byte> unknownDataBytes(blangBytes.begin(), blangBytes.begin() + 8);
         pos += 8;
         std::reverse(unknownDataBytes.begin(), unknownDataBytes.end());
-        blangFile.UnknownData = VectorToNumber(unknownDataBytes, 8);
+        std::copy(unknownDataBytes.begin(), unknownDataBytes.end(), (std::byte*)&blangFile.UnknownData);
     }
 
     std::vector<std::byte> stringAmountBytes(blangBytes.begin() + 8, blangBytes.begin() + 12);
     pos += 4;
     std::reverse(stringAmountBytes.begin(), stringAmountBytes.end());
-    int stringAmount = VectorToNumber(stringAmountBytes, 4);
+    int stringAmount;
+    std::copy(stringAmountBytes.begin(), stringAmountBytes.end(), (std::byte*)&stringAmount);
 
     std::vector<std::byte> identifierBytes;
     std::vector<std::byte> textBytes;
@@ -47,7 +48,8 @@ BlangFile ParseBlang(std::vector<std::byte>& blangBytes, std::string& resourceNa
     for (int i = 0; i < stringAmount; i++) {
         std::vector<std::byte> hashBytes(blangBytes.begin() + pos, blangBytes.begin() + pos + 4);
         pos += 4;
-        unsigned int hash = VectorToNumber(hashBytes, 4);
+        unsigned int hash;
+        std::copy(hashBytes.begin(), hashBytes.end(), (std::byte*)&hash);
 
         int identifierLength;
         std::copy(blangBytes.begin() + pos, blangBytes.begin() + pos + 4, (std::byte*)&identifierLength);
@@ -94,12 +96,13 @@ std::vector<std::byte> WriteBlangToVector(BlangFile blangFile, std::string& reso
         }
     }
     if (resourceName == "gameresources_patch1") {
-        std::vector<std::byte> unknownDataBytes = LongToVector(blangFile.UnknownData, 8);
+        std::vector<std::byte> unknownDataBytes((std::byte*)&blangFile.UnknownData, (std::byte*)&blangFile.UnknownData + 8);
         std::reverse(unknownDataBytes.begin(), unknownDataBytes.end());
         blangBytes.insert(blangBytes.end(), unknownDataBytes.begin(), unknownDataBytes.end());
     }
 
-    std::vector<std::byte> stringsAmountBytes = LongToVector(blangFile.Strings.size(), 4);
+    int stringsAmount = blangFile.Strings.size();
+    std::vector<std::byte> stringsAmountBytes((std::byte*)&stringsAmount, (std::byte*)&stringsAmount + 4);
     std::reverse(stringsAmountBytes.begin(), stringsAmountBytes.end());
     blangBytes.insert(blangBytes.end(), stringsAmountBytes.begin(), stringsAmountBytes.end());
 
@@ -121,9 +124,9 @@ std::vector<std::byte> WriteBlangToVector(BlangFile blangFile, std::string& reso
             blangString.Hash *= fnvPrime;
         }
 
-        hashBytes = LongToVector(blangString.Hash, 4);
+        std::copy((std::byte*)&blangString.Hash, (std::byte*)&blangString.Hash + 4, hashBytes.begin());
         std::reverse(hashBytes.begin(), hashBytes.end());
-        blangString.Hash = VectorToNumber(hashBytes, 4);
+        std::copy(hashBytes.begin(), hashBytes.end(), (std::byte*)&blangString.Hash);
         blangBytes.insert(blangBytes.end(), hashBytes.begin(), hashBytes.end());
 
         identifierBytesNew.resize(blangString.Identifier.size());

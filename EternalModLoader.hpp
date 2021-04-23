@@ -147,9 +147,6 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, i
 void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, int resourceIndex);
 void ReadResource(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, int resourceIndex);
 int GetResourceInfo(std::string resourceName);
-std::vector<std::byte> LongToVector(long number, int numberOfBytes);
-std::vector<std::byte> VectorIntegralAdd(std::vector<std::byte>& vect, int numberOfBytes, long numbertoAdd);
-long VectorToNumber(std::vector<std::byte>& vect, int numberOfBytes);
 std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string internalPath, bool decrypt);
 BlangFile ParseBlang(std::vector<std::byte>& blangBytes, std::string& resourceName);
 std::vector<std::byte> WriteBlangToVector(BlangFile blangFile, std::string& resourceName);

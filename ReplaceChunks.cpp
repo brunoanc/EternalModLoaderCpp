@@ -157,9 +157,9 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, i
             }
         }
 
-        auto modFileBytesSizeVector = LongToVector((long)mod.FileBytes.size(), 8);
-        std::copy(modFileBytesSizeVector.begin(), modFileBytesSizeVector.begin() + 8, mem.begin() + ResourceList[resourceIndex].ChunkList[chunkIndex].SizeOffset);
-        std::copy(modFileBytesSizeVector.begin(), modFileBytesSizeVector.begin() + 8, mem.begin() + ResourceList[resourceIndex].ChunkList[chunkIndex].SizeOffset + 8);
+        long modFileBytesSize = mod.FileBytes.size();
+        std::copy((std::byte*)&modFileBytesSize, (std::byte*)&modFileBytesSize + 8, mem.begin() + ResourceList[resourceIndex].ChunkList[chunkIndex].SizeOffset);
+        std::copy((std::byte*)&modFileBytesSize, (std::byte*)&modFileBytesSize + 8, mem.begin() + ResourceList[resourceIndex].ChunkList[chunkIndex].SizeOffset + 8);
 
         mem[ResourceList[resourceIndex].ChunkList[chunkIndex].SizeOffset + 0x30] = (std::byte)0;
 
@@ -168,8 +168,8 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, i
             int index = (int)std::distance(ResourceList[resourceIndex].ChunkList.begin(), x);
             for (int i = index + 1; i < ResourceList[resourceIndex].ChunkList.size(); i++) {
                 std::copy(mem.begin() + ResourceList[resourceIndex].ChunkList[i].FileOffset, mem.begin() + ResourceList[resourceIndex].ChunkList[i].FileOffset + 8, (std::byte*)&fileOffset);
-                auto fileOffsetSizeDirVector = LongToVector(fileOffset + sizeDiff, 8);
-                std::copy(fileOffsetSizeDirVector.begin(), fileOffsetSizeDirVector.begin() + 8, mem.begin() + ResourceList[resourceIndex].ChunkList[i].FileOffset);
+                long fileOffsetSizeDir = fileOffset + sizeDiff;
+                std::copy((std::byte*)&fileOffsetSizeDir, (std::byte*)&fileOffsetSizeDir + 8, mem.begin() + ResourceList[resourceIndex].ChunkList[i].FileOffset);
             }
         }
 
