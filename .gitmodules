@@ -1,9 +1,6 @@
 [submodule "mmap_allocator"]
 	path = mmap_allocator
 	url = https://github.com/johannesthoma/mmap_allocator.git
-[submodule "json"]
-	path = json
-	url = https://github.com/nlohmann/json.git
 [submodule "zipper"]
 	path = zipper
 	url = https://github.com/sebastiandev/zipper.git
