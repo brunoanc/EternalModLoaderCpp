@@ -22,7 +22,7 @@ file(GLOB SOURCES
         ./mmap_allocator/mmap*
         )
 
-set (CMAKE_CXX_FLAGS "-Ofast -DNDEBUG -ftree-vectorize -msse2 -lcrypto")
+set (CMAKE_CXX_FLAGS "-Ofast -DNDEBUG -ftree-vectorize -msse2")
 add_executable(DEternal_loadMods ${SOURCES})
 
 find_package(OpenSSL REQUIRED)
