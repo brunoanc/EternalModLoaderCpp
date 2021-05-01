@@ -101,8 +101,8 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, int r
         std::copy(info.end() - 0x90, info.end(), lastInfo);
         info.resize(info.size() + 0x90);
         std::copy(lastInfo, lastInfo + 0x90, info.end() - 0x90);
-        std::copy((std::byte*)nameIdOffset, (std::byte*)nameIdOffset + 8, info.end() - 0x70);
-        std::copy((std::byte*)fileOffset, (std::byte*)fileOffset + 8, info.end() - 0x58);
+        std::copy((std::byte*)&nameIdOffset, (std::byte*)&nameIdOffset + 8, info.end() - 0x70);
+        std::copy((std::byte*)&fileOffset, (std::byte*)&fileOffset + 8, info.end() - 0x58);
 
         long fileBytesSize = mod.FileBytes.size();
 
