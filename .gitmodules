@@ -4,3 +4,6 @@
 [submodule "zipper"]
 	path = zipper
 	url = https://github.com/sebastiandev/zipper.git
+[submodule "json"]
+	path = json
+	url = https://github.com/nlohmann/json.git
