@@ -139,8 +139,6 @@ int main(int argc, char **argv)
                         && modFilePathPart2ToLower == "strings"
                         && std::filesystem::path(modFilePathParts[3]).extension() == ".json") {
                             mod.IsBlangJson = true;
-                            FILE *f = fopen("xd", "wb");
-                            fwrite(mod.FileBytes.data(), 1, mod.FileBytes.size(), f);
                         }
                         else {
                             continue;
