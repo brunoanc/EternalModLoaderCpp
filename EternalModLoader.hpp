@@ -28,6 +28,8 @@ public:
     std::string Name;
     std::vector<std::byte> FileBytes;
     bool IsBlangJson;
+    bool IsSound;
+
     explicit Mod(std::string name)
     {
         Name = name;
@@ -43,6 +45,7 @@ public:
     long SizeZ;
     long Size;
     std::byte CompressionMode;
+
     ResourceChunk(std::string name, long fileOffset)
     {
         Name = name;
@@ -76,6 +79,7 @@ public:
     std::vector<Mod> ModListNew;
     std::vector<std::string> NamesList;
     std::vector<ResourceChunk> ChunkList;
+
     ResourceInfo(std::string name, std::string path)
     {
         Name = name;
@@ -102,12 +106,14 @@ public:
     std::string Identifier;
     std::string Text;
     std::vector<std::byte> Unknown;
+
     BlangString()
     {
         Hash = 0;
         Identifier = "";
         Text = "";
     }
+    
     BlangString(unsigned int hash, std::string identifier, std::string text, std::vector<std::byte> unknown)
     {
         Hash = hash;
