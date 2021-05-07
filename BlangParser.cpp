@@ -23,51 +23,50 @@
 
 #include "EternalModLoader.hpp"
 
-BlangFile ParseBlang(std::vector<std::byte>& blangBytes, std::string& resourceName)
+BlangFile ParseBlang(std::vector<std::byte> &blangBytes, std::string& resourceName)
 {
     BlangFile blangFile;
     std::vector<BlangString> blangStrings;
-    int pos;
+    int pos = 0;
 
     if (resourceName == "gameresources_patch1") {
         std::vector<std::byte> unknownDataBytes(blangBytes.begin(), blangBytes.begin() + 8);
-        pos += 8;
         std::reverse(unknownDataBytes.begin(), unknownDataBytes.end());
         std::copy(unknownDataBytes.begin(), unknownDataBytes.end(), (std::byte*)&blangFile.UnknownData);
+
+        pos += 8;
     }
 
     std::vector<std::byte> stringAmountBytes(blangBytes.begin() + 8, blangBytes.begin() + 12);
-    pos += 4;
     std::reverse(stringAmountBytes.begin(), stringAmountBytes.end());
+
+    pos += 4;
+
     int stringAmount;
     std::copy(stringAmountBytes.begin(), stringAmountBytes.end(), (std::byte*)&stringAmount);
 
     std::vector<std::byte> identifierBytes;
     std::vector<std::byte> textBytes;
     std::vector<std::byte> unknown;
+    
     for (int i = 0; i < stringAmount; i++) {
-        std::vector<std::byte> hashBytes(blangBytes.begin() + pos, blangBytes.begin() + pos + 4);
-        pos += 4;
         unsigned int hash;
-        std::copy(hashBytes.begin(), hashBytes.end(), (std::byte*)&hash);
+        std::copy(blangBytes.begin() + pos, blangBytes.begin() + pos + 4, (std::byte*)&hash);
+        pos += 4;
 
         int identifierLength;
         std::copy(blangBytes.begin() + pos, blangBytes.begin() + pos + 4, (std::byte*)&identifierLength);
         pos += 4;
 
-        identifierBytes.resize(identifierLength);
-        std::copy(blangBytes.begin() + pos, blangBytes.begin() + pos + identifierLength, identifierBytes.begin());
+        std::string identifier((char*)blangBytes.data() + pos, (char*)blangBytes.data() + pos + identifierLength);
         pos += identifierLength;
-        std::string identifier((const char*)identifierBytes.data(), identifierBytes.size());
 
         int textLength;
         std::copy(blangBytes.begin() + pos, blangBytes.begin() + pos + 4, (std::byte*)&textLength);
         pos += 4;
 
-        textBytes.resize(textLength);
-        std::copy(blangBytes.begin() + pos, blangBytes.begin() + pos + textLength, textBytes.begin());
+        std::string text((char*)blangBytes.data() + pos, (char*)blangBytes.data() + pos + textLength);
         pos += textLength;
-        std::string text((const char*)textBytes.data(), textLength);
 
         int unknownLength;
         std::copy(blangBytes.begin() + pos, blangBytes.begin() + pos + 4, (std::byte*)&unknownLength);
@@ -95,6 +94,7 @@ std::vector<std::byte> WriteBlangToVector(BlangFile blangFile, std::string& reso
             blangFile.Strings.erase(blangFile.Strings.begin() + i);
         }
     }
+
     if (resourceName == "gameresources_patch1") {
         std::vector<std::byte> unknownDataBytes((std::byte*)&blangFile.UnknownData, (std::byte*)&blangFile.UnknownData + 8);
         std::reverse(unknownDataBytes.begin(), unknownDataBytes.end());
@@ -107,15 +107,15 @@ std::vector<std::byte> WriteBlangToVector(BlangFile blangFile, std::string& reso
     blangBytes.insert(blangBytes.end(), stringsAmountBytes.begin(), stringsAmountBytes.end());
 
     std::vector<std::byte> identifierBytes;
-    std::vector<std::byte> hashBytes;
+    std::vector<std::byte> hashBytes(4);
     std::vector<std::byte> identifierBytesNew;
     std::vector<std::byte> textBytes;
-
 
     for (auto& blangString : blangFile.Strings) {
         std::string identifierToLower = ToLower(blangString.Identifier);
         identifierBytes.resize(identifierToLower.size());
         std::copy((std::byte*)identifierToLower.c_str(), (std::byte*)identifierToLower.c_str() + identifierToLower.size(), identifierBytes.begin());
+
         unsigned int fnvPrime = 0x01000193;
         blangString.Hash = 0x811C9DC5;
 
@@ -129,23 +129,18 @@ std::vector<std::byte> WriteBlangToVector(BlangFile blangFile, std::string& reso
         std::copy(hashBytes.begin(), hashBytes.end(), (std::byte*)&blangString.Hash);
         blangBytes.insert(blangBytes.end(), hashBytes.begin(), hashBytes.end());
 
-        identifierBytesNew.resize(blangString.Identifier.size());
-        std::copy((std::byte*)blangString.Identifier.c_str(), (std::byte*)blangString.Identifier.c_str() + blangString.Identifier.size(), identifierBytesNew.begin());
-        int identifierBytesLength = identifierBytes.size();
+        int identifierBytesLength = blangString.Identifier.size();
         blangBytes.insert(blangBytes.end(), (std::byte*)&identifierBytesLength, (std::byte*)&identifierBytesLength + 4);
-        blangBytes.insert(blangBytes.end(), identifierBytesNew.begin(), identifierBytesNew.end());
-
+        blangBytes.insert(blangBytes.end(), (std::byte*)blangString.Identifier.c_str(), (std::byte*)blangString.Identifier.c_str() + blangString.Identifier.size());
 
         std::replace(blangString.Text.begin(), blangString.Text.end(), '\r', '\n');
 
-        textBytes.resize(blangString.Text.size());
-        std::copy((std::byte*)blangString.Text.c_str(), (std::byte*)blangString.Text.c_str() + blangString.Text.size(), textBytes.begin());
-        int textBytesLength = textBytes.size();
+        int textBytesLength = blangString.Text.size();
         blangBytes.insert(blangBytes.end(), (std::byte*)&textBytesLength, (std::byte*)&textBytesLength + 4);
-        blangBytes.insert(blangBytes.end(), textBytes.begin(), textBytes.end());
+        blangBytes.insert(blangBytes.end(), (std::byte*)blangString.Text.c_str(), (std::byte*)blangString.Text.c_str() + blangString.Text.size());
 
         if (blangString.Unknown.empty()) {
-            std::byte emptyArray[4] = {(std::byte)0, (std::byte)0, (std::byte)0, (std::byte)0};
+            std::byte emptyArray[4] = {};
             blangBytes.insert(blangBytes.end(), emptyArray, emptyArray + 4);
         }
         else {

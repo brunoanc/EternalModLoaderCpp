@@ -45,16 +45,35 @@ int GetChunk(std::string name, int resourceIndex)
     return -1;
 }
 
-std::string RemoveWhitespace(std::string& stringWithWhitespace)
+std::string RemoveWhitespace(std::string &stringWithWhitespace)
 {
     std::string stringWithoutWhitespace = stringWithWhitespace;
     stringWithoutWhitespace.erase(std::remove_if(stringWithoutWhitespace.begin(), stringWithoutWhitespace.end(), [](char ch) { return std::isspace<char>(ch, std::locale::classic()); }), stringWithoutWhitespace.end());
+
     return stringWithoutWhitespace;
 }
 
-std::string ToLower(std::string& str)
+std::string ToLower(std::string &str)
 {
     std::string lowercase = str;
     std::transform(lowercase.begin(), lowercase.end(), lowercase.begin(), [](unsigned char c) { return std::tolower(c); });
+    
     return lowercase;
+}
+
+std::vector<std::string> SplitString(std::string stringToSplit, char delimiter)
+{
+    std::vector<std::string> resultVector;
+    size_t pos;
+    std::string part;
+
+    while ((pos = stringToSplit.find(delimiter)) != std::string::npos) {
+        part = stringToSplit.substr(0, pos);
+        resultVector.push_back(part);
+        stringToSplit.erase(0, pos + 1);
+    }
+
+    resultVector.push_back(stringToSplit);
+
+    return resultVector;
 }

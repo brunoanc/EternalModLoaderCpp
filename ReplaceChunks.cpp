@@ -23,26 +23,26 @@
 #include "json/single_include/nlohmann/json.hpp"
 #include "EternalModLoader.hpp"
 
-void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, int resourceIndex)
+void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, int resourceIndex)
 {
-    std::ios::sync_with_stdio(false);
-
     int fileCount = 0;
 
     for (auto& mod : ResourceList[resourceIndex].ModList) {
         int chunkIndex;
 
-        if (mod.isBlangJson) {
+        if (mod.IsBlangJson) {
             mod.Name = mod.Name.substr(mod.Name.find('/') + 1);
             mod.Name = std::filesystem::path(mod.Name).replace_extension(".blang");
 
             chunkIndex = GetChunk(mod.Name, resourceIndex);
+
             if (chunkIndex == -1) {
                 continue;
             }
         }
         else {
             chunkIndex = GetChunk(mod.Name, resourceIndex);
+
             if (chunkIndex == -1) {
                 ResourceList[resourceIndex].ModListNew.push_back(mod);
                 continue;
@@ -55,8 +55,9 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, i
 
         long sizeDiff = (long)mod.FileBytes.size() - size;
 
-        if (mod.isBlangJson) {
+        if (mod.IsBlangJson) {
             nlohmann::json blangJson;
+
             try {
                 blangJson = nlohmann::json::parse(std::string((char*)mod.FileBytes.data(), mod.FileBytes.size()));
 
@@ -65,13 +66,13 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, i
                 }
 
                 for (auto& blangJsonString : blangJson["strings"]) {
-                    if (blangJsonString == NULL || blangJsonString["name"].empty() || blangJsonString["text"].empty()) {
+                    if (blangJsonString == NULL || blangJsonString["name"].empty()) {
                         throw std::exception();
                     }
                 }
             }
             catch (const std::exception& e) {
-                std::cout << RED << "ERROR: " << RESET << "Failed to parse EternalMod/strings/" << std::filesystem::path(mod.Name).replace_extension(".json").string() << std::endl;
+                std::cerr << RED << "ERROR: " << RESET << "Failed to parse EternalMod/strings/" << std::filesystem::path(mod.Name).replace_extension(".json").string() << std::endl;
                 continue;
             }
 
@@ -79,8 +80,9 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, i
             std::copy(mem.begin() + fileOffset, mem.begin() + fileOffset + size, blangFileBytes.begin());
 
             std::vector<std::byte> decryptedBlangFileBytes = IdCrypt(blangFileBytes, mod.Name, true);
+
             if (decryptedBlangFileBytes.empty()) {
-                std::cout << RED << "ERROR: " << RESET << "Failed to decrypt " << ResourceList[resourceIndex].Name << "/" << mod.Name << std::endl;
+                std::cerr << RED << "ERROR: " << RESET << "Failed to decrypt " << ResourceList[resourceIndex].Name << "/" << mod.Name << std::endl;
                 continue;
             }
 
@@ -89,7 +91,7 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, i
                 blangFile = ParseBlang(decryptedBlangFileBytes, ResourceList[resourceIndex].Name);
             }
             catch (const std::exception& e) {
-                std::cout << RED << "ERROR: " << RESET << "Failed to parse " << ResourceList[resourceIndex].Name << "/" << mod.Name << std::endl;
+                std::cerr << RED << "ERROR: " << RESET << "Failed to parse " << ResourceList[resourceIndex].Name << "/" << mod.Name << std::endl;
                 continue;
             }
 
@@ -106,9 +108,8 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, i
                     }
                 }
 
-                if (stringFound) {
+                if (stringFound)
                     continue;
-                }
 
                 BlangString newBlangString;
                 newBlangString.Identifier = blangJsonString["name"];
@@ -118,10 +119,10 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, i
             }
 
             std::vector<std::byte> cryptDataBuffer = WriteBlangToVector(blangFile, ResourceList[resourceIndex].Name);
-
             std::vector<std::byte> encryptedBlangFileBytes = IdCrypt(cryptDataBuffer, mod.Name, false);
+
             if (encryptedBlangFileBytes.empty()) {
-                std::cout << RED << "ERROR: " << RESET << "Failed to re-encrypt " << ResourceList[resourceIndex].Name << "/" << mod.Name << std::endl;
+                std::cerr << RED << "ERROR: " << RESET << "Failed to re-encrypt " << ResourceList[resourceIndex].Name << "/" << mod.Name << std::endl;
                 continue;
             }
 
@@ -133,14 +134,15 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, i
             mem.munmap_file();
             std::filesystem::resize_file(ResourceList[resourceIndex].Path, length + sizeDiff);
             mem.mmap_file(ResourceList[resourceIndex].Path, mmap_allocator_namespace::READ_WRITE_SHARED, 0, length + sizeDiff, mmap_allocator_namespace::MAP_WHOLE_FILE | mmap_allocator_namespace::ALLOW_REMAP);
-            int toRead;
 
+            int toRead;
             const int bufferSize = 4096;
             std::byte buffer[bufferSize];
 
             while (length > (fileOffset + size)) {
                 toRead = length - bufferSize >= (fileOffset + size) ? bufferSize : (int)(length - fileOffset - size);
                 length -= toRead;
+
                 std::copy(mem.begin() + length, mem.begin() + length + toRead, buffer);
                 std::copy(buffer, buffer + toRead, mem.begin() + length + sizeDiff);
             }
@@ -150,10 +152,13 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, i
         else {
             std::copy(mod.FileBytes.begin(), mod.FileBytes.begin() + (long)mod.FileBytes.size(), mem.begin() + fileOffset);
 
-            std::byte emptyArray[-sizeDiff] = {};
-
             if (sizeDiff < 0) {
+                std::byte *emptyArray = new std::byte[-sizeDiff];
+                std::memset(emptyArray, 0, -sizeDiff);
+
                 std::copy(emptyArray, emptyArray - sizeDiff, mem.begin() + fileOffset + (long)mod.FileBytes.size());
+
+                delete[] emptyArray;
             }
         }
 
@@ -166,14 +171,16 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, i
         if (sizeDiff > 0) {
             auto x = std::find(ResourceList[resourceIndex].ChunkList.begin(), ResourceList[resourceIndex].ChunkList.end(), ResourceList[resourceIndex].ChunkList[chunkIndex]);
             int index = (int)std::distance(ResourceList[resourceIndex].ChunkList.begin(), x);
+
             for (int i = index + 1; i < ResourceList[resourceIndex].ChunkList.size(); i++) {
                 std::copy(mem.begin() + ResourceList[resourceIndex].ChunkList[i].FileOffset, mem.begin() + ResourceList[resourceIndex].ChunkList[i].FileOffset + 8, (std::byte*)&fileOffset);
+
                 long fileOffsetSizeDir = fileOffset + sizeDiff;
                 std::copy((std::byte*)&fileOffsetSizeDir, (std::byte*)&fileOffsetSizeDir + 8, mem.begin() + ResourceList[resourceIndex].ChunkList[i].FileOffset);
             }
         }
 
-        if (!mod.isBlangJson) {
+        if (!mod.IsBlangJson) {
             std::cout << "\tReplaced " << mod.Name << std::endl;
         }
 

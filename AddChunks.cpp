@@ -24,10 +24,8 @@
 
 #include "EternalModLoader.hpp"
 
-void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, int resourceIndex)
+void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, int resourceIndex)
 {
-    std::ios::sync_with_stdio(false);
-
     long fileSize = (long)std::filesystem::file_size(ResourceList[resourceIndex].Path);
 
     if (ResourceList[resourceIndex].ModListNew.empty())
@@ -62,20 +60,23 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, int r
         long fileOffset;
         long placement = 0x10 - ((long)data.size() % 0x10) + 0x30;
         fileOffset = (long)data.size() + placement + ResourceList[resourceIndex].DataOffset;
+
         data.resize(data.size() + placement + mod.FileBytes.size());
         std::copy(mod.FileBytes.begin(), mod.FileBytes.end(), data.end() - (long)mod.FileBytes.size());
 
-        long nameId;
-        long nameIdOffset;
-        nameId = (long)ResourceList[resourceIndex].NamesList.size();
+        long nameId = (long)ResourceList[resourceIndex].NamesList.size();
         nameIds.resize(nameIds.size() + 8);
-        nameIdOffset = (long)nameIds.size() / 8 - 1;
+
+        long nameIdOffset = (long)nameIds.size() / 8 - 1;
         nameIds.resize(nameIds.size() + 8);
+
         std::copy((std::byte*)&nameId, (std::byte*)&nameId + 8, nameIds.end() - 8);
         std::byte nameOffsetsBytes[8];
         std::copy(nameOffsets.end() - 8, nameOffsets.end(), nameOffsetsBytes);
+
         long lastOffset;
         std::copy(nameOffsetsBytes, nameOffsetsBytes + 8, (std::byte*)&lastOffset);
+
         long lastNameOffset = 0;
 
         for (int i = (int)lastOffset; i < names.size(); i++) {
@@ -85,13 +86,14 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, int r
             }
         }
 
-        const char* nameChars = mod.Name.c_str();
+        const char *nameChars = mod.Name.c_str();
         names.resize(names.size() + mod.Name.size() + 1);
         std::copy((std::byte*)nameChars, (std::byte*)nameChars + mod.Name.size(), names.begin() + lastNameOffset);
 
         long newCount;
         std::copy(nameOffsets.begin(), nameOffsets.begin() + 8, (std::byte*)&newCount);
         newCount += 1;
+
         std::copy((std::byte*)&newCount, (std::byte*)&newCount + 8, nameOffsets.begin());
         nameOffsets.resize(nameOffsets.size() + 8);
 
@@ -101,6 +103,7 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, int r
         std::copy(info.end() - 0x90, info.end(), lastInfo);
         info.resize(info.size() + 0x90);
         std::copy(lastInfo, lastInfo + 0x90, info.end() - 0x90);
+
         std::copy((std::byte*)&nameIdOffset, (std::byte*)&nameIdOffset + 8, info.end() - 0x70);
         std::copy((std::byte*)&fileOffset, (std::byte*)&fileOffset + 8, info.end() - 0x58);
 
@@ -161,9 +164,11 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, int r
 
     for (int i = 0; i < (int)info.size() / 0x90; i++) {
         int fileOffset = 0x38 + (i * 0x90);
+
         long newOffsetPlusDataAdd;
         std::copy(info.begin() + fileOffset, info.begin() + fileOffset + 8, (std::byte*)&newOffsetPlusDataAdd);
         newOffsetPlusDataAdd += dataAdd;
+
         std::copy((std::byte*)&newOffsetPlusDataAdd, (std::byte*)&newOffsetPlusDataAdd + 8, info.begin() + fileOffset);
     }
 

@@ -27,7 +27,7 @@ class Mod {
 public:
     std::string Name;
     std::vector<std::byte> FileBytes;
-    bool isBlangJson;
+    bool IsBlangJson;
     explicit Mod(std::string name)
     {
         Name = name;
@@ -141,16 +141,17 @@ extern std::string YELLOW;
 extern std::string BLUE;
 
 std::string PathToRes(std::string name);
-void ReadChunkInfo(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, int resourceIndex);
+void ReadChunkInfo(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, int resourceIndex);
 int GetChunk(std::string name, int resourceIndex);
-void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, int resourceIndex);
-void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, int resourceIndex);
-void ReadResource(mmap_allocator_namespace::mmappable_vector<std::byte>& mem, int resourceIndex);
+void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, int resourceIndex);
+void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, int resourceIndex);
+void ReadResource(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, int resourceIndex);
 int GetResourceInfo(std::string resourceName);
 std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string internalPath, bool decrypt);
-BlangFile ParseBlang(std::vector<std::byte>& blangBytes, std::string& resourceName);
-std::vector<std::byte> WriteBlangToVector(BlangFile blangFile, std::string& resourceName);
-std::string RemoveWhitespace(std::string& stringWithWhitespace);
-std::string ToLower(std::string& str);
+BlangFile ParseBlang(std::vector<std::byte> &blangBytes, std::string &resourceName);
+std::vector<std::byte> WriteBlangToVector(BlangFile blangFile, std::string &resourceName);
+std::string RemoveWhitespace(std::string &stringWithWhitespace);
+std::string ToLower(std::string &str);
+std::vector<std::string> SplitString(std::string stringToSplit, char delimiter);
 
 #endif

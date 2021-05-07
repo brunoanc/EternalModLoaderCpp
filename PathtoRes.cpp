@@ -40,12 +40,13 @@ std::string PathToRes(std::string name)
     for (auto& file : std::filesystem::recursive_directory_iterator(BasePath)) {
         std::string path = file.path();
         std::string base_filename = path.substr(path.find_last_of('/') + 1);
+
         if (base_filename == resourcePath || path == resourcePath) {
             return path;
         }
         else
             continue;
     }
-    std::string emptyString;
-    return emptyString;
+
+    return "";
 }
