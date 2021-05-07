@@ -161,6 +161,7 @@ int main(int argc, char **argv)
                     zippedModCount++;
                 }
             }
+            
             if (zippedModCount > 0 && !(listResources)) {
                 std::cout << "Found " << BLUE << zippedModCount << " file(s) " << RESET << "in archive " << YELLOW << zippedMod << RESET << "..." << std::endl;
             }
