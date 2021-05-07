@@ -129,13 +129,10 @@ int main(int argc, char **argv)
                     std::vector<std::byte> unzipped_entry_bytes((std::byte*)unzipped_entry.data(), (std::byte*)unzipped_entry.data() + unzipped_entry.size()); 
                     mod.FileBytes = unzipped_entry_bytes;
 
-                    std::string modFilePathPart1ToLower = ToLower(modFilePathParts[1]);
-
-                    if (modFilePathPart1ToLower == "eternalmod") {
-                        std::string modFilePathPart2ToLower = ToLower(modFilePathParts[2]);
+                    if (ToLower(modFilePathParts[1]) == "eternalmod") {
 
                         if (modFilePathParts.size() == 4
-                        && modFilePathPart2ToLower == "strings"
+                        && ToLower(modFilePathParts[2]) == "strings"
                         && std::filesystem::path(modFilePathParts[3]).extension() == ".json") {
                             mod.IsBlangJson = true;
                         }
@@ -214,12 +211,9 @@ int main(int argc, char **argv)
 
                 mod.FileBytes = streamVector;
 
-                std::string modFilePathPart3ToLower = ToLower(modFilePathParts[3]);
-                std::string modFilePathPart4ToLower = ToLower(modFilePathParts[4]);
-
-                if (modFilePathPart3ToLower == "eternalmod") {
+                if (ToLower(modFilePathParts[3]) == "eternalmod") {
                     if (modFilePathParts.size() == 6
-                    && modFilePathPart4ToLower == "strings"
+                    && ToLower(modFilePathParts[4]) == "strings"
                     && std::filesystem::path(modFilePathParts[5]).extension() == ".json") {
                         mod.IsBlangJson = true;
                     }
