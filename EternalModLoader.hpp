@@ -36,19 +36,6 @@ public:
     }
 };
 
-class SoundMod {
-public:
-    std::vector<std::byte> SoundBytes;
-    std::string SndPath;
-    std::string SoundFilename;
-
-    SoundMod(std::vector<std::byte> soundBytes, std::string sndPath, std::string soundFilename) {
-        SoundBytes = soundBytes;
-        SndPath = sndPath;
-        SoundFilename = soundFilename;
-    }
-};
-
 class ResourceChunk {
 public:
     std::string Name;
@@ -75,6 +62,7 @@ class ResourceInfo {
 public:
     std::string Name;
     std::string Path;
+    bool IsSnd;
     int FileCount;
     int TypeCount;
     int StringsSize;
@@ -97,6 +85,7 @@ public:
     {
         Name = name;
         Path = path;
+        IsSnd = false;
         FileCount = 0;
         TypeCount = 0;
         StringsSize = 0;
@@ -159,7 +148,7 @@ extern std::string GREEN;
 extern std::string YELLOW;
 extern std::string BLUE;
 
-std::string PathToRes(std::string name);
+std::string PathToRes(std::string name, bool &isSnd);
 void ReadChunkInfo(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, int resourceIndex);
 int GetChunk(std::string name, int resourceIndex);
 void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, int resourceIndex);
