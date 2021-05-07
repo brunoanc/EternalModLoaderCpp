@@ -78,13 +78,13 @@ int main(int argc, char **argv)
         }
     }
 
-    for (const auto& zippedMod : std::filesystem::directory_iterator(std::string(argv[1]) + "/Mods")) {
+    for (const auto &zippedMod : std::filesystem::directory_iterator(std::string(argv[1]) + "/Mods")) {
         if (std::filesystem::is_regular_file(zippedMod) && zippedMod.path().extension() == ".zip") {
             int zippedModCount = 0;
             std::vector<std::string> modFileNameList;
             zipper::Unzipper modZip(zippedMod.path());
 
-            for (auto& zipEntry : modZip.entries()) {
+            for (auto &zipEntry : modZip.entries()) {
                 if (0 == zipEntry.name.compare(zipEntry.name.length() - 1, 1, "/"))
                     continue;
 
@@ -174,7 +174,7 @@ int main(int argc, char **argv)
 
     int unzippedModCount = 0;
 
-    for (const auto& unzippedMod : std::filesystem::recursive_directory_iterator(std::string(argv[1]) + "/Mods")) {
+    for (const auto &unzippedMod : std::filesystem::recursive_directory_iterator(std::string(argv[1]) + "/Mods")) {
         if (std::filesystem::is_regular_file(unzippedMod) && !(unzippedMod.path().extension() == ".zip")) {
             std::string unzippedModPath = unzippedMod.path();
 
@@ -264,7 +264,7 @@ int main(int argc, char **argv)
     }
 
     if (listResources) {
-        for (auto& resource : ResourceList) {
+        for (auto &resource : ResourceList) {
             if (resource.Path.empty())
                 continue;
 
@@ -317,7 +317,7 @@ int main(int argc, char **argv)
 
             int fileCount = 0;
 
-            for (auto& mod : ResourceList[i].ModList) {
+            for (auto &mod : ResourceList[i].ModList) {
                 if (LoadSoundMods(mod.FileBytes, ResourceList[i].Path, mod.Name) == -1) {
                     std::cerr << RED << "ERROR: " << RESET << "Failed to inject " << mod.Name << std::endl;
                     continue;

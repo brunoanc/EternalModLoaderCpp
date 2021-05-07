@@ -27,7 +27,7 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, i
 {
     int fileCount = 0;
 
-    for (auto& mod : ResourceList[resourceIndex].ModList) {
+    for (auto &mod : ResourceList[resourceIndex].ModList) {
         int chunkIndex;
 
         if (mod.IsBlangJson) {
@@ -62,16 +62,16 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, i
                 blangJson = nlohmann::json::parse(std::string((char*)mod.FileBytes.data(), mod.FileBytes.size()));
 
                 if (blangJson == NULL || blangJson["strings"].empty()) {
-                    throw std::exception();
+                    throw;
                 }
 
-                for (auto& blangJsonString : blangJson["strings"]) {
+                for (auto &blangJsonString : blangJson["strings"]) {
                     if (blangJsonString == NULL || blangJsonString["name"].empty()) {
-                        throw std::exception();
+                        throw;
                     }
                 }
             }
-            catch (const std::exception& e) {
+            catch (...) {
                 std::cerr << RED << "ERROR: " << RESET << "Failed to parse EternalMod/strings/" << std::filesystem::path(mod.Name).replace_extension(".json").string() << std::endl;
                 continue;
             }
@@ -90,15 +90,15 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, i
             try {
                 blangFile = ParseBlang(decryptedBlangFileBytes, ResourceList[resourceIndex].Name);
             }
-            catch (const std::exception& e) {
+            catch (...) {
                 std::cerr << RED << "ERROR: " << RESET << "Failed to parse " << ResourceList[resourceIndex].Name << "/" << mod.Name << std::endl;
                 continue;
             }
 
-            for (auto& blangJsonString : blangJson["strings"]) {
+            for (auto &blangJsonString : blangJson["strings"]) {
                 bool stringFound = false;
 
-                for (auto& blangString : blangFile.Strings) {
+                for (auto &blangString : blangFile.Strings) {
                     if (blangJsonString["name"] == blangString.Identifier) {
                         stringFound = true;
                         blangString.Text = blangJsonString["text"];

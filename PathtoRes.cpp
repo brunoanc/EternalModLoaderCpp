@@ -37,7 +37,7 @@ std::string PathToRes(std::string name, bool &isSnd)
         resourcePath = name;
     }
 
-    for (auto& file : std::filesystem::recursive_directory_iterator(BasePath)) {
+    for (auto &file : std::filesystem::recursive_directory_iterator(BasePath)) {
         std::string path = file.path();
         std::string base_filename = path.substr(path.find_last_of('/') + 1);
 

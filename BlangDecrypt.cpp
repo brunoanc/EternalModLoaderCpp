@@ -146,7 +146,7 @@ std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string inte
     try {
         encKey = HashData(fileSalt, 0xC, (std::byte*)keyDeriveStatic.c_str(), 0xA, (std::byte*)internalPath.c_str(), internalPath.size(), NULL, 0);
     }
-    catch (const std::exception& e) {
+    catch (...) {
         return emptyVector;
     }
 
@@ -174,7 +174,7 @@ std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string inte
         try {
             hmac = HashData(fileSalt, 0xC, fileIV, 0x10, fileText.data(), fileText.size(), encKey, 0x20);
         }
-        catch (const std::exception& e) {
+        catch (...) {
             return emptyVector;
         }
 
@@ -194,7 +194,7 @@ std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string inte
 
         cryptedText = CryptData(decrypt, fileText.data(), fileText.size(), realKey, fileIV);
     }
-    catch (const std::exception& e) {
+    catch (...) {
         return emptyVector;
     }
 

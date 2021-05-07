@@ -111,7 +111,7 @@ std::vector<std::byte> WriteBlangToVector(BlangFile blangFile, std::string& reso
     std::vector<std::byte> identifierBytesNew;
     std::vector<std::byte> textBytes;
 
-    for (auto& blangString : blangFile.Strings) {
+    for (auto &blangString : blangFile.Strings) {
         std::string identifierToLower = ToLower(blangString.Identifier);
         identifierBytes.resize(identifierToLower.size());
         std::copy((std::byte*)identifierToLower.c_str(), (std::byte*)identifierToLower.c_str() + identifierToLower.size(), identifierBytes.begin());
