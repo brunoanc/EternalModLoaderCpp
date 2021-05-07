@@ -78,6 +78,9 @@ int main(int argc, char **argv)
         }
     }
 
+    std::vector<SoundMod> soundModList;
+    std::vector<std::string> sndPathList;
+
     for (const auto& zippedMod : std::filesystem::directory_iterator(std::string(argv[1]) + "/Mods")) {
         if (std::filesystem::is_regular_file(zippedMod) && zippedMod.path().extension() == ".zip") {
             int zippedModCount = 0;
@@ -105,15 +108,24 @@ int main(int argc, char **argv)
                 }
 
                 int resourceIndex = GetResourceInfo(resourceName);
+                std::string sndPath;
 
                 if (resourceIndex == -1) {
-                    ResourceInfo resource(resourceName, PathToRes(resourceName));
-                    ResourceList.push_back(resource);
-                    resourceIndex = (int)ResourceList.size() - 1;
+                    if (PathToRes(resourceName).empty() && ToLower(resourceName) != "eternalmod")
+                        continue;
+
+                    if (ToLower(resourceName) != "eternalmod") {
+                        ResourceInfo resource(resourceName, PathToRes(resourceName));
+                        ResourceList.push_back(resource);
+                        resourceIndex = (int)ResourceList.size() - 1;
+                    }
+                    else {
+                        sndPath = BasePath + "sound/soundbanks/pc/" + std::string(modFilePathParts[2]) + ".snd";
+                        sndPathList.push_back(sndPath);
+                    }
                 }
 
                 if (!listResources) {
-                    Mod mod(modFileName);
 
                     unsigned long streamSize = zipEntry.uncompressedSize;
 
@@ -126,11 +138,27 @@ int main(int argc, char **argv)
                     unzipped_entry.reserve(zipEntry.uncompressedSize);
                     modZip.extractEntryToMemory(zipEntry.name, unzipped_entry);
 
-                    std::vector<std::byte> unzipped_entry_bytes((std::byte*)unzipped_entry.data(), (std::byte*)unzipped_entry.data() + unzipped_entry.size()); 
+                    std::vector<std::byte> unzipped_entry_bytes((std::byte*)unzipped_entry.data(), (std::byte*)unzipped_entry.data() + unzipped_entry.size());
+
+                    if (ToLower(resourceName) == "eternalmod") {
+                        if (modFilePathParts.size() == 4
+                        && ToLower(modFilePathParts[1]) == "sounds"
+                        && std::filesystem::path(modFilePathParts[3]).extension() == ".wem"
+                        || std::filesystem::path(modFilePathParts[3]).extension() == ".opus"
+                        || std::filesystem::path(modFilePathParts[3]).extension() == ".ogg") {
+                            SoundMod soundMod(unzipped_entry_bytes, sndPath, modFilePathParts[3]);
+
+                            soundModList.push_back(soundMod);
+                        }
+
+                        zippedModCount++;
+                        continue;
+                    }
+
+                    Mod mod(modFileName);
                     mod.FileBytes = unzipped_entry_bytes;
 
                     if (ToLower(modFilePathParts[1]) == "eternalmod") {
-
                         if (modFilePathParts.size() == 4
                         && ToLower(modFilePathParts[2]) == "strings"
                         && std::filesystem::path(modFilePathParts[3]).extension() == ".json") {
@@ -181,35 +209,57 @@ int main(int argc, char **argv)
             }
 
             int resourceIndex = GetResourceInfo(resourceName);
+            std::string sndPath;
 
             if (resourceIndex == -1) {
-                if (PathToRes(resourceName).empty())
+                if (PathToRes(resourceName).empty() && ToLower(resourceName) != "eternalmod")
                     continue;
 
-                ResourceInfo resource(resourceName, PathToRes(resourceName));
-                ResourceList.push_back(resource);
-                resourceIndex = (int)ResourceList.size() - 1;
+                if (ToLower(resourceName) != "eternalmod") {
+                    ResourceInfo resource(resourceName, PathToRes(resourceName));
+                    ResourceList.push_back(resource);
+                    resourceIndex = (int)ResourceList.size() - 1;
+                }
+                else {
+                    sndPath = BasePath + "sound/soundbanks/pc/" + std::string(modFilePathParts[4]) + ".snd";
+                    sndPathList.push_back(sndPath);
+                }
             }
 
             if (!listResources) {
-                Mod mod(fileName);
-
                 long unzippedModSize = std::filesystem::file_size(unzippedModPath);
 
                 if (unzippedModSize > ResourceList.max_size()) {
                     std::cerr << "Skipped " << fileName << " - too large." << std::endl;
                 }
 
-                std::fstream stream;
-                stream.open(unzippedModPath, std::ios::in | std::ios::binary);
+                FILE *unzippedModFile = fopen(unzippedModPath.c_str(), "rb");
 
-                stream.seekg(0, std::ios::beg);
-                std::vector<std::byte> streamVector(unzippedModSize);
-                stream.read((char*)streamVector.data(), (long)unzippedModSize);
+                if (!unzippedModFile)
+                    std::cerr << RED << "ERROR: " << RESET << "Failed to open " << unzippedModPath << " for reading." << std::endl;
 
-                stream.close();
+                std::vector<std::byte> unzippedModBytes(unzippedModSize);
+                fread(unzippedModBytes.data(), 1, unzippedModSize, unzippedModFile);
 
-                mod.FileBytes = streamVector;
+                fclose(unzippedModFile);
+
+                if (ToLower(resourceName) == "eternalmod") {
+                    if (modFilePathParts.size() == 6
+                    && ToLower(modFilePathParts[3]) == "sounds"
+                    && std::filesystem::path(modFilePathParts[5]).extension() == ".wem"
+                    || std::filesystem::path(modFilePathParts[5]).extension() == ".opus"
+                    || std::filesystem::path(modFilePathParts[5]).extension() == ".ogg") {
+                        SoundMod soundMod(unzippedModBytes, sndPath, modFilePathParts[5]);
+
+                        soundModList.push_back(soundMod);
+                    }
+
+                    unzippedModCount++;
+                    continue;
+                }
+
+                Mod mod(fileName);
+                mod.FileBytes = unzippedModBytes;
 
                 if (ToLower(modFilePathParts[3]) == "eternalmod") {
                     if (modFilePathParts.size() == 6
@@ -246,6 +296,10 @@ int main(int argc, char **argv)
             std::cout << resource.Path << std::endl;
         }
 
+        for (auto& sndPath : sndPathList) {
+            std::cout << sndPath << std::endl;
+        }
+
         return 0;
     }
 
@@ -265,8 +319,15 @@ int main(int argc, char **argv)
         }
 
         mmap_allocator_namespace::mmappable_vector<std::byte> mem;
-        mem.mmap_file(ResourceList[i].Path, mmap_allocator_namespace::READ_WRITE_SHARED, 0, fileSize, mmap_allocator_namespace::MAP_WHOLE_FILE | mmap_allocator_namespace::ALLOW_REMAP);
 
+        try {
+            mem.mmap_file(ResourceList[i].Path, mmap_allocator_namespace::READ_WRITE_SHARED, 0, fileSize,
+                mmap_allocator_namespace::MAP_WHOLE_FILE | mmap_allocator_namespace::ALLOW_REMAP);
+        }
+        catch (...) {
+            std::cerr << RED << "ERROR: " << RESET << "Failed to open " << YELLOW << ResourceList[i].Path << RESET << " for writing!" << std::endl;
+        }
+        
         ReadResource(mem, i);
         ReplaceChunks(mem, i);
 
@@ -275,6 +336,14 @@ int main(int argc, char **argv)
         }
 
         mem.munmap_file();
+    }
+
+    for (auto& soundMod : soundModList) {
+        if (LoadSoundMods(soundMod.SoundBytes, soundMod.SndPath, soundMod.SoundFilename) == -1) {
+            std::cerr << RED << "ERROR: " << RESET << "Failed to replace " << std::filesystem::path(soundMod.SoundFilename).stem() << " in " << soundMod.SndPath << "." << std::endl;
+        }
+
+        std::cout << "Replaced " << GREEN << std::filesystem::path(soundMod.SoundFilename).stem() << RESET << " in " << YELLOW << soundMod.SndPath << RESET << "." << std::endl;
     }
 
     std::cout << GREEN << "Finished." << RESET << std::endl;

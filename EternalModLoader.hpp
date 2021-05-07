@@ -36,6 +36,19 @@ public:
     }
 };
 
+class SoundMod {
+public:
+    std::vector<std::byte> SoundBytes;
+    std::string SndPath;
+    std::string SoundFilename;
+
+    SoundMod(std::vector<std::byte> soundBytes, std::string sndPath, std::string soundFilename) {
+        SoundBytes = soundBytes;
+        SndPath = sndPath;
+        SoundFilename = soundFilename;
+    }
+};
+
 class ResourceChunk {
 public:
     std::string Name;
@@ -113,7 +126,7 @@ public:
         Identifier = "";
         Text = "";
     }
-    
+
     BlangString(unsigned int hash, std::string identifier, std::string text, std::vector<std::byte> unknown)
     {
         Hash = hash;
@@ -159,5 +172,6 @@ std::vector<std::byte> WriteBlangToVector(BlangFile blangFile, std::string &reso
 std::string RemoveWhitespace(std::string &stringWithWhitespace);
 std::string ToLower(std::string &str);
 std::vector<std::string> SplitString(std::string stringToSplit, char delimiter);
+int LoadSoundMods(std::vector<std::byte> &soundBytes, std::string sndPath, std::string soundFilename);
 
 #endif

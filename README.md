@@ -38,3 +38,5 @@ The DEternal_loadMods executable will be in the "build" folder.
 * SutandoTsukai181: For making the original EternalModLoader.
 
 * leveste: For helping to test the debug versions of the code.
+
+* Fry: For creating the original sound mod loading tool.

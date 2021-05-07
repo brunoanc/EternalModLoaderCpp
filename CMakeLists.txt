@@ -14,6 +14,7 @@ file(GLOB SOURCES
         ./AddChunks.cpp
         ./BlangDecrypt.cpp
         ./BlangParser.cpp
+        ./LoadSoundMods.cpp
         ./PathtoRes.cpp
         ./ReadChunkInfo.cpp
         ./ReadResourceFile.cpp
