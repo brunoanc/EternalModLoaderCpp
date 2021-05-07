@@ -126,8 +126,7 @@ int main(int argc, char **argv)
                     unzipped_entry.reserve(zipEntry.uncompressedSize);
                     modZip.extractEntryToMemory(zipEntry.name, unzipped_entry);
 
-                    std::vector<std::byte> unzipped_entry_bytes(unzipped_entry.size()); 
-                    std::copy((std::byte*)unzipped_entry.data(), (std::byte*)unzipped_entry.data() + unzipped_entry.size(), unzipped_entry_bytes.begin());
+                    std::vector<std::byte> unzipped_entry_bytes((std::byte*)unzipped_entry.data(), (std::byte*)unzipped_entry.data() + unzipped_entry.size()); 
                     mod.FileBytes = unzipped_entry_bytes;
 
                     std::string modFilePathPart1ToLower = ToLower(modFilePathParts[1]);

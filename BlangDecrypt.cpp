@@ -137,7 +137,8 @@ std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string inte
         std::copy(fileData.begin(), fileData.begin() + 0xC, fileSalt);
     }
     else {
-        getrandom(fileSalt, 0xC, 0);
+        if(getrandom(fileSalt, 0xC, 0) == -1)
+            return emptyVector;
     }
 
     std::byte *encKey;
@@ -156,7 +157,8 @@ std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string inte
         std::copy(fileData.begin() + 0xC, fileData.begin() + 0xC + 0x10, fileIV);
     }
     else {
-        getrandom(fileIV, 0x10, 0);
+        if(getrandom(fileIV, 0x10, 0) == -1)
+            return emptyVector;
     }
 
     std::vector<std::byte> fileText;
@@ -176,9 +178,8 @@ std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string inte
             return emptyVector;
         }
 
-        if (std::memcmp(hmac, fileHmac, 0x20)) {
+        if (std::memcmp(hmac, fileHmac, 0x20))
             return emptyVector;
-        }
     }
     else {
         fileText.resize(fileData.size());
