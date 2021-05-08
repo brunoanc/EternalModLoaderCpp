@@ -13,7 +13,5 @@ addons:
 script:
   - export CC=gcc-10
   - export CXX=g++-10
-  - ldd --version
-  - cmake --version
-  - cmake
+  - cmake .
   - make
