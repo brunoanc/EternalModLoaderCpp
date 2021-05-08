@@ -134,14 +134,14 @@ int main(int argc, char **argv)
                         continue;
                     }
 
-                    std::vector<unsigned char> unzipped_entry;
-                    unzipped_entry.reserve(zipEntry.uncompressedSize);
-                    modZip.extractEntryToMemory(zipEntry.name, unzipped_entry);
-
-                    std::vector<std::byte> unzipped_entry_bytes((std::byte*)unzipped_entry.data(), (std::byte*)unzipped_entry.data() + unzipped_entry.size());
+                    std::vector<unsigned char> unzippedEntry;
+                    unzippedEntry.reserve(zipEntry.uncompressedSize);
+                    modZip.extractEntryToMemory(zipEntry.name, unzippedEntry);
 
                     Mod mod(modFileName);
-                    mod.FileBytes = unzipped_entry_bytes;
+
+                    mod.FileBytes.resize(unzippedEntry.size());
+                    std::copy((std::byte*)unzippedEntry.data(), (std::byte*)unzippedEntry.data() + unzippedEntry.size(), mod.FileBytes.begin());
 
                     if (ToLower(modFilePathParts[1]) == "eternalmod") {
                         if (modFilePathParts.size() == 4
