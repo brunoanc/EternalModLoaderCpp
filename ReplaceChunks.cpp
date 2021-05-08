@@ -87,6 +87,7 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, i
             }
 
             BlangFile blangFile;
+            
             try {
                 blangFile = ParseBlang(decryptedBlangFileBytes, ResourceList[resourceIndex].Name);
             }
