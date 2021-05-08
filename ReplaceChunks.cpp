@@ -76,8 +76,7 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, i
                 continue;
             }
 
-            std::vector<std::byte> blangFileBytes(size);
-            std::copy(mem.begin() + fileOffset, mem.begin() + fileOffset + size, blangFileBytes.begin());
+            std::vector<std::byte> blangFileBytes(mem.begin() + fileOffset, mem.begin() + fileOffset + size);
 
             std::vector<std::byte> decryptedBlangFileBytes = IdCrypt(blangFileBytes, mod.Name, true);
 
@@ -87,7 +86,7 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, i
             }
 
             BlangFile blangFile;
-            
+
             try {
                 blangFile = ParseBlang(decryptedBlangFileBytes, ResourceList[resourceIndex].Name);
             }
