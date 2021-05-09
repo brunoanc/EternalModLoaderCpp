@@ -162,9 +162,9 @@ int main(int argc, char **argv)
                 }
             }
             
-            if (zippedModCount > 0 && !(listResources)) {
+            if (zippedModCount > 0 && !(listResources))
                 std::cout << "Found " << BLUE << zippedModCount << " file(s) " << RESET << "in archive " << YELLOW << zippedMod << RESET << "..." << std::endl;
-            }
+
             modZip.close();
         }
         else {
@@ -219,9 +219,8 @@ int main(int argc, char **argv)
             if (!listResources) {
                 long unzippedModSize = std::filesystem::file_size(unzippedModPath);
 
-                if (unzippedModSize > ResourceList.max_size()) {
+                if (unzippedModSize > ResourceList.max_size())
                     std::cerr << "Skipped " << fileName << " - too large." << std::endl;
-                }
 
                 FILE *unzippedModFile = fopen(unzippedModPath.c_str(), "rb");
 
@@ -259,9 +258,8 @@ int main(int argc, char **argv)
         }
     }
 
-    if (unzippedModCount > 0 && !(listResources)) {
+    if (unzippedModCount > 0 && !(listResources))
         std::cout << "Found " << BLUE << unzippedModCount << " file(s) " << RESET << "in " << YELLOW << "'Mods' " << RESET << "folder..." << std::endl;
-    }
 
     if (listResources) {
         for (auto &resource : ResourceList) {
@@ -303,9 +301,8 @@ int main(int argc, char **argv)
             ReadResource(mem, i);
             ReplaceChunks(mem, i);
 
-            if (std::getenv("ETERNALMODLOADER_SKIP_ADDCHUNKS") == NULL) {
+            if (std::getenv("ETERNALMODLOADER_SKIP_ADDCHUNKS") == NULL)
                 AddChunks(mem, i);
-            }
 
             mem.munmap_file();
         }

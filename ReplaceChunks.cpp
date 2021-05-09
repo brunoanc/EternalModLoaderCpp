@@ -36,9 +36,8 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, i
 
             chunkIndex = GetChunk(mod.Name, resourceIndex);
 
-            if (chunkIndex == -1) {
+            if (chunkIndex == -1)
                 continue;
-            }
         }
         else {
             chunkIndex = GetChunk(mod.Name, resourceIndex);
@@ -61,14 +60,12 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, i
             try {
                 blangJson = nlohmann::json::parse(std::string((char*)mod.FileBytes.data(), mod.FileBytes.size()));
 
-                if (blangJson == NULL || blangJson["strings"].empty()) {
+                if (blangJson == NULL || blangJson["strings"].empty())
                     throw;
-                }
 
                 for (auto &blangJsonString : blangJson["strings"]) {
-                    if (blangJsonString == NULL || blangJsonString["name"].empty()) {
+                    if (blangJsonString == NULL || blangJsonString["name"].empty())
                         throw;
-                    }
                 }
             }
             catch (...) {
@@ -180,13 +177,11 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, i
             }
         }
 
-        if (!mod.IsBlangJson) {
+        if (!mod.IsBlangJson)
             std::cout << "\tReplaced " << mod.Name << std::endl;
-        }
 
         fileCount++;
     }
-    if (fileCount > 0) {
+    if (fileCount > 0)
         std::cout << "Number of files replaced: " << GREEN << fileCount << " file(s) " << RESET << "in " << YELLOW << ResourceList[resourceIndex].Path << RESET << "." << std::endl;
-    }
 }

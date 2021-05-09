@@ -137,7 +137,7 @@ std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string inte
         std::copy(fileData.begin(), fileData.begin() + 0xC, fileSalt);
     }
     else {
-        if(getrandom(fileSalt, 0xC, 0) == -1)
+        if (getrandom(fileSalt, 0xC, 0) == -1)
             return emptyVector;
     }
 
@@ -151,13 +151,12 @@ std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string inte
     }
 
     std::byte fileIV[0x10];
-    std::byte fileIVBackup[0x10];
 
     if (decrypt) {
         std::copy(fileData.begin() + 0xC, fileData.begin() + 0xC + 0x10, fileIV);
     }
     else {
-        if(getrandom(fileIV, 0x10, 0) == -1)
+        if (getrandom(fileIV, 0x10, 0) == -1)
             return emptyVector;
     }
 

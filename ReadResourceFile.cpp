@@ -81,17 +81,14 @@ void ReadResource(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, in
 
             std::string name((char*)currentNameBytes.data());
 
-            if (name.find_first_of('$') != std::string::npos) {
+            if (name.find_first_of('$') != std::string::npos)
                 name = name.substr(0, name.find_first_of('$'));
-            }
 
-            if (name.find_last_of('#') != std::string::npos) {
+            if (name.find_last_of('#') != std::string::npos)
                 name = name.substr(0, name.find_last_of('#'));
-            }
 
-            if (name.find_first_of('#') != std::string::npos) {
+            if (name.find_first_of('#') != std::string::npos)
                 name = name.substr(0, name.find_first_of('#'));
-            }
 
             namesList.push_back(name);
             currentNameBytes.clear();

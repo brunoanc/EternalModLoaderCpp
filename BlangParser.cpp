@@ -90,9 +90,8 @@ std::vector<std::byte> WriteBlangToVector(BlangFile blangFile, std::string& reso
     std::vector<std::byte> blangBytes;
 
     for (int i = 0; i < blangFile.Strings.size(); i++) {
-        if (RemoveWhitespace(blangFile.Strings[i].Identifier).empty()) {
+        if (RemoveWhitespace(blangFile.Strings[i].Identifier).empty())
             blangFile.Strings.erase(blangFile.Strings.begin() + i);
-        }
     }
 
     if (resourceName == "gameresources_patch1") {

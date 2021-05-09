@@ -204,7 +204,6 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, int r
 
     std::copy(data.begin(), data.end(), mem.begin() + memPosition);
 
-    if ((long)newChunks.size() != 0) {
+    if ((long)newChunks.size() != 0)
         std::cout << "Number of files added: " << GREEN << newChunks.size() << " file(s) " << RESET << "in " << YELLOW << ResourceList[resourceIndex].Path << RESET << "." << std::endl;
-    }
 }
