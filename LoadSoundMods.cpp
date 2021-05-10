@@ -1,4 +1,3 @@
-#include "EternalModLoader.hpp"
 #include <iostream>
 #include <stdio.h>
 #include <vector>
