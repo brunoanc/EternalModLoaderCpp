@@ -114,9 +114,11 @@ int main(int argc, char **argv)
                         if (PathToRes(modFilePathParts[2], isSnd).empty())
                             continue;
                         
-                        ResourceInfo resource(modFilePathParts[2], PathToRes(modFilePathParts[2], isSnd));
-                        resource.IsSnd = isSnd;
-                        ResourceList.push_back(resource);
+                        if (modFilePathParts[1] == "sound" || modFilePathParts[1] == "sounds") {
+                            ResourceInfo resource(modFilePathParts[2], PathToRes(modFilePathParts[2], isSnd));
+                            resource.IsSnd = isSnd;
+                            ResourceList.push_back(resource);
+                        }
                     }
                     else {
                         ResourceInfo resource(resourceName, PathToRes(resourceName, isSnd));
@@ -203,10 +205,12 @@ int main(int argc, char **argv)
                 if (PathToRes(resourceName, isSnd).empty()) {
                     if (PathToRes(modFilePathParts[4], isSnd).empty())
                         continue;
-                        
-                    ResourceInfo resource(modFilePathParts[4], PathToRes(modFilePathParts[4], isSnd));
-                    resource.IsSnd = isSnd;
-                    ResourceList.push_back(resource);
+
+                    if (modFilePathParts[3] == "sound" || modFilePathParts[3] == "sounds") {
+                        ResourceInfo resource(modFilePathParts[4], PathToRes(modFilePathParts[4], isSnd));
+                        resource.IsSnd = isSnd;
+                        ResourceList.push_back(resource);
+                    }
                 }
                 else {
                     ResourceInfo resource(resourceName, PathToRes(resourceName, isSnd));
