@@ -12,7 +12,8 @@ uint32_t GetDecSize(std::vector<std::byte> &sound_bytes)
     if (!p)
         return -1;
 
-    fwrite(sound_bytes.data(), 1, sound_bytes.size(), p);
+    if (fwrite(sound_bytes.data(), 1, sound_bytes.size(), p) != sound_bytes.size())
+        return -1;
 
     pclose(p);
 
@@ -60,10 +61,14 @@ int LoadSoundMods(std::vector<std::byte> &soundBytes, std::string sndPath, std::
     fseek(sndFile, 4, SEEK_SET);
 
     uint32_t infoSize;
-    fread(&infoSize, 4, 1, sndFile);
+
+    if (fread(&infoSize, 4, 1, sndFile) != 1)
+        return -1;
 
     uint32_t headerSize;
-    fread(&headerSize, 4, 1, sndFile);
+
+    if (fread(&headerSize, 4, 1, sndFile) != 1)
+        return -1;
 
     fseek(sndFile, headerSize, SEEK_CUR);
 
@@ -71,7 +76,9 @@ int LoadSoundMods(std::vector<std::byte> &soundBytes, std::string sndPath, std::
         fseek(sndFile, 8, SEEK_CUR);
 
         uint32_t id;
-        fread(&id, 4, 1, sndFile);
+
+        if (fread(&id, 4, 1, sndFile) != 1)
+            return -1;
 
         if (id != soundId) {
             fseek(sndFile, 20, SEEK_CUR);
@@ -82,14 +89,23 @@ int LoadSoundMods(std::vector<std::byte> &soundBytes, std::string sndPath, std::
 
         fseek(sndFile, 0, SEEK_END);
         uint32_t offset = ftell(sndFile);
-        fwrite(soundBytes.data(), 1, encSize, sndFile);
+
+        if (fwrite(soundBytes.data(), 1, encSize, sndFile) != encSize)
+            return -1;
 
         fseek(sndFile, currentPos, SEEK_SET);
 
-        fwrite(&encSize, 4, 1, sndFile);
-        fwrite(&offset, 4, 1, sndFile);
-        fwrite(&decSize, 4, 1, sndFile);
-        fwrite(&format, 2, 1, sndFile);
+        if (fwrite(&encSize, 4, 1, sndFile) != 1)
+            return -1;
+
+        if (fwrite(&offset, 4, 1, sndFile) != 1)
+            return -1;
+
+        if (fwrite(&decSize, 4, 1, sndFile) != 1)
+            return -1;
+
+        if (fwrite(&format, 2, 1, sndFile) != 1)
+            return -1;
 
         break;
     }

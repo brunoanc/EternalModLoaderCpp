@@ -228,11 +228,17 @@ int main(int argc, char **argv)
 
                 FILE *unzippedModFile = fopen(unzippedModPath.c_str(), "rb");
 
-                if (!unzippedModFile)
+                if (!unzippedModFile) {
                     std::cerr << RED << "ERROR: " << RESET << "Failed to open " << unzippedModPath << " for reading." << std::endl;
+                    continue;
+                }
 
                 std::vector<std::byte> unzippedModBytes(unzippedModSize);
-                fread(unzippedModBytes.data(), 1, unzippedModSize, unzippedModFile);
+
+                if (fread(unzippedModBytes.data(), 1, unzippedModSize, unzippedModFile) != unzippedModSize) {
+                    std::cerr << RESET << "ERROR: " << RESET << "Failed to read from " << unzippedModPath << "." << std::endl;
+                    continue;
+                }
 
                 fclose(unzippedModFile);
 
