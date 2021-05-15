@@ -48,7 +48,7 @@ int main(int argc, char **argv)
         BLUE = "\033[34m";
     }
 
-    ResourceList.reserve(80);
+    ResourceList.reserve(120);
 
     if (argc == 1 || argc > 3) {
         std::cout << "EternalModLoaderCpp by PowerBall253, based on EternalModLoader by proteh\n\n";
