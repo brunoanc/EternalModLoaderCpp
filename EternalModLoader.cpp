@@ -105,25 +105,15 @@ int main(int argc, char **argv)
                 }
 
                 int resourceIndex = GetResourceInfo(resourceName);
-                std::string sndPath;
 
                 if (resourceIndex == -1) {
                     bool isSnd;
 
-                    if (PathToRes(resourceName, isSnd).empty()) {
-                        if (PathToRes(modFilePathParts[2], isSnd).empty())
-                            continue;
-                        
-                        if (modFilePathParts[1] == "sound" || modFilePathParts[1] == "sounds") {
-                            ResourceInfo resource(modFilePathParts[2], PathToRes(modFilePathParts[2], isSnd));
-                            resource.IsSnd = isSnd;
-                            ResourceList.push_back(resource);
-                        }
-                    }
-                    else {
-                        ResourceInfo resource(resourceName, PathToRes(resourceName, isSnd));
-                        ResourceList.push_back(resource);
-                    }
+                    if (PathToRes(resourceName, isSnd).empty())
+                        continue;
+
+                    ResourceInfo resource(resourceName, PathToRes(resourceName, isSnd), isSnd);
+                    ResourceList.push_back(resource);
 
                     resourceIndex = (int)ResourceList.size() - 1;
                 }
@@ -197,25 +187,15 @@ int main(int argc, char **argv)
             }
 
             int resourceIndex = GetResourceInfo(resourceName);
-            std::string sndPath;
 
             if (resourceIndex == -1) {
                 bool isSnd;
 
-                if (PathToRes(resourceName, isSnd).empty()) {
-                    if (PathToRes(modFilePathParts[4], isSnd).empty())
-                        continue;
+                if (PathToRes(resourceName, isSnd).empty())
+                    continue;
 
-                    if (modFilePathParts[3] == "sound" || modFilePathParts[3] == "sounds") {
-                        ResourceInfo resource(modFilePathParts[4], PathToRes(modFilePathParts[4], isSnd));
-                        resource.IsSnd = isSnd;
-                        ResourceList.push_back(resource);
-                    }
-                }
-                else {
-                    ResourceInfo resource(resourceName, PathToRes(resourceName, isSnd));
-                    ResourceList.push_back(resource);
-                }
+                ResourceInfo resource(resourceName, PathToRes(resourceName, isSnd), isSnd);
+                ResourceList.push_back(resource);
 
                 resourceIndex = (int)ResourceList.size() - 1;
             }
@@ -330,11 +310,11 @@ int main(int argc, char **argv)
                     continue;
                 }
 
-                std::cout << "\tReplaced sound file with id " << std::filesystem::path(mod.Name).stem().string() << std::endl;
+                std::cout << "\tReplaced sound with id " << std::filesystem::path(mod.Name).stem().string() << std::endl;
                 fileCount++;
             }
 
-            std::cout << "Number of files replaced: " << GREEN << fileCount << " sound file(s) " << RESET << "in " << YELLOW << ResourceList[i].Path << RESET << "." << std::endl;
+            std::cout << "Number of sounds replaced: " << GREEN << fileCount << " sound(s) " << RESET << "in " << YELLOW << ResourceList[i].Path << RESET << "." << std::endl;
         }
     }
 

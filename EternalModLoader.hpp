@@ -81,11 +81,11 @@ public:
     std::vector<std::string> NamesList;
     std::vector<ResourceChunk> ChunkList;
 
-    ResourceInfo(std::string name, std::string path)
+    ResourceInfo(std::string name, std::string path, bool isSnd)
     {
         Name = name;
         Path = path;
-        IsSnd = false;
+        IsSnd = isSnd;
         FileCount = 0;
         TypeCount = 0;
         StringsSize = 0;
