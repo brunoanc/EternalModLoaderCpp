@@ -5,14 +5,14 @@
 
 #include "EternalModLoader.hpp"
 
-uint32_t GetDecSize(std::vector<std::byte> &sound_bytes)
+uint32_t GetDecSize(std::vector<std::byte> &soundBytes)
 {
-    FILE *p = popen("opusdec --quiet - tmp.wav", "w");
+    FILE *p = popen("opusdec - tmp.wav >/dev/null 2>&1", "w");
 
     if (!p)
         return -1;
 
-    if (fwrite(sound_bytes.data(), 1, sound_bytes.size(), p) != sound_bytes.size())
+    if (fwrite(soundBytes.data(), 1, soundBytes.size(), p) != soundBytes.size())
         return -1;
 
     pclose(p);
@@ -34,12 +34,66 @@ uint32_t GetDecSize(std::vector<std::byte> &sound_bytes)
     return decSize + 20;
 }
 
+int EncodeWav(std::vector<std::byte> &soundBytes)
+{
+    FILE *p = popen("opusenc - tmp.ogg >/dev/null 2>&1", "w");
+
+    if (!p)
+        return -1;
+
+    if (fwrite(soundBytes.data(), 1, soundBytes.size(), p) != soundBytes.size())
+        return -1;
+
+    pclose(p);
+
+    try {
+        soundBytes.resize(std::filesystem::file_size("tmp.ogg"));
+
+        if (soundBytes.size() == 0)
+            throw;
+
+    }
+    catch (...) {
+        return -1;
+    }
+
+    FILE *encFile = fopen("tmp.ogg", "rb");
+
+    if (!encFile)
+        return -1;
+
+    if (fread(soundBytes.data(), 1, soundBytes.size(), encFile) != soundBytes.size())
+        return -1;
+
+    fclose(encFile);
+
+    remove("tmp.ogg");
+
+    return 0;
+}
+
 int LoadSoundMods(std::vector<std::byte> &soundBytes, std::string sndPath, std::string soundFilename)
 {
     std::string idStr = std::filesystem::path(soundFilename).stem();
     uint16_t format = std::filesystem::path(soundFilename).extension() == ".wem" ? 3 : 2;
+    bool isWav = std::filesystem::path(soundFilename).extension() == ".wav" ? true : false;
     uint32_t encSize = soundBytes.size();
-    uint32_t decSize = format == 2 ? GetDecSize(soundBytes) : soundBytes.size();
+    uint32_t decSize;
+
+    if (format == 2) {
+        if (isWav) {
+            decSize = soundBytes.size() + 20;
+
+            if (EncodeWav(soundBytes) == -1)
+                return -1;
+        }
+        else {
+            decSize = GetDecSize(soundBytes);
+        }
+    }
+    else {
+        soundBytes.size();
+    }
 
     if (decSize == -1)
         return -1;
