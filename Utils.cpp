@@ -33,14 +33,26 @@ int GetResourceInfo(std::string resourceName)
     return -1;
 }
 
-int GetChunk(std::string name, int resourceIndex)
+int GetSoundBankInfo(std::string soundBankName)
 {
-    for (int i = 0; i < ResourceList[resourceIndex].ChunkList.size(); i++) {
-        if (ResourceList[resourceIndex].ChunkList[i].Name.find(name) != std::string::npos)
+    for (int i = 0; i < SoundBankList.size(); i++) {
+        if (SoundBankList[i].Name == soundBankName)
             return i;
     }
 
     return -1;
+}
+
+ResourceChunk *GetChunk(std::string name, ResourceInfo &resource)
+{
+    for (auto &chunk : resource.ChunkList) {
+        if (chunk.ResourceName.FullFileName.find(name) != std::string::npos
+            || chunk.ResourceName.NormalizedFileName.find(name) != std::string::npos) {
+                return &chunk;
+            }
+    }
+
+    return NULL;
 }
 
 std::string RemoveWhitespace(std::string &stringWithWhitespace)
@@ -74,4 +86,28 @@ std::vector<std::string> SplitString(std::string stringToSplit, char delimiter)
     resultVector.push_back(stringToSplit);
 
     return resultVector;
+}
+
+bool EndsWith(const std::string &fullString, const std::string &ending)
+{
+    if (fullString.length() >= ending.length()) {
+        return 0 == fullString.compare(fullString.length() - ending.length(), ending.length(), ending);
+    }
+    else {
+        return false;
+    }
+}
+
+std::string NormalizeResourceFilename(std::string filename)
+{
+    if (filename.find_first_of('$') != std::string::npos)
+        filename = filename.substr(0, filename.find_first_of('$'));
+
+    if (filename.find_last_of('#') != std::string::npos)
+        filename = filename.substr(0, filename.find_last_of('#'));
+
+    if (filename.find_first_of('#') != std::string::npos)
+        filename = filename.substr(0, filename.find_first_of('#'));
+
+    return filename;
 }

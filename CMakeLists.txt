@@ -9,16 +9,21 @@ set(JSON_BuildTests OFF CACHE INTERNAL "")
 add_subdirectory(json)
 
 file(GLOB SOURCES
-        ./EternalModLoader.h
+        ./EternalModLoader.hpp
         ./EternalModLoader.cpp
         ./AddChunks.cpp
+        ./AssetsInfo.cpp
         ./BlangDecrypt.cpp
         ./BlangParser.cpp
-        ./LoadSoundMods.cpp
+        ./MapResourcesFile.cpp
+        ./Oodle.cpp
+        ./PackageMapSpec.cpp
         ./PathtoRes.cpp
         ./ReadChunkInfo.cpp
         ./ReadResourceFile.cpp
         ./ReplaceChunks.cpp
+        ./ResourceData.cpp
+        ./SoundMods.cpp
         ./Utils.cpp
         ./mmap_allocator/mmap*
         )
@@ -34,4 +39,5 @@ target_link_libraries(
         staticZipper
         nlohmann_json::nlohmann_json
         OpenSSL::Crypto
+        ${CMAKE_DL_LIBS}
 )

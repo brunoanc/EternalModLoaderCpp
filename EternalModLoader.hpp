@@ -16,19 +16,32 @@
 * along with EternalModLoaderCpp. If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <optional>
+#include <vector>
+#include <cmath>
+
 #ifndef ETERNALMODLOADER_HPP
 #define ETERNALMODLOADER_HPP
 
-#include <vector>
-
 #include "mmap_allocator/mmappable_vector.h"
+#include "AssetsInfo.hpp"
+#include "Oodle.hpp"
+#include "PackageMapSpec.hpp"
 
 class Mod {
 public:
     std::string Name;
+    long UncompressedSize;
     std::vector<std::byte> FileBytes;
     bool IsBlangJson;
-    bool IsSound;
+    bool IsAssetsInfoJson;
+    std::optional<class AssetsInfo> AssetsInfo = std::nullopt;
+    std::optional<unsigned long> StreamDbHash = std::nullopt;
+    std::string ResourceType;
+    std::optional<unsigned short> Version = std::nullopt;
+    std::optional<std::byte> SpecialByte1 = std::nullopt;
+    std::optional<std::byte> SpecialByte2 = std::nullopt;
+    std::optional<std::byte> SpecialByte3 = std::nullopt;
 
     explicit Mod(std::string name)
     {
@@ -36,20 +49,38 @@ public:
     }
 };
 
-class ResourceChunk {
+class SoundMod {
 public:
     std::string Name;
-    long NameId;
+    std::vector<std::byte> FileBytes;
+};
+
+class ResourceName {
+public:
+    std::string FullFileName;
+    std::string NormalizedFileName;
+
+    ResourceName() {}
+
+    ResourceName(std::string fullFileName, std::string normalizedFileName)
+    {
+        FullFileName = fullFileName;
+        NormalizedFileName = normalizedFileName;
+    }
+};
+
+class ResourceChunk {
+public:
+    class ResourceName ResourceName;
     long FileOffset;
     long SizeOffset;
     long SizeZ;
     long Size;
     std::byte CompressionMode;
 
-    ResourceChunk(std::string name, long fileOffset)
+    ResourceChunk(class ResourceName name, long fileOffset)
     {
-        Name = name;
-        NameId = 0;
+        ResourceName = name;
         FileOffset = fileOffset;
         SizeOffset = 0;
         SizeZ = 0;
@@ -62,7 +93,6 @@ class ResourceInfo {
 public:
     std::string Name;
     std::string Path;
-    bool IsSnd;
     int FileCount;
     int TypeCount;
     int StringsSize;
@@ -78,14 +108,13 @@ public:
     long UnknownOffset2;
     std::vector<Mod> ModList;
     std::vector<Mod> ModListNew;
-    std::vector<std::string> NamesList;
+    std::vector<ResourceName> NamesList;
     std::vector<ResourceChunk> ChunkList;
 
-    ResourceInfo(std::string name, std::string path, bool isSnd)
+    ResourceInfo(std::string name, std::string path)
     {
         Name = name;
         Path = path;
-        IsSnd = isSnd;
         FileCount = 0;
         TypeCount = 0;
         StringsSize = 0;
@@ -99,6 +128,39 @@ public:
         NamesOffsetEnd = 0;
         UnknownOffset = 0;
         UnknownOffset2 = 0;
+    }
+
+    bool ContainsResourceWithName(std::string name)
+    {
+        for (auto &resourceName : NamesList) {
+            if (resourceName.FullFileName == name || resourceName.NormalizedFileName == name)
+                return true;
+        }
+
+        return false;
+    }
+
+    long GetResourceNameId(std::string name)
+    {
+        for (int i = 0; i < NamesList.size(); i++) {
+            if (NamesList[i].FullFileName == name || NamesList[i].NormalizedFileName == name)
+                return i;
+        }
+
+        return -1;
+    }
+};
+
+class SoundBankInfo {
+public:
+    std::string Name;
+    std::string Path;
+    std::vector<SoundMod> ModList;
+
+    SoundBankInfo(std::string name, std::string path)
+    {
+        Name = name;
+        Path = path;
     }
 };
 
@@ -129,18 +191,76 @@ class BlangFile {
 public:
     long UnknownData;
     std::vector<BlangString> Strings;
+
+    BlangFile() {}
+    BlangFile(std::vector<std::byte> &blangBytes, std::string &resourceName);
+
+    std::vector<std::byte> ToByteVector(std::string &resourceName);
+};
+
+class MapAsset {
+public:
+    int AssetTypeIndex;
+    std::string Name;
+    int UnknownData1;
+    int UnknownData2;
+    long UnknownData3;
+    long UnknownData4;
+};
+
+class ResourceDataEntry {
+public:
+    unsigned long StreamDbHash;
+    std::byte Version;
+    std::byte SpecialByte1;
+    std::byte SpecialByte2;
+    std::byte SpecialByte3;
+    std::string ResourceType;
+    std::string MapResourceType;
+    std::string MapResourceName;
+};
+
+class MapResourcesFile {
+public:
+    int Magic;
+    std::vector<std::string> Layers;
+    std::vector<std::string> AssetTypes;
+    std::vector<MapAsset> Assets;
+    std::vector<std::string> Maps;
+
+    MapResourcesFile() {}
+    MapResourcesFile(std::vector<std::byte> &rawData);
+
+    std::vector<std::byte> ToByteVector();
 };
 
 inline bool operator==(ResourceChunk& chunk1, const ResourceChunk& chunk2)
 {
-    if (chunk1.Name == chunk2.Name)
+    if (chunk1.ResourceName.FullFileName == chunk2.ResourceName.FullFileName) {
         return true;
-    else
+    }
+    else {
         return false;
+    }
 }
 
+inline bool operator==(MapAsset& mapAsset1, const MapAsset& mapAsset2)
+{
+    if (mapAsset1.Name == mapAsset2.Name) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+extern const std::string ResourceDataFileName;
+extern const std::string PackageMapSpecJsonFileName;
 extern std::string BasePath;
 extern std::vector<ResourceInfo> ResourceList;
+extern std::vector<SoundBankInfo> SoundBankList;
+extern bool Verbose;
+extern std::map<unsigned long, ResourceDataEntry> ResourceDataMap;
 
 extern std::string RESET;
 extern std::string RED;
@@ -148,12 +268,14 @@ extern std::string GREEN;
 extern std::string YELLOW;
 extern std::string BLUE;
 
-std::string PathToRes(std::string name, bool &isSnd);
-void ReadChunkInfo(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, int resourceIndex);
-int GetChunk(std::string name, int resourceIndex);
-void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, int resourceIndex);
-void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, int resourceIndex);
-void ReadResource(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, int resourceIndex);
+extern std::vector<std::string> SupportedFileFormats;
+
+std::string PathToResource(std::string name);
+void ReadChunkInfo(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, ResourceInfo &resource);
+ResourceChunk *GetChunk(std::string name, ResourceInfo &resource);
+void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, ResourceInfo &resource);
+void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, ResourceInfo &resource);
+void ReadResource(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, ResourceInfo &resource);
 int GetResourceInfo(std::string resourceName);
 std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string internalPath, bool decrypt);
 BlangFile ParseBlang(std::vector<std::byte> &blangBytes, std::string &resourceName);
@@ -161,6 +283,12 @@ std::vector<std::byte> WriteBlangToVector(BlangFile blangFile, std::string &reso
 std::string RemoveWhitespace(std::string &stringWithWhitespace);
 std::string ToLower(std::string &str);
 std::vector<std::string> SplitString(std::string stringToSplit, char delimiter);
-int LoadSoundMods(std::vector<std::byte> &soundBytes, std::string sndPath, std::string soundFilename);
+void LoadSoundMods(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, SoundBankInfo &soundBankInfo);
+std::map<unsigned long, ResourceDataEntry> ParseResourceData(std::string &filename);
+unsigned long CalculateResourceFileNameHash(std::string &input);
+std::string NormalizeResourceFilename(std::string filename);
+bool EndsWith(const std::string &fullString, const std::string &ending);
+std::string PathToSoundBank(std::string name);
+int GetSoundBankInfo(std::string soundBankName);
 
 #endif
