@@ -46,10 +46,10 @@ int GetSoundBankInfo(std::string soundBankName)
 ResourceChunk *GetChunk(std::string name, ResourceInfo &resource)
 {
     for (auto &chunk : resource.ChunkList) {
-        if (chunk.ResourceName.FullFileName.find(name) != std::string::npos
-            || chunk.ResourceName.NormalizedFileName.find(name) != std::string::npos) {
+        if (chunk.ResourceName.FullFileName == name
+            || chunk.ResourceName.NormalizedFileName == name) {
                 return &chunk;
-            }
+        }
     }
 
     return NULL;

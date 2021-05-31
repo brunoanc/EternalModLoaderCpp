@@ -89,19 +89,24 @@ int main(int argc, char **argv)
     ResourceList.reserve(80);
     SoundBankList.reserve(40);
 
-    std::string resourceDataFilePath = BasePath + ResourceDataFileName;
+    if (!listResources) {
+        std::string resourceDataFilePath = BasePath + ResourceDataFileName;
 
-    if (std::filesystem::exists(resourceDataFilePath)) {
-        try {
-            ResourceDataMap = ParseResourceData(resourceDataFilePath);
+        if (std::filesystem::exists(resourceDataFilePath)) {
+            try {
+                ResourceDataMap = ParseResourceData(resourceDataFilePath);
+
+                if (ResourceDataMap.empty())
+                    throw;
+            }
+            catch (...) {
+                std::cerr << RED << "ERROR: " << RESET << "Failed to parse " << ResourceDataFileName << std::endl;
+            }
         }
-        catch (...) {
-            std::cerr << RED << "ERROR: " << RESET << "Failed to parse " << ResourceDataFileName << std::endl;
-        }
-    }
-    else {
-        if (Verbose) {
-            std::cerr << RED << "WARNING: " << RESET << ResourceDataFileName << " was not found! There will be issues when adding existing new assets to containers..." << std::endl;
+        else {
+            if (Verbose) {
+                std::cerr << RED << "WARNING: " << RESET << ResourceDataFileName << " was not found! There will be issues when adding existing new assets to containers..." << std::endl;
+            }
         }
     }
 
@@ -112,7 +117,7 @@ int main(int argc, char **argv)
             zippedMods.push_back(zippedMod.path());
     }
 
-    std::sort(zippedMods.begin(), zippedMods.end());
+    std::sort(zippedMods.begin(), zippedMods.end(), [](std::string str1, std::string str2) { return std::strcoll(str1.c_str(), str2.c_str()) <= 0 ? true : false; });
 
     for (const auto &zippedMod : zippedMods) {
         int zippedModCount = 0;
@@ -256,7 +261,7 @@ int main(int argc, char **argv)
             unzippedMods.push_back(unzippedMod.path());
     }
 
-    std::sort(unzippedMods.begin(), unzippedMods.end());
+    std::sort(unzippedMods.begin(), unzippedMods.end(), [](std::string str1, std::string str2) { return std::strcoll(str1.c_str(), str2.c_str()) <= 0 ? true : false; });
 
     int unzippedModCount = 0;
 
@@ -430,7 +435,7 @@ int main(int argc, char **argv)
             continue;
         }
 
-        long fileSize = (long)std::filesystem::file_size(resource.Path);
+        long fileSize = std::filesystem::file_size(resource.Path);
 
         if (fileSize == 0) {
             std::cerr << RED << "ERROR: " << RESET << "Failed to open " << YELLOW << resource.Path << RESET << " for writing!" << std::endl;
@@ -464,7 +469,7 @@ int main(int argc, char **argv)
             continue;
         }
 
-        long fileSize = (long)std::filesystem::file_size(soundBank.Path);
+        long fileSize = std::filesystem::file_size(soundBank.Path);
 
         if (fileSize == 0) {
             std::cerr << RED << "ERROR: " << RESET << "Failed to open " << YELLOW << soundBank.Path << RESET << " for writing!" << std::endl;

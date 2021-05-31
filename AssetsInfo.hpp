@@ -61,8 +61,8 @@ class AssetsInfo {
 public:
     std::vector<AssetsInfoLayer> Layers;
     std::vector<AssetsInfoMap> Maps;
-    std::vector<AssetsInfoResource> ExtraResources;
-    std::vector<AssetsInfoAsset> NewAssets;
+    std::vector<AssetsInfoResource> Resources;
+    std::vector<AssetsInfoAsset> Assets;
 
     AssetsInfo() {}
     AssetsInfo(std::string &json);

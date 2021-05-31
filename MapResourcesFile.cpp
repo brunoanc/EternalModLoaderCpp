@@ -34,11 +34,11 @@ std::vector<std::byte> MapResourcesFile::ToByteVector()
 
     for (auto &layer : Layers) {
         int layerSize = layer.size();
-        mapResourcesBytes.insert(mapResourcesBytes.end(), (std::byte*)&layer, (std::byte*)&layer + 4);
+        mapResourcesBytes.insert(mapResourcesBytes.end(), (std::byte*)&layerSize, (std::byte*)&layerSize + 4);
         mapResourcesBytes.insert(mapResourcesBytes.end(), (std::byte*)layer.c_str(), (std::byte*)layer.c_str() + layerSize);
     }
 
-    int assetTypesCount = AssetTypes.size();
+    long assetTypesCount = AssetTypes.size();
     std::reverse((std::byte*)&assetTypesCount, (std::byte*)&assetTypesCount + 8);
     mapResourcesBytes.insert(mapResourcesBytes.end(), (std::byte*)&assetTypesCount, (std::byte*)&assetTypesCount + 8);
 
@@ -115,19 +115,21 @@ MapResourcesFile::MapResourcesFile(std::vector<std::byte> &rawData)
     std::copy(rawData.begin() + pos, rawData.begin() + pos + 8, (std::byte*)&assetTypeCount);
     pos += 8;
 
+    AssetTypes.reserve(assetTypeCount);
+
     for (int i = 0; i < assetTypeCount; i++) {
         int stringSize;
         std::copy(rawData.begin() + pos, rawData.begin() + pos + 4, (std::byte*)&stringSize);
         pos += 4;
 
         std::string assetType((char*)rawData.data() + pos, stringSize);
-        Layers.push_back(assetType);
+        AssetTypes.push_back(assetType);
         pos += stringSize;
     }
 
     std::reverse(rawData.begin() + pos, rawData.begin() + pos + 4);
     int assetCount;
-    std::copy(rawData.begin() + pos, rawData.begin() + pos + 4, (std::byte*)&assetTypeCount);
+    std::copy(rawData.begin() + pos, rawData.begin() + pos + 4, (std::byte*)&assetCount);
     pos += 4;
 
     Assets.reserve(assetCount);
@@ -178,5 +180,6 @@ MapResourcesFile::MapResourcesFile(std::vector<std::byte> &rawData)
 
         std::string map((char*)rawData.data() + pos, stringSize);
         Maps.push_back(map);
+        pos += stringSize;
     }
 }

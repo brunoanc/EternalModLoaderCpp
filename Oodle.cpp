@@ -20,14 +20,15 @@
 #include <vector>
 #include <dlfcn.h>
 
-#include "Oodle.hpp"
+#include "EternalModLoader.hpp"
 
 OodLZ_CompressFunc* OodLZ_Compress;
 OodLZ_DecompressFunc* OodLZ_Decompress;
 
 int OodleInit()
 {
-    void *oodle = dlopen("liblinoodle.so", RTLD_LAZY);
+    std::string linoodlePath = BasePath + "liblinoodle.so";
+    void *oodle = dlopen(linoodlePath.c_str(), RTLD_LAZY);
 
     if (!oodle)
         return -1;
@@ -41,11 +42,11 @@ int OodleInit()
     return 0;
 }
 
-std::vector<std::byte> OodleDecompress(std::vector<std::byte> compressedData, long decompressedSize)
+std::vector<std::byte> OodleDecompress(std::vector<std::byte> &compressedData, long decompressedSize)
 {
     if (!OodLZ_Decompress) {
         if (OodleInit() == -1)
-            throw;
+            throw std::exception();
     }
 
     std::vector<std::byte> decompressedData(decompressedSize);
@@ -56,7 +57,7 @@ std::vector<std::byte> OodleDecompress(std::vector<std::byte> compressedData, lo
     return decompressedData;
 }
 
-std::vector<std::byte> OodleCompress(std::vector<std::byte> decompressedData, OodleFormat format, OodleCompressionLevel compressionLevel)
+std::vector<std::byte> OodleCompress(std::vector<std::byte> &decompressedData, OodleFormat format, OodleCompressionLevel compressionLevel)
 {
     if (!OodLZ_Compress) {
         if (OodleInit() == -1)

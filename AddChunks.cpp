@@ -27,7 +27,7 @@
 
 void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, ResourceInfo &resourceInfo)
 {
-    long fileSize = (long)std::filesystem::file_size(resourceInfo.Path);
+    long fileSize = std::filesystem::file_size(resourceInfo.Path);
 
     if (resourceInfo.ModListNew.empty())
         return;
@@ -52,14 +52,14 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
 
     std::vector<std::byte> data(mem.begin() + resourceInfo.DataOffset, mem.begin() + fileSize);
 
-    int infoOldLength = (int)info.size();
-    int nameIdsOldLength = (int)nameIds.size();
+    int infoOldLength = info.size();
+    int nameIdsOldLength = nameIds.size();
     int newChunksCount = 0;
 
     for (Mod &mod : resourceInfo.ModList) {
-        if (mod.IsAssetsInfoJson && mod.AssetsInfo.has_value() && !mod.AssetsInfo.value().NewAssets.empty()) {
+        if (mod.IsAssetsInfoJson && mod.AssetsInfo.has_value() && !mod.AssetsInfo.value().Assets.empty()) {
             for (auto &newMod : resourceInfo.ModListNew) {
-                for (auto &assetsInfoAssets : mod.AssetsInfo.value().NewAssets) {
+                for (auto &assetsInfoAssets : mod.AssetsInfo.value().Assets) {
                     if (RemoveWhitespace(assetsInfoAssets.Path).empty())
                         continue;
 
@@ -77,8 +77,6 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
                     }
                 }
             }
-
-            continue;
         }
     }
 
@@ -134,7 +132,7 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
 
             if (!found) {
                 long typeLastOffset;
-                std::copy(mem.begin() + nameOffsets.size() - 8, mem.begin() + nameOffsets.size(), (std::byte*)&typeLastOffset);
+                std::copy(nameOffsets.end() - 8, nameOffsets.end(), (std::byte*)&typeLastOffset);
 
                 long typeLastNameOffset = 0;
 
@@ -145,8 +143,8 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
                     }
                 }
 
-                names.resize(names.size() + mod.ResourceType.size());
-                std::copy((std::byte*)mod.ResourceType.c_str(), (std::byte*)mod.ResourceType.c_str() + mod.ResourceType.size(), names.begin() + typeLastNameOffset);
+                names.resize(names.size() + mod.ResourceType.size() + 1);
+                std::copy((std::byte*)mod.ResourceType.c_str(), (std::byte*)mod.ResourceType.c_str() + mod.ResourceType.size() + 1, names.begin() + typeLastNameOffset);
 
                 long typeNewCount;
                 std::copy(nameOffsets.begin(), nameOffsets.begin() + 8, (std::byte*)&typeNewCount);
@@ -175,9 +173,9 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
             }
         }
 
-        const char *nameChars = mod.Name.c_str();
+        std::byte *nameChars = (std::byte*)mod.Name.c_str();
         names.resize(names.size() + mod.Name.size() + 1);
-        std::copy((std::byte*)nameChars, (std::byte*)nameChars + mod.Name.size(), names.begin() + lastNameOffset);
+        std::copy(nameChars, nameChars + mod.Name.size() + 1, names.begin() + lastNameOffset);
 
         long newCount;
         std::copy(nameOffsets.begin(), nameOffsets.begin() + 8, (std::byte*)&newCount);
@@ -221,8 +219,8 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
 
         long fileBytesSize = mod.FileBytes.size();
 
-        std::copy((std::byte*)&fileBytesSize, (std::byte*)&fileBytesSize + 8, info.begin() + (long)info.size() - 0x50);
-        std::copy((std::byte*)&fileBytesSize, (std::byte*)&fileBytesSize + 8, info.begin() + (long)info.size() - 0x48);
+        std::copy((std::byte*)&fileBytesSize, (std::byte*)&fileBytesSize + 8, info.end() - 0x50);
+        std::copy((std::byte*)&fileBytesSize, (std::byte*)&fileBytesSize + 8, info.end() - 0x48);
 
         std::copy((std::byte*)&mod.StreamDbHash.value(), (std::byte*)&mod.StreamDbHash.value() + 8, info.end() - 0x40);
         std::copy((std::byte*)&mod.StreamDbHash.value(), (std::byte*)&mod.StreamDbHash.value() + 8, info.end() - 0x30);
@@ -244,12 +242,12 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
         newChunksCount++;
     }
 
-    long namesOffsetAdd = (long)info.size() - infoOldLength;
-    long newSize = (long)nameOffsets.size() + (long)names.size();
+    long namesOffsetAdd = info.size() - infoOldLength;
+    long newSize = nameOffsets.size() + names.size();
     long unknownAdd = namesOffsetAdd + (newSize - resourceInfo.StringsSize);
     long typeIdsAdd = unknownAdd;
     long nameIdsAdd = typeIdsAdd;
-    long idclAdd = (long)nameIdsAdd + (long)(nameIds.size() - nameIdsOldLength);
+    long idclAdd = nameIdsAdd + (nameIds.size() - nameIdsOldLength);
     long dataAdd = idclAdd;
 
     int fileCountAdd = resourceInfo.FileCount + newChunksCount;
@@ -280,7 +278,7 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
 
     info.reserve(2 * (0x38 + info.size() + 8));
 
-    for (int i = 0; i < (int)info.size() / 0x90; i++) {
+    for (int i = 0; i < info.size() / 0x90; i++) {
         int fileOffset = 0x38 + (i * 0x90);
 
         long newOffsetPlusDataAdd;
@@ -290,7 +288,7 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
         std::copy((std::byte*)&newOffsetPlusDataAdd, (std::byte*)&newOffsetPlusDataAdd + 8, info.begin() + fileOffset);
     }
 
-    long newContainerLength = (long)(header.size() + info.size() + nameOffsets.size() + names.size() + unknown.size() + typeIds.size() + nameIds.size() + idcl.size() + data.size());
+    long newContainerLength = header.size() + info.size() + nameOffsets.size() + names.size() + unknown.size() + typeIds.size() + nameIds.size() + idcl.size() + data.size();
 
     mem.munmap_file();
     std::filesystem::resize_file(resourceInfo.Path, newContainerLength);
@@ -307,32 +305,32 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
         return;
     }
 
-    long memPosition = 0;
-    std::copy(header.begin(), header.end(), mem.begin() + memPosition);
-    memPosition += (long)header.size();
+    unsigned long pos = 0;
+    std::copy(header.begin(), header.end(), mem.begin() + pos);
+    pos += header.size();
 
-    std::copy(info.begin(), info.end(), mem.begin() + memPosition);
-    memPosition += (long)info.size();
+    std::copy(info.begin(), info.end(), mem.begin() + pos);
+    pos += info.size();
 
-    std::copy(nameOffsets.begin(), nameOffsets.end(), mem.begin() + memPosition);
-    memPosition += (long)nameOffsets.size();
+    std::copy(nameOffsets.begin(), nameOffsets.end(), mem.begin() + pos);
+    pos += nameOffsets.size();
 
-    std::copy(names.begin(), names.end(), mem.begin() + memPosition);
-    memPosition += (long)names.size();
+    std::copy(names.begin(), names.end(), mem.begin() + pos);
+    pos += names.size();
 
-    std::copy(unknown.begin(), unknown.end(), mem.begin() + memPosition);
-    memPosition += (long)unknown.size();
+    std::copy(unknown.begin(), unknown.end(), mem.begin() + pos);
+    pos += unknown.size();
 
-    std::copy(typeIds.begin(), typeIds.end(), mem.begin() + memPosition);
-    memPosition += (long)typeIds.size();
+    std::copy(typeIds.begin(), typeIds.end(), mem.begin() + pos);
+    pos += typeIds.size();
 
-    std::copy(nameIds.begin(), nameIds.end(), mem.begin() + memPosition);
-    memPosition += (long)nameIds.size();
+    std::copy(nameIds.begin(), nameIds.end(), mem.begin() + pos);
+    pos += nameIds.size();
 
-    std::copy(idcl.begin(), idcl.end(), mem.begin() + memPosition);
-    memPosition += (long)idcl.size();
+    std::copy(idcl.begin(), idcl.end(), mem.begin() + pos);
+    pos += idcl.size();
 
-    std::copy(data.begin(), data.end(), mem.begin() + memPosition);
+    std::copy(data.begin(), data.end(), mem.begin() + pos);
 
     if (newChunksCount != 0)
         std::cout << "Number of files added: " << GREEN << newChunksCount << " file(s) " << RESET << "in " << YELLOW << resourceInfo.Path << RESET << "." << std::endl;

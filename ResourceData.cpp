@@ -34,10 +34,10 @@ std::map<unsigned long, ResourceDataEntry> ParseResourceData(std::string &fileNa
     if (!resourceDataFile)
         return resourceData;
     
-    if (fread(&decompressedSize, 8, 1, resourceDataFile) != 8)
+    if (fread(&decompressedSize, 8, 1, resourceDataFile) != 1)
         return resourceData;
 
-    if (fread(compressedData.data(), 1, filesize, resourceDataFile) != filesize)
+    if (fread(compressedData.data(), 1, compressedData.size(), resourceDataFile) != compressedData.size())
         return resourceData;
 
     std::vector<std::byte> decompressedData;
@@ -62,7 +62,7 @@ std::map<unsigned long, ResourceDataEntry> ParseResourceData(std::string &fileNa
     std::copy(decompressedData.begin() + pos, decompressedData.begin() + pos + 8, (std::byte*)&amount);
     pos += 8;
 
-    for (unsigned long i = 0; i < amount; i--) {
+    for (unsigned long i = 0; i < amount; i++) {
         ResourceDataEntry resourceDataEntry;
         
         unsigned long fileNameHash;
@@ -88,7 +88,7 @@ std::map<unsigned long, ResourceDataEntry> ParseResourceData(std::string &fileNa
         std::copy(decompressedData.begin() + pos, decompressedData.begin() + pos + 2, (std::byte*)&resourceTypeSize);
         pos += 2;
 
-        resourceDataEntry.ResourceType = std::string((char*)decompressedData.data() + pos, (char*)decompressedData.data() + pos + resourceTypeSize);
+        resourceDataEntry.ResourceType = std::string((char*)decompressedData.data() + pos, resourceTypeSize);
         pos += resourceTypeSize;
 
         unsigned short mapResourceTypeSize;
@@ -99,18 +99,18 @@ std::map<unsigned long, ResourceDataEntry> ParseResourceData(std::string &fileNa
         resourceDataEntry.MapResourceName = "";
 
         if (mapResourceTypeSize > 0) {
-            resourceDataEntry.MapResourceType = std::string((char*)decompressedData.data() + pos, (char*)decompressedData.data() + pos + mapResourceTypeSize);
+            resourceDataEntry.MapResourceType = std::string((char*)decompressedData.data() + pos, mapResourceTypeSize);
             pos += mapResourceTypeSize;
 
             unsigned short mapResourceNameSize;
             std::copy(decompressedData.begin() + pos, decompressedData.begin() + pos + 2, (std::byte*)&mapResourceNameSize);
             pos += 2;
 
-            resourceDataEntry.MapResourceName = std::string((char*)decompressedData.data() + pos, (char*)decompressedData.data() + pos + mapResourceNameSize);
+            resourceDataEntry.MapResourceName = std::string((char*)decompressedData.data() + pos, mapResourceNameSize);
             pos += mapResourceNameSize;
         }
 
-        resourceData.insert({fileNameHash, resourceDataEntry});
+        resourceData[fileNameHash] = resourceDataEntry;
     }
 
     return resourceData;

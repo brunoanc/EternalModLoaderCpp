@@ -202,10 +202,10 @@ class MapAsset {
 public:
     int AssetTypeIndex;
     std::string Name;
-    int UnknownData1;
-    int UnknownData2;
-    long UnknownData3;
-    long UnknownData4;
+    int UnknownData1 = 0;
+    int UnknownData2 = 0;
+    long UnknownData3 = 0;
+    long UnknownData4 = 0;
 };
 
 class ResourceDataEntry {
@@ -271,11 +271,11 @@ extern std::string BLUE;
 extern std::vector<std::string> SupportedFileFormats;
 
 std::string PathToResource(std::string name);
-void ReadChunkInfo(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, ResourceInfo &resource);
+void ReadChunkInfo(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, ResourceInfo &resourceInfo);
 ResourceChunk *GetChunk(std::string name, ResourceInfo &resource);
-void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, ResourceInfo &resource);
-void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, ResourceInfo &resource);
-void ReadResource(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, ResourceInfo &resource);
+void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, ResourceInfo &resourceInfo);
+void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, ResourceInfo &resourceInfo);
+void ReadResource(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, ResourceInfo &resourceInfo);
 int GetResourceInfo(std::string resourceName);
 std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string internalPath, bool decrypt);
 BlangFile ParseBlang(std::vector<std::byte> &blangBytes, std::string &resourceName);

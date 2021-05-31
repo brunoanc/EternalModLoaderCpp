@@ -30,9 +30,9 @@ typedef int OodLZ_DecompressFunc(uint8_t *src_buf, int src_len, uint8_t *dst, si
     int fuzz, int crc, int verbose,
     uint8_t *dst_base, size_t e, void *cb, void *cb_ctx, void *scratch, size_t scratch_size, int threadPhase);
 
-enum OodleCompressionLevel : int
+enum OodleCompressionLevel
 {
-    NormalCompression,
+    NoCompression,
     SuperFast,
     VeryFast,
     Fast,
@@ -44,12 +44,12 @@ enum OodleCompressionLevel : int
     Optimal5
 };
 
-enum OodleFormat : int
+enum OodleFormat
 {
     LZH,
     LZHLW,
     LZNIB,
-    NormalFormat,
+    NoFormat,
     LZB16,
     LZBLW,
     LZA,
@@ -61,7 +61,7 @@ enum OodleFormat : int
     Akkorokamui
 };
 
-std::vector<std::byte> OodleDecompress(std::vector<std::byte> compressedData, long decompressedSize);
-std::vector<std::byte> OodleCompress(std::vector<std::byte> compressedData, OodleFormat format, OodleCompressionLevel compressionLevel);
+std::vector<std::byte> OodleDecompress(std::vector<std::byte> &compressedData, long decompressedSize);
+std::vector<std::byte> OodleCompress(std::vector<std::byte> &compressedData, OodleFormat format, OodleCompressionLevel compressionLevel);
 
 #endif

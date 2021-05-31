@@ -23,7 +23,10 @@
 
 AssetsInfo::AssetsInfo(std::string &json)
 {
-    nlohmann::ordered_json assetsInfoJson = nlohmann::ordered_json::parse(json, nullptr, true, true);
+    nlohmann::json assetsInfoJson = nlohmann::json::parse(json, nullptr, true, true);
+
+    if (assetsInfoJson.contains("layers"))
+        Layers.reserve(assetsInfoJson["layers"].size());
 
     for (auto &layer : assetsInfoJson["layers"]) {
         AssetsInfoLayer assetsInfoLayer;
@@ -34,6 +37,9 @@ AssetsInfo::AssetsInfo(std::string &json)
         Layers.push_back(assetsInfoLayer);
     }
 
+    if (assetsInfoJson.contains("maps"))
+        Maps.reserve(assetsInfoJson["maps"].size());
+
     for (auto &map : assetsInfoJson["maps"]) {
         AssetsInfoMap assetsInfoMap;
 
@@ -43,7 +49,10 @@ AssetsInfo::AssetsInfo(std::string &json)
         Maps.push_back(assetsInfoMap);
     }
 
-    for (auto &resource : assetsInfoJson["extraResources"]) {
+    if (assetsInfoJson.contains("resources"))
+        Resources.reserve(assetsInfoJson["resources"].size());
+
+    for (auto &resource : assetsInfoJson["resources"]) {
         AssetsInfoResource assetsInfoResource;
 
         if (resource.contains("name"))
@@ -58,10 +67,13 @@ AssetsInfo::AssetsInfo(std::string &json)
         if (resource.contains("placeByName"))
             assetsInfoResource.PlaceByName = resource["placeByName"].get<std::string>();
 
-        ExtraResources.push_back(assetsInfoResource);
+        Resources.push_back(assetsInfoResource);
     }
 
-    for (auto &asset : assetsInfoJson["newAssets"]) {
+    if (assetsInfoJson.contains("assets"))
+        Assets.reserve(assetsInfoJson["assets"].size());
+
+    for (auto &asset : assetsInfoJson["assets"]) {
         AssetsInfoAsset assetsInfoAsset;
 
         if (asset.contains("path"))
@@ -102,5 +114,7 @@ AssetsInfo::AssetsInfo(std::string &json)
 
         if (asset.contains("specialByte3"))
             assetsInfoAsset.SpecialByte3 = asset["specialByte3"].get<std::byte>();
+
+        Assets.push_back(assetsInfoAsset);
     }
 }
