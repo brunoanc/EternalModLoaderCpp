@@ -139,24 +139,26 @@ int main(int argc, char **argv)
             if (0 == zipEntry.name.compare(zipEntry.name.length() - 1, 1, "/"))
                 continue;
 
-            if (ToLower(zipEntry.name) == "eternalmod.json") {
-                std::vector<unsigned char> unzippedModJson;
-                unzippedModJson.reserve(zipEntry.uncompressedSize);
-                modZip.extractEntryToMemory(zipEntry.name, unzippedModJson);
+            if (!listResources) {
+                if (ToLower(zipEntry.name) == "eternalmod.json") {
+                    std::vector<unsigned char> unzippedModJson;
+                    unzippedModJson.reserve(zipEntry.uncompressedSize);
+                    modZip.extractEntryToMemory(zipEntry.name, unzippedModJson);
 
-                std::string modJson((char*)unzippedModJson.data(), unzippedModJson.size());
-                
-                try {
-                    mod = Mod(mod.Name, modJson);
+                    std::string modJson((char*)unzippedModJson.data(), unzippedModJson.size());
+                    
+                    try {
+                        mod = Mod(mod.Name, modJson);
 
-                    if (mod.RequiredVersion > Version) {
-                        std::cerr << RED << "WARNING: " << RESET << "Mod " << mod.Name << " requires mod loader version"
-                            << mod.RequiredVersion << " but the current mod loader version is " << Version << ",skipping" << std::endl;
-                        continue;
+                        if (mod.RequiredVersion > Version) {
+                            std::cerr << RED << "WARNING: " << RESET << "Mod " << std::filesystem::path(zippedMod).filename().string() << " requires mod loader version "
+                                << mod.RequiredVersion << " but the current mod loader version is " << Version << ", skipping" << std::endl;
+                            continue;
+                        }
                     }
-                }
-                catch (...) {
-                    std::cerr << RED << "ERROR: " << RESET << "Failed to parse EternalMod.json - using defaults." << std::endl;
+                    catch (...) {
+                        std::cerr << RED << "ERROR: " << RESET << "Failed to parse EternalMod.json - using defaults." << std::endl;
+                    }
                 }
             }
 
