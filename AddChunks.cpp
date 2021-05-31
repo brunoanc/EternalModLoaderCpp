@@ -298,9 +298,12 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
 
         newFileInfo[sizeof(newFileInfo) - 0x20] = (std::byte)0;
 
+        short metaEntries = 0;
+        std::copy((std::byte*)&metaEntries, (std::byte*)&metaEntries + 2, newFileInfo + sizeof(newFileInfo) - 0x10);
+
         info.resize(info.size() + 0x90);
 
-        if (newInfoSectionOffset != -1) {
+        if (newInfoSectionOffset != -1 && modFile.ResourceType == "rs_streamfile") {
             std::copy(info.begin() + newInfoSectionOffset, info.begin() + info.size() - newInfoSectionOffset - 0x90, info.begin() + newInfoSectionOffset + 0x90);
             std::copy(newFileInfo, newFileInfo + sizeof(newFileInfo), info.begin() + newInfoSectionOffset);
         }
