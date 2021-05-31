@@ -135,33 +135,30 @@ int main(int argc, char **argv)
 
         Mod mod(std::filesystem::path(zippedMod).filename());
 
+        if (!listResources) {
+            std::vector<unsigned char> unzippedModJson;
+
+            if (modZip.extractEntryToMemory("EternalMod.json", unzippedModJson)) {
+                std::string modJson((char*)unzippedModJson.data(), unzippedModJson.size());
+
+                try {
+                    mod = Mod(mod.Name, modJson);
+
+                    if (mod.RequiredVersion > Version) {
+                        std::cerr << RED << "WARNING: " << RESET << "Mod " << std::filesystem::path(zippedMod).filename().string() << " requires mod loader version "
+                            << mod.RequiredVersion << " but the current mod loader version is " << Version << ", skipping" << std::endl;
+                        continue;
+                    }
+                }
+                catch (...) {
+                    std::cerr << RED << "ERROR: " << RESET << "Failed to parse EternalMod.json - using defaults." << std::endl;
+                }
+            }
+        }
+
         for (auto &zipEntry : modZip.entries()) {
             if (0 == zipEntry.name.compare(zipEntry.name.length() - 1, 1, "/"))
                 continue;
-
-            if (!listResources) {
-                if (ToLower(zipEntry.name) == "eternalmod.json") {
-                    std::vector<unsigned char> unzippedModJson;
-                    unzippedModJson.reserve(zipEntry.uncompressedSize);
-                    modZip.extractEntryToMemory(zipEntry.name, unzippedModJson);
-
-                    std::string modJson((char*)unzippedModJson.data(), unzippedModJson.size());
-                    
-                    try {
-                        mod = Mod(mod.Name, modJson);
-
-                        if (mod.RequiredVersion > Version) {
-                            std::cerr << RED << "WARNING: " << RESET << "Mod " << std::filesystem::path(zippedMod).filename().string() << " requires mod loader version "
-                                << mod.RequiredVersion << " but the current mod loader version is " << Version << ", skipping" << std::endl;
-                            zippedModCount = 0;
-                            break;
-                        }
-                    }
-                    catch (...) {
-                        std::cerr << RED << "ERROR: " << RESET << "Failed to parse EternalMod.json - using defaults." << std::endl;
-                    }
-                }
-            }
 
             bool isSoundMod = false;
             std::string modFileName = zipEntry.name;
