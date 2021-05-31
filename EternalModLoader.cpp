@@ -23,16 +23,18 @@
 #include <algorithm>
 #include <cstring>
 #include <cstdlib>
+#include <climits>
 
 #include "zipper/unzipper.h"
 #include "EternalModLoader.hpp"
 
+const int Version = 6;
 const std::string ResourceDataFileName = "rs_data";
 const std::string PackageMapSpecJsonFileName = "packagemapspec.json";
 std::string BasePath;
 bool Verbose;
-std::vector<ResourceInfo> ResourceList;
-std::vector<SoundBankInfo> SoundBankList;
+std::vector<ResourceContainer> ResourceContainerList;
+std::vector<SoundContainer> SoundContainerList;
 std::map<unsigned long, ResourceDataEntry> ResourceDataMap;
 
 std::string RESET = "";
@@ -56,10 +58,17 @@ int main(int argc, char **argv)
     if (argc == 1 || argc > 3) {
         std::cout << "EternalModLoaderCpp by PowerBall253, based on EternalModLoader by proteh\n\n";
         std::cout << "Loads DOOM Eternal mods from ZIPs or loose files in 'Mods' folder into the .resources files in the specified directory.\n\n";
-        std::cout << "USAGE: " << argv[0] << " <game path> [OPTIONS]\n\n";
+        std::cout << "USAGE: " << argv[0] << " <game path | --version> [OPTIONS]\n";
+        std::cout << "\t--version - Prints the version number of the mod loader and exits with exit code same as the version number.\n\n";
         std::cout << "OPTIONS:\n";
-        std::cout << "\t--list-res - List the .resources files that will be modified and exit.\n" << std::endl;
+        std::cout << "\t--list-res - List the .resources files that will be modified and exit.\n";
+        std::cout << "\t--verbose - Print more information during the mod loading process.\n" << std::endl;
         return 1;
+    }
+
+    if (!strcmp(argv[1], "--version")) {
+        std::cout << Version << std::endl;
+        return Version;
     }
 
     BasePath = std::string(argv[1]) + "/base/";
@@ -86,8 +95,8 @@ int main(int argc, char **argv)
         }
     }
 
-    ResourceList.reserve(80);
-    SoundBankList.reserve(40);
+    ResourceContainerList.reserve(80);
+    SoundContainerList.reserve(40);
 
     if (!listResources) {
         std::string resourceDataFilePath = BasePath + ResourceDataFileName;
@@ -97,7 +106,7 @@ int main(int argc, char **argv)
                 ResourceDataMap = ParseResourceData(resourceDataFilePath);
 
                 if (ResourceDataMap.empty())
-                    throw;
+                    throw std::exception();
             }
             catch (...) {
                 std::cerr << RED << "ERROR: " << RESET << "Failed to parse " << ResourceDataFileName << std::endl;
@@ -124,9 +133,32 @@ int main(int argc, char **argv)
         std::vector<std::string> modFileNameList;
         zipper::Unzipper modZip(zippedMod);
 
+        Mod mod(std::filesystem::path(zippedMod).filename());
+
         for (auto &zipEntry : modZip.entries()) {
             if (0 == zipEntry.name.compare(zipEntry.name.length() - 1, 1, "/"))
                 continue;
+
+            if (ToLower(zipEntry.name) == "eternalmod.json") {
+                std::vector<unsigned char> unzippedModJson;
+                unzippedModJson.reserve(zipEntry.uncompressedSize);
+                modZip.extractEntryToMemory(zipEntry.name, unzippedModJson);
+
+                std::string modJson((char*)unzippedModJson.data(), unzippedModJson.size());
+                
+                try {
+                    mod = Mod(mod.Name, modJson);
+
+                    if (mod.RequiredVersion > Version) {
+                        std::cerr << RED << "WARNING: " << RESET << "Mod " << mod.Name << " requires mod loader version"
+                            << mod.RequiredVersion << " but the current mod loader version is " << Version << ",skipping" << std::endl;
+                        continue;
+                    }
+                }
+                catch (...) {
+                    std::cerr << RED << "ERROR: " << RESET << "Failed to parse EternalMod.json - using defaults." << std::endl;
+                }
+            }
 
             bool isSoundMod = false;
             std::string modFileName = zipEntry.name;
@@ -144,23 +176,23 @@ int main(int argc, char **argv)
                 modFileName = modFileName.substr(resourceName.size() + 1, modFileName.size() - resourceName.size() - 1);
             }
 
-            std::string resourcePath = PathToResource(resourceName + ".resources");
+            std::string resourcePath = PathToResourceContainer(resourceName + ".resources");
 
             if (resourcePath.empty()) {
-                resourcePath = PathToSoundBank(resourceName);
+                resourcePath = PathToSoundContainer(resourceName);
 
                 if (!resourcePath.empty())
                     isSoundMod = true;
             }
 
             if (isSoundMod) {
-                int soundBankInfoIndex = GetSoundBankInfo(resourceName);
+                int soundContainerIndex = GetSoundContainer(resourceName);
 
-                if (soundBankInfoIndex == -1) {
-                    SoundBankInfo soundBank(resourceName, resourcePath);
-                    SoundBankList.push_back(soundBank);
+                if (soundContainerIndex == -1) {
+                    SoundContainer soundContainer(resourceName, resourcePath);
+                    SoundContainerList.push_back(soundContainer);
 
-                    soundBankInfoIndex = (int)SoundBankList.size() - 1;
+                    soundContainerIndex = SoundContainerList.size() - 1;
                 }
 
                 if (!listResources) {
@@ -175,30 +207,29 @@ int main(int argc, char **argv)
                     unzippedEntry.reserve(zipEntry.uncompressedSize);
                     modZip.extractEntryToMemory(zipEntry.name, unzippedEntry);
 
-                    SoundMod sndMod;
-                    sndMod.Name = std::filesystem::path(modFileName).filename();
+                    SoundModFile soundModFile(mod, std::filesystem::path(modFileName).filename());
 
-                    sndMod.FileBytes.resize(unzippedEntry.size());
-                    std::copy((std::byte*)unzippedEntry.data(), (std::byte*)unzippedEntry.data() + unzippedEntry.size(), sndMod.FileBytes.begin());
+                    soundModFile.FileBytes.resize(unzippedEntry.size());
+                    std::copy((std::byte*)unzippedEntry.data(), (std::byte*)unzippedEntry.data() + unzippedEntry.size(), soundModFile.FileBytes.begin());
 
-                    SoundBankList[soundBankInfoIndex].ModList.push_back(sndMod);
+                    SoundContainerList[soundContainerIndex].ModFileList.push_back(soundModFile);
                     zippedModCount++;
                 }
             }
             else {
-                int resourceIndex = GetResourceInfo(resourceName);
+                int resourceContainerIndex = GetResourceContainer(resourceName);
 
-                if (resourceIndex == -1) {
-                    ResourceInfo resource(resourceName, PathToResource(resourceName + ".resources"));
-                    ResourceList.push_back(resource);
+                if (resourceContainerIndex == -1) {
+                    ResourceContainer resource(resourceName, PathToResourceContainer(resourceName + ".resources"));
+                    ResourceContainerList.push_back(resource);
 
-                    resourceIndex = (int)ResourceList.size() - 1;
+                    resourceContainerIndex = ResourceContainerList.size() - 1;
                 }
 
                 if (!listResources) {
                     unsigned long streamSize = zipEntry.uncompressedSize;
 
-                    if (streamSize > ResourceList.max_size()) {
+                    if (streamSize > ResourceContainerList.max_size()) {
                         std::cerr << RED << "WARNING: " << RESET << "Skipped " << modFileName << " - too large." << std::endl;
                         continue;
                     }
@@ -207,20 +238,20 @@ int main(int argc, char **argv)
                     unzippedEntry.reserve(zipEntry.uncompressedSize);
                     modZip.extractEntryToMemory(zipEntry.name, unzippedEntry);
 
-                    Mod mod(modFileName);
+                    ResourceModFile resourceModFile(mod, modFileName);
 
-                    mod.FileBytes.resize(unzippedEntry.size());
-                    std::copy((std::byte*)unzippedEntry.data(), (std::byte*)unzippedEntry.data() + unzippedEntry.size(), mod.FileBytes.begin());
+                    resourceModFile.FileBytes.resize(unzippedEntry.size());
+                    std::copy((std::byte*)unzippedEntry.data(), (std::byte*)unzippedEntry.data() + unzippedEntry.size(), resourceModFile.FileBytes.begin());
 
                     if (ToLower(modFilePathParts[1]) == "eternalmod") {
                         if (modFilePathParts.size() == 4
                         && ToLower(modFilePathParts[2]) == "assetsinfo"
                         && std::filesystem::path(modFilePathParts[3]).extension() == ".json") {
                             try {
-                                std::string assetsInfoJson((char*)mod.FileBytes.data(), mod.FileBytes.size());
-                                mod.AssetsInfo = AssetsInfo(assetsInfoJson);
-                                mod.IsAssetsInfoJson = true;
-                                mod.FileBytes.resize(0);
+                                std::string assetsInfoJson((char*)resourceModFile.FileBytes.data(), resourceModFile.FileBytes.size());
+                                resourceModFile.AssetsInfo = AssetsInfo(assetsInfoJson);
+                                resourceModFile.IsAssetsInfoJson = true;
+                                resourceModFile.FileBytes.resize(0);
                             }
                             catch (...) {
                                 std::cerr << RED << "ERROR: " << RESET << "Failed to parse EternalMod/assetsinfo/"
@@ -231,18 +262,14 @@ int main(int argc, char **argv)
                         else if (modFilePathParts.size() == 4
                         && ToLower(modFilePathParts[2]) == "strings"
                         && std::filesystem::path(modFilePathParts[3]).extension() == ".json") {
-                            mod.IsBlangJson = true;
+                            resourceModFile.IsBlangJson = true;
                         }
                         else {
                             continue;
                         }
                     }
-                    else {
-                        mod.IsBlangJson = false;
-                        mod.IsAssetsInfoJson = false;
-                    }
 
-                    ResourceList[resourceIndex].ModList.push_back(mod);
+                    ResourceContainerList[resourceContainerIndex].ModFileList.push_back(resourceModFile);
                     zippedModCount++;
                 }
             }
@@ -265,6 +292,9 @@ int main(int argc, char **argv)
 
     int unzippedModCount = 0;
 
+    Mod globalLooseMod;
+    globalLooseMod.LoadPriority = INT_MIN;
+
     for (const auto &unzippedMod : unzippedMods) {
         std::string unzippedModPath = unzippedMod;
         std::vector<std::string> modFilePathParts = SplitString(unzippedModPath, '/');
@@ -284,23 +314,23 @@ int main(int argc, char **argv)
             fileName = unzippedModPath.substr(modFilePathParts[1].size() + resourceName.size() + 4, unzippedModPath.size() - resourceName.size() - 4);
         }
 
-        std::string resourcePath = PathToResource(resourceName + ".resources");
+        std::string resourcePath = PathToResourceContainer(resourceName + ".resources");
 
         if (resourcePath.empty()) {
-            resourcePath = PathToSoundBank(resourceName);
+            resourcePath = PathToSoundContainer(resourceName);
 
             if (!resourcePath.empty())
                 isSoundMod = true;
         }
 
         if (isSoundMod) {
-            int soundBankInfoIndex = GetSoundBankInfo(resourceName);
+            int soundContainerIndex = GetSoundContainer(resourceName);
 
-            if (soundBankInfoIndex == -1) {
-                SoundBankInfo soundBank(resourceName, resourcePath);
-                SoundBankList.push_back(soundBank);
+            if (soundContainerIndex == -1) {
+                SoundContainer soundContainer(resourceName, resourcePath);
+                SoundContainerList.push_back(soundContainer);
 
-                soundBankInfoIndex = (int)SoundBankList.size() - 1;
+                soundContainerIndex = SoundContainerList.size() - 1;
             }
 
             if (!listResources) {
@@ -313,11 +343,10 @@ int main(int argc, char **argv)
 
                 long unzippedModSize = std::filesystem::file_size(unzippedModPath);
 
-                if (unzippedModSize > ResourceList.max_size())
+                if (unzippedModSize > ResourceContainerList.max_size())
                     std::cerr << RED << "WARNING: " << RESET << "Skipped " << fileName << " - too large." << std::endl;
                 
-                SoundMod soundMod;
-                soundMod.Name = std::filesystem::path(fileName).filename();
+                SoundModFile soundModFile(globalLooseMod, std::filesystem::path(fileName).filename());
                 
                 FILE *unzippedModFile = fopen(unzippedModPath.c_str(), "rb");
 
@@ -326,36 +355,36 @@ int main(int argc, char **argv)
                     continue;
                 }
 
-                soundMod.FileBytes.resize(unzippedModSize);
+                soundModFile.FileBytes.resize(unzippedModSize);
 
-                if (fread(soundMod.FileBytes.data(), 1, unzippedModSize, unzippedModFile) != unzippedModSize) {
+                if (fread(soundModFile.FileBytes.data(), 1, unzippedModSize, unzippedModFile) != unzippedModSize) {
                     std::cerr << RESET << "ERROR: " << RESET << "Failed to read from " << unzippedModPath << "." << std::endl;
                     continue;
                 }
 
                 fclose(unzippedModFile);
 
-                SoundBankList[soundBankInfoIndex].ModList.push_back(soundMod);
+                SoundContainerList[soundContainerIndex].ModFileList.push_back(soundModFile);
                 unzippedModCount++;
             }
         }
         else {
-            int resourceIndex = GetResourceInfo(resourceName);
+            int resourceContainerIndex = GetResourceContainer(resourceName);
 
-            if (resourceIndex == -1) {
-                ResourceInfo resource(resourceName, PathToResource(resourceName));
-                ResourceList.push_back(resource);
+            if (resourceContainerIndex == -1) {
+                ResourceContainer resourceContainer(resourceName, PathToResourceContainer(resourceName));
+                ResourceContainerList.push_back(resourceContainer);
 
-                resourceIndex = (int)ResourceList.size() - 1;
+                resourceContainerIndex = ResourceContainerList.size() - 1;
             }
 
             if (!listResources) {
                 long unzippedModSize = std::filesystem::file_size(unzippedModPath);
 
-                if (unzippedModSize > ResourceList.max_size())
+                if (unzippedModSize > ResourceContainerList.max_size())
                     std::cerr << RED << "WARNING: " << RESET << "Skipped " << fileName << " - too large." << std::endl;
 
-                Mod mod(fileName);
+                ResourceModFile resourceModFile(globalLooseMod, fileName);
 
                 FILE *unzippedModFile = fopen(unzippedModPath.c_str(), "rb");
 
@@ -364,9 +393,9 @@ int main(int argc, char **argv)
                     continue;
                 }
 
-                mod.FileBytes.resize(unzippedModSize);
+                resourceModFile.FileBytes.resize(unzippedModSize);
 
-                if (fread(mod.FileBytes.data(), 1, unzippedModSize, unzippedModFile) != unzippedModSize) {
+                if (fread(resourceModFile.FileBytes.data(), 1, unzippedModSize, unzippedModFile) != unzippedModSize) {
                     std::cerr << RESET << "ERROR: " << RESET << "Failed to read from " << unzippedModPath << "." << std::endl;
                     continue;
                 }
@@ -378,31 +407,28 @@ int main(int argc, char **argv)
                     && ToLower(modFilePathParts[4]) == "assetsinfo"
                     && std::filesystem::path(modFilePathParts[5]).extension() == ".json") {
                         try {
-                            std::string assetsInfoJson((char*)mod.FileBytes.data(), mod.FileBytes.size());
-                            mod.AssetsInfo = AssetsInfo(assetsInfoJson);
-                            mod.IsAssetsInfoJson = true;
-                            mod.FileBytes.resize(0);
+                            std::string assetsInfoJson((char*)resourceModFile.FileBytes.data(), resourceModFile.FileBytes.size());
+                            resourceModFile.AssetsInfo = AssetsInfo(assetsInfoJson);
+                            resourceModFile.IsAssetsInfoJson = true;
+                            resourceModFile.FileBytes.resize(0);
                         }
                         catch (...) {
                             std::cerr << RED << "ERROR: " << RESET << "Failed to parse EternalMod/assetsinfo/"
-                                << std::filesystem::path(mod.Name).stem().string() << ".json" << std::endl;
+                                << std::filesystem::path(resourceModFile.Name).stem().string() << ".json" << std::endl;
                             continue;
                         }
                     }
                     else if (modFilePathParts.size() == 6
                     && ToLower(modFilePathParts[4]) == "strings"
                     && std::filesystem::path(modFilePathParts[5]).extension() == ".json") {
-                        mod.IsBlangJson = true;
+                        resourceModFile.IsBlangJson = true;
                     }
                     else {
                         continue;
                     }
                 }
-                else {
-                    mod.IsBlangJson = false;
-                }
 
-                ResourceList[resourceIndex].ModList.push_back(mod);
+                ResourceContainerList[resourceContainerIndex].ModFileList.push_back(resourceModFile);
                 unzippedModCount++;
             }
         }
@@ -412,85 +438,85 @@ int main(int argc, char **argv)
         std::cout << "Found " << BLUE << unzippedModCount << " file(s) " << RESET << "in " << YELLOW << "'Mods' " << RESET << "folder..." << std::endl;
 
     if (listResources) {
-        for (auto &resource : ResourceList) {
-            if (resource.Path.empty())
+        for (auto &resourceContainer : ResourceContainerList) {
+            if (resourceContainer.Path.empty())
                 continue;
 
-            std::cout << resource.Path << std::endl;
+            std::cout << resourceContainer.Path << std::endl;
         }
 
-        for (auto &soundBank : SoundBankList) {
-            if (soundBank.Path.empty())
+        for (auto &soundContainer : SoundContainerList) {
+            if (soundContainer.Path.empty())
                 continue;
 
-            std::cout << soundBank.Path << std::endl;
+            std::cout << soundContainer.Path << std::endl;
         }
 
         return 0;
     }
 
-    for (auto &resource : ResourceList) {
-        if (resource.Path.empty()) {
-            std::cerr << RED << "WARNING: " << YELLOW << resource.Name << ".resources" << RESET << " was not found! Skipping " << RED << resource.ModList.size() << " file(s)" << RESET << "..." << std::endl;
+    for (auto &resourceContainer : ResourceContainerList) {
+        if (resourceContainer.Path.empty()) {
+            std::cerr << RED << "WARNING: " << YELLOW << resourceContainer.Name << ".resources" << RESET << " was not found! Skipping " << RED << resourceContainer.ModFileList.size() << " file(s)" << RESET << "..." << std::endl;
             continue;
         }
 
-        long fileSize = std::filesystem::file_size(resource.Path);
+        long fileSize = std::filesystem::file_size(resourceContainer.Path);
 
         if (fileSize == 0) {
-            std::cerr << RED << "ERROR: " << RESET << "Failed to open " << YELLOW << resource.Path << RESET << " for writing!" << std::endl;
+            std::cerr << RED << "ERROR: " << RESET << "Failed to open " << YELLOW << resourceContainer.Path << RESET << " for writing!" << std::endl;
             continue;
         }
 
         mmap_allocator_namespace::mmappable_vector<std::byte> mem;
 
         try {
-            mem.mmap_file(resource.Path, mmap_allocator_namespace::READ_WRITE_SHARED, 0, fileSize,
+            mem.mmap_file(resourceContainer.Path, mmap_allocator_namespace::READ_WRITE_SHARED, 0, fileSize,
                 mmap_allocator_namespace::MAP_WHOLE_FILE | mmap_allocator_namespace::ALLOW_REMAP);
             
             if (mem.empty())
-                throw;
+                throw std::exception();
         }
         catch (...) {
-            std::cerr << RED << "ERROR: " << RESET << "Failed to open " << YELLOW << resource.Path << RESET << " for writing!" << std::endl;
+            std::cerr << RED << "ERROR: " << RESET << "Failed to open " << YELLOW << resourceContainer.Path << RESET << " for writing!" << std::endl;
             continue;
         }
 
-        ReadResource(mem, resource);
-        ReplaceChunks(mem, resource);
-        AddChunks(mem, resource);
+        ReadResource(mem, resourceContainer);
+        ReplaceChunks(mem, resourceContainer);
+        AddChunks(mem, resourceContainer);
 
         mem.munmap_file();
     }
 
-    for (auto &soundBank : SoundBankList) {
-        if (soundBank.Path.empty()) {
-            std::cerr << RED << "WARNING: " << YELLOW << soundBank.Name << ".resources" << RESET << " was not found! Skipping " << RED << soundBank.ModList.size() << " file(s)" << RESET << "..." << std::endl;
+    for (auto &soundContainer : SoundContainerList) {
+        if (soundContainer.Path.empty()) {
+            std::cerr << RED << "WARNING: " << YELLOW << soundContainer.Name << ".resources" << RESET << " was not found! Skipping " << RED << soundContainer.ModFileList.size() << " file(s)" << RESET << "..." << std::endl;
             continue;
         }
 
-        long fileSize = std::filesystem::file_size(soundBank.Path);
+        long fileSize = std::filesystem::file_size(soundContainer.Path);
 
         if (fileSize == 0) {
-            std::cerr << RED << "ERROR: " << RESET << "Failed to open " << YELLOW << soundBank.Path << RESET << " for writing!" << std::endl;
+            std::cerr << RED << "ERROR: " << RESET << "Failed to open " << YELLOW << soundContainer.Path << RESET << " for writing!" << std::endl;
             continue;
         }
 
         mmap_allocator_namespace::mmappable_vector<std::byte> mem;
 
         try {
-            mem.mmap_file(soundBank.Path, mmap_allocator_namespace::READ_WRITE_SHARED, 0, fileSize,
+            mem.mmap_file(soundContainer.Path, mmap_allocator_namespace::READ_WRITE_SHARED, 0, fileSize,
                 mmap_allocator_namespace::MAP_WHOLE_FILE | mmap_allocator_namespace::ALLOW_REMAP);
             
             if (mem.empty())
-                throw;
+                throw std::exception();
         }
         catch (...) {
-            std::cerr << RED << "ERROR: " << RESET << "Failed to open " << YELLOW << soundBank.Path << RESET << " for writing!" << std::endl;
+            std::cerr << RED << "ERROR: " << RESET << "Failed to open " << YELLOW << soundContainer.Path << RESET << " for writing!" << std::endl;
             continue;
         }
 
-        LoadSoundMods(mem, soundBank);
+        LoadSoundMods(mem, soundContainer);
 
         mem.munmap_file();
     }

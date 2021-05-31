@@ -46,7 +46,7 @@ std::map<unsigned long, ResourceDataEntry> ParseResourceData(std::string &fileNa
         decompressedData = OodleDecompress(compressedData, decompressedSize);
 
         if (decompressedData.empty())
-            throw;
+            throw std::exception();
     }
     catch (...) {
         std::cerr << RED << "ERROR: " << RESET << "Failed to decompress " << fileName << std::endl;

@@ -25,54 +25,57 @@
 
 #include "EternalModLoader.hpp"
 
-void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, ResourceInfo &resourceInfo)
+void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, ResourceContainer &resourceContainer)
 {
-    long fileSize = std::filesystem::file_size(resourceInfo.Path);
+    std::stable_sort(resourceContainer.NewModFileList.begin(), resourceContainer.NewModFileList.end(),
+        [](ResourceModFile resource1, ResourceModFile resource2) { return resource1.Parent.LoadPriority > resource2.Parent.LoadPriority ? true : false; });
 
-    if (resourceInfo.ModListNew.empty())
+    if (resourceContainer.NewModFileList.empty())
         return;
 
-    std::vector<std::byte> header(mem.begin(), mem.begin() + resourceInfo.InfoOffset);
+    long fileSize = std::filesystem::file_size(resourceContainer.Path);
 
-    std::vector<std::byte> info(mem.begin() + resourceInfo.InfoOffset, mem.begin() + resourceInfo.NamesOffset);
+    std::vector<std::byte> header(mem.begin(), mem.begin() + resourceContainer.InfoOffset);
 
-    std::vector<std::byte> nameOffsets(mem.begin() + resourceInfo.NamesOffset, mem.begin() + resourceInfo.NamesOffsetEnd);
+    std::vector<std::byte> info(mem.begin() + resourceContainer.InfoOffset, mem.begin() + resourceContainer.NamesOffset);
 
-    std::vector<std::byte> names(mem.begin() + resourceInfo.NamesOffsetEnd, mem.begin() + resourceInfo.UnknownOffset);
+    std::vector<std::byte> nameOffsets(mem.begin() + resourceContainer.NamesOffset, mem.begin() + resourceContainer.NamesOffsetEnd);
 
-    std::vector<std::byte> unknown(mem.begin() + resourceInfo.UnknownOffset, mem.begin() + resourceInfo.Dummy7Offset);
+    std::vector<std::byte> names(mem.begin() + resourceContainer.NamesOffsetEnd, mem.begin() + resourceContainer.UnknownOffset);
 
-    long nameIdsOffset = resourceInfo.Dummy7Offset + (resourceInfo.TypeCount * 4);
+    std::vector<std::byte> unknown(mem.begin() + resourceContainer.UnknownOffset, mem.begin() + resourceContainer.Dummy7Offset);
 
-    std::vector<std::byte> typeIds(mem.begin() + resourceInfo.Dummy7Offset, mem.begin() + nameIdsOffset);
+    long nameIdsOffset = resourceContainer.Dummy7Offset + (resourceContainer.TypeCount * 4);
 
-    std::vector<std::byte> nameIds(mem.begin() + nameIdsOffset, mem.begin() + resourceInfo.IdclOffset);
+    std::vector<std::byte> typeIds(mem.begin() + resourceContainer.Dummy7Offset, mem.begin() + nameIdsOffset);
 
-    std::vector<std::byte> idcl(mem.begin() + resourceInfo.IdclOffset, mem.begin() + resourceInfo.DataOffset);
+    std::vector<std::byte> nameIds(mem.begin() + nameIdsOffset, mem.begin() + resourceContainer.IdclOffset);
 
-    std::vector<std::byte> data(mem.begin() + resourceInfo.DataOffset, mem.begin() + fileSize);
+    std::vector<std::byte> idcl(mem.begin() + resourceContainer.IdclOffset, mem.begin() + resourceContainer.DataOffset);
+
+    std::vector<std::byte> data(mem.begin() + resourceContainer.DataOffset, mem.begin() + fileSize);
 
     int infoOldLength = info.size();
     int nameIdsOldLength = nameIds.size();
     int newChunksCount = 0;
 
-    for (Mod &mod : resourceInfo.ModList) {
-        if (mod.IsAssetsInfoJson && mod.AssetsInfo.has_value() && !mod.AssetsInfo.value().Assets.empty()) {
-            for (auto &newMod : resourceInfo.ModListNew) {
-                for (auto &assetsInfoAssets : mod.AssetsInfo.value().Assets) {
+    for (auto &modFile : resourceContainer.ModFileList) {
+        if (modFile.IsAssetsInfoJson && modFile.AssetsInfo.has_value() && !modFile.AssetsInfo.value().Assets.empty()) {
+            for (auto &newModFile : resourceContainer.NewModFileList) {
+                for (auto &assetsInfoAssets : modFile.AssetsInfo.value().Assets) {
                     if (RemoveWhitespace(assetsInfoAssets.Path).empty())
                         continue;
 
-                    if (assetsInfoAssets.Path == newMod.Name) {
-                        newMod.ResourceType = assetsInfoAssets.ResourceType;
-                        newMod.Version = (unsigned short)assetsInfoAssets.Version;
-                        newMod.StreamDbHash = assetsInfoAssets.StreamDbHash;
-                        newMod.SpecialByte1 = assetsInfoAssets.SpecialByte1;
-                        newMod.SpecialByte2 = assetsInfoAssets.SpecialByte2;
-                        newMod.SpecialByte3 = assetsInfoAssets.SpecialByte3;
+                    if (assetsInfoAssets.Path == newModFile.Name) {
+                        newModFile.ResourceType = assetsInfoAssets.ResourceType;
+                        newModFile.Version = (unsigned short)assetsInfoAssets.Version;
+                        newModFile.StreamDbHash = assetsInfoAssets.StreamDbHash;
+                        newModFile.SpecialByte1 = assetsInfoAssets.SpecialByte1;
+                        newModFile.SpecialByte2 = assetsInfoAssets.SpecialByte2;
+                        newModFile.SpecialByte3 = assetsInfoAssets.SpecialByte3;
 
-                        std::cout << "\tSet resources type " << newMod.ResourceType << " (version: " << newMod.Version.value()
-                            << ", streamdb hash: " << newMod.StreamDbHash.value() << ") for new file: " << newMod.Name << std::endl;
+                        std::cout << "\tSet resources type " << newModFile.ResourceType << " (version: " << newModFile.Version.value()
+                            << ", streamdb hash: " << newModFile.StreamDbHash.value() << ") for new file: " << newModFile.Name << std::endl;
                         break;
                     }
                 }
@@ -80,51 +83,51 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
         }
     }
 
-    for (Mod &mod : resourceInfo.ModListNew) {
-        if (resourceInfo.ContainsResourceWithName(mod.Name)) {
+    for (auto &modFile : resourceContainer.NewModFileList) {
+        if (resourceContainer.ContainsResourceWithName(modFile.Name)) {
             if (Verbose) {
-                std::cerr << RED << "WARNING: " << RESET << "Trying to add resource " << mod.Name
-                    << " that has already been added to " << resourceInfo.Name << ", skipping" << std::endl;
+                std::cerr << RED << "WARNING: " << RESET << "Trying to add resource " << modFile.Name
+                    << " that has already been added to " << resourceContainer.Name << ", skipping" << std::endl;
             }
 
             continue;
         }
 
-        if (mod.IsAssetsInfoJson || mod.IsBlangJson)
+        if (modFile.IsAssetsInfoJson || modFile.IsBlangJson)
             continue;
 
         ResourceDataEntry resourceData;
-        std::map<unsigned long, ResourceDataEntry>::iterator x = ResourceDataMap.find(CalculateResourceFileNameHash(mod.Name));
+        std::map<unsigned long, ResourceDataEntry>::iterator x = ResourceDataMap.find(CalculateResourceFileNameHash(modFile.Name));
 
         if (x != ResourceDataMap.end()) {
             resourceData = x->second;
 
-            mod.ResourceType = mod.ResourceType.empty() ? resourceData.ResourceType : mod.ResourceType;
-            mod.Version = !mod.Version.has_value() ? (unsigned short)resourceData.Version : mod.Version;
-            mod.StreamDbHash = !mod.StreamDbHash.has_value() ? resourceData.StreamDbHash : mod.StreamDbHash;
-            mod.SpecialByte1 = !mod.SpecialByte1.has_value() ? resourceData.SpecialByte1 : mod.SpecialByte1;
-            mod.SpecialByte2 = !mod.SpecialByte2.has_value() ? resourceData.SpecialByte2 : mod.SpecialByte2;
-            mod.SpecialByte3 = !mod.SpecialByte3.has_value() ? resourceData.SpecialByte3 : mod.SpecialByte3;
+            modFile.ResourceType = modFile.ResourceType.empty() ? resourceData.ResourceType : modFile.ResourceType;
+            modFile.Version = !modFile.Version.has_value() ? (unsigned short)resourceData.Version : modFile.Version;
+            modFile.StreamDbHash = !modFile.StreamDbHash.has_value() ? resourceData.StreamDbHash : modFile.StreamDbHash;
+            modFile.SpecialByte1 = !modFile.SpecialByte1.has_value() ? resourceData.SpecialByte1 : modFile.SpecialByte1;
+            modFile.SpecialByte2 = !modFile.SpecialByte2.has_value() ? resourceData.SpecialByte2 : modFile.SpecialByte2;
+            modFile.SpecialByte3 = !modFile.SpecialByte3.has_value() ? resourceData.SpecialByte3 : modFile.SpecialByte3;
         }
 
-        if (mod.ResourceType.empty() && !mod.Version.has_value() && !mod.StreamDbHash.has_value()) {
-            mod.ResourceType = "rs_streamfile";
-            mod.Version = 0;
-            mod.StreamDbHash = 0;
-            mod.SpecialByte1 = (std::byte)0;
-            mod.SpecialByte2 = (std::byte)0;
-            mod.SpecialByte3 = (std::byte)0;
+        if (modFile.ResourceType.empty() && !modFile.Version.has_value() && !modFile.StreamDbHash.has_value()) {
+            modFile.ResourceType = "rs_streamfile";
+            modFile.Version = 0;
+            modFile.StreamDbHash = 0;
+            modFile.SpecialByte1 = (std::byte)0;
+            modFile.SpecialByte2 = (std::byte)0;
+            modFile.SpecialByte3 = (std::byte)0;
 
             if (Verbose) {
-                std::cerr << RED << "WARNING: " << RESET << "No resource data found for file: " << mod.Name << std::endl;
+                std::cerr << RED << "WARNING: " << RESET << "No resource data found for file: " << modFile.Name << std::endl;
             }
         }
 
-        if (!mod.ResourceType.empty()) {
+        if (!modFile.ResourceType.empty()) {
             bool found = false;
 
-            for (auto &name : resourceInfo.NamesList) {
-                if (name.NormalizedFileName == mod.ResourceType) {
+            for (auto &name : resourceContainer.NamesList) {
+                if (name.NormalizedFileName == modFile.ResourceType) {
                     found = true;
                     break;
                 }
@@ -143,8 +146,8 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
                     }
                 }
 
-                names.resize(names.size() + mod.ResourceType.size() + 1);
-                std::copy((std::byte*)mod.ResourceType.c_str(), (std::byte*)mod.ResourceType.c_str() + mod.ResourceType.size() + 1, names.begin() + typeLastNameOffset);
+                names.resize(names.size() + modFile.ResourceType.size() + 1);
+                std::copy((std::byte*)modFile.ResourceType.c_str(), (std::byte*)modFile.ResourceType.c_str() + modFile.ResourceType.size() + 1, names.begin() + typeLastNameOffset);
 
                 long typeNewCount;
                 std::copy(nameOffsets.begin(), nameOffsets.begin() + 8, (std::byte*)&typeNewCount);
@@ -154,10 +157,10 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
                 nameOffsets.resize(nameOffsets.size() + 8);
                 std::copy((std::byte*)&typeLastNameOffset, (std::byte*)&typeLastNameOffset + 8, nameOffsets.end() - 8);
 
-                ResourceName newResourceName(mod.ResourceType, mod.ResourceType);
-                resourceInfo.NamesList.push_back(newResourceName);
+                ResourceName newResourceName(modFile.ResourceType, modFile.ResourceType);
+                resourceContainer.NamesList.push_back(newResourceName);
 
-                std::cout << "\tAdded resource type name " << mod.ResourceType << " to " << resourceInfo.Name << std::endl;
+                std::cout << "\tAdded resource type name " << modFile.ResourceType << " to " << resourceContainer.Name << std::endl;
             }
         }
 
@@ -173,9 +176,9 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
             }
         }
 
-        std::byte *nameChars = (std::byte*)mod.Name.c_str();
-        names.resize(names.size() + mod.Name.size() + 1);
-        std::copy(nameChars, nameChars + mod.Name.size() + 1, names.begin() + lastNameOffset);
+        std::byte *nameChars = (std::byte*)modFile.Name.c_str();
+        names.resize(names.size() + modFile.Name.size() + 1);
+        std::copy(nameChars, nameChars + modFile.Name.size() + 1, names.begin() + lastNameOffset);
 
         long newCount;
         std::copy(nameOffsets.begin(), nameOffsets.begin() + 8, (std::byte*)&newCount);
@@ -186,22 +189,22 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
 
         std::copy((std::byte*)&lastNameOffset, (std::byte*)&lastNameOffset + 8, nameOffsets.end() - 8);
 
-        ResourceName newResourceName(mod.Name, mod.Name);
-        resourceInfo.NamesList.push_back(newResourceName);
+        ResourceName newResourceName(modFile.Name, modFile.Name);
+        resourceContainer.NamesList.push_back(newResourceName);
 
         long placement = 0x10 - (data.size() % 0x10) + 0x30;
         data.resize(data.size() + placement);
 
-        long fileOffset = data.size() + resourceInfo.DataOffset;
-        data.resize(data.size() + mod.FileBytes.size());
-        std::copy(mod.FileBytes.begin(), mod.FileBytes.end(), data.end() - mod.FileBytes.size());
+        long fileOffset = data.size() + resourceContainer.DataOffset;
+        data.resize(data.size() + modFile.FileBytes.size());
+        std::copy(modFile.FileBytes.begin(), modFile.FileBytes.end(), data.end() - modFile.FileBytes.size());
 
-        long nameId = resourceInfo.GetResourceNameId(mod.Name);
+        long nameId = resourceContainer.GetResourceNameId(modFile.Name);
         nameIds.resize(nameIds.size() + 8);
         long nameIdOffset = (nameIds.size() / 8) - 1;
         nameIds.resize(nameIds.size() + 8);
 
-        long assetTypeNameId = resourceInfo.GetResourceNameId(mod.ResourceType);
+        long assetTypeNameId = resourceContainer.GetResourceNameId(modFile.ResourceType);
 
         if (assetTypeNameId == -1)
             assetTypeNameId = 0;
@@ -217,20 +220,20 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
         std::copy((std::byte*)&nameIdOffset, (std::byte*)&nameIdOffset + 8, info.end() - 0x70);
         std::copy((std::byte*)&fileOffset, (std::byte*)&fileOffset + 8, info.end() - 0x58);
 
-        long fileBytesSize = mod.FileBytes.size();
+        long fileBytesSize = modFile.FileBytes.size();
 
         std::copy((std::byte*)&fileBytesSize, (std::byte*)&fileBytesSize + 8, info.end() - 0x50);
         std::copy((std::byte*)&fileBytesSize, (std::byte*)&fileBytesSize + 8, info.end() - 0x48);
 
-        std::copy((std::byte*)&mod.StreamDbHash.value(), (std::byte*)&mod.StreamDbHash.value() + 8, info.end() - 0x40);
-        std::copy((std::byte*)&mod.StreamDbHash.value(), (std::byte*)&mod.StreamDbHash.value() + 8, info.end() - 0x30);
+        std::copy((std::byte*)&modFile.StreamDbHash.value(), (std::byte*)&modFile.StreamDbHash.value() + 8, info.end() - 0x40);
+        std::copy((std::byte*)&modFile.StreamDbHash.value(), (std::byte*)&modFile.StreamDbHash.value() + 8, info.end() - 0x30);
 
-        int version = mod.Version.value();
+        int version = modFile.Version.value();
         std::copy((std::byte*)&version, (std::byte*)&version + 4, info.end() - 0x28);
 
-        int SpecialByte1Int = (int)mod.SpecialByte1.value();
-        int SpecialByte2Int = (int)mod.SpecialByte2.value();
-        int SpecialByte3Int = (int)mod.SpecialByte3.value();
+        int SpecialByte1Int = (int)modFile.SpecialByte1.value();
+        int SpecialByte2Int = (int)modFile.SpecialByte2.value();
+        int SpecialByte3Int = (int)modFile.SpecialByte3.value();
 
         std::copy((std::byte*)&SpecialByte1Int, (std::byte*)&SpecialByte1Int + 4, info.end() - 0x24);
         std::copy((std::byte*)&SpecialByte2Int, (std::byte*)&SpecialByte2Int + 4, info.end() - 0x1E);
@@ -238,42 +241,42 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
 
         info[info.size() - 0x20] = (std::byte)0;
 
-        std::cout << "\tAdded " << mod.Name << std::endl;
+        std::cout << "\tAdded " << modFile.Name << std::endl;
         newChunksCount++;
     }
 
     long namesOffsetAdd = info.size() - infoOldLength;
     long newSize = nameOffsets.size() + names.size();
-    long unknownAdd = namesOffsetAdd + (newSize - resourceInfo.StringsSize);
+    long unknownAdd = namesOffsetAdd + (newSize - resourceContainer.StringsSize);
     long typeIdsAdd = unknownAdd;
     long nameIdsAdd = typeIdsAdd;
     long idclAdd = nameIdsAdd + (nameIds.size() - nameIdsOldLength);
     long dataAdd = idclAdd;
 
-    int fileCountAdd = resourceInfo.FileCount + newChunksCount;
+    int fileCountAdd = resourceContainer.FileCount + newChunksCount;
     std::copy((std::byte*)&fileCountAdd, (std::byte*)&fileCountAdd + 4, header.begin() + 0x20);
 
-    int fileCount2Add = resourceInfo.FileCount2 + newChunksCount * 2;
+    int fileCount2Add = resourceContainer.FileCount2 + newChunksCount * 2;
     std::copy((std::byte*)&fileCount2Add, (std::byte*)&fileCount2Add + 4, header.begin() + 0x2C);
 
     std::copy((std::byte*)&newSize, (std::byte*)&newSize + 4, header.begin() + 0x38);
 
-    long nameOffsetAdd = resourceInfo.NamesOffset + namesOffsetAdd;
+    long nameOffsetAdd = resourceContainer.NamesOffset + namesOffsetAdd;
     std::copy((std::byte*)&nameOffsetAdd, (std::byte*)&nameOffsetAdd + 8, header.begin() + 0x40);
 
-    long unknownOffsetAdd = resourceInfo.UnknownOffset + unknownAdd;
+    long unknownOffsetAdd = resourceContainer.UnknownOffset + unknownAdd;
     std::copy((std::byte*)&unknownOffsetAdd, (std::byte*)&unknownOffsetAdd + 8, header.begin() + 0x48);
 
-    long unknownOffsetAdd2 = resourceInfo.UnknownOffset2 + unknownAdd;
+    long unknownOffsetAdd2 = resourceContainer.UnknownOffset2 + unknownAdd;
     std::copy((std::byte*)&unknownOffsetAdd2, (std::byte*)&unknownOffsetAdd2 + 8, header.begin() + 0x58);
 
-    long dummy7OffsetAdd = resourceInfo.Dummy7Offset + typeIdsAdd;
+    long dummy7OffsetAdd = resourceContainer.Dummy7Offset + typeIdsAdd;
     std::copy((std::byte*)&dummy7OffsetAdd, (std::byte*)&dummy7OffsetAdd + 8, header.begin() + 0x60);
 
-    long dataOffsetAdd = resourceInfo.DataOffset + dataAdd;
+    long dataOffsetAdd = resourceContainer.DataOffset + dataAdd;
     std::copy((std::byte*)&dataOffsetAdd, (std::byte*)&dataOffsetAdd + 8, header.begin() + 0x68);
 
-    long idclOffsetAdd = resourceInfo.IdclOffset + idclAdd;
+    long idclOffsetAdd = resourceContainer.IdclOffset + idclAdd;
     std::copy((std::byte*)&idclOffsetAdd, (std::byte*)&idclOffsetAdd + 8, header.begin() + 0x74);
 
     info.reserve(2 * (0x38 + info.size() + 8));
@@ -291,17 +294,17 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
     long newContainerLength = header.size() + info.size() + nameOffsets.size() + names.size() + unknown.size() + typeIds.size() + nameIds.size() + idcl.size() + data.size();
 
     mem.munmap_file();
-    std::filesystem::resize_file(resourceInfo.Path, newContainerLength);
+    std::filesystem::resize_file(resourceContainer.Path, newContainerLength);
 
     try {
-        mem.mmap_file(resourceInfo.Path, mmap_allocator_namespace::READ_WRITE_SHARED, 0, newContainerLength,
+        mem.mmap_file(resourceContainer.Path, mmap_allocator_namespace::READ_WRITE_SHARED, 0, newContainerLength,
             mmap_allocator_namespace::MAP_WHOLE_FILE | mmap_allocator_namespace::ALLOW_REMAP);
                 
         if (mem.empty())
-            throw;
+            throw std::exception();
         }
     catch (...) {
-        std::cerr << RED << "ERROR: " << RESET << "Failed to load " << resourceInfo.Path << " into memory for writing"<< std::endl;
+        std::cerr << RED << "ERROR: " << RESET << "Failed to load " << resourceContainer.Path << " into memory for writing"<< std::endl;
         return;
     }
 
@@ -333,5 +336,5 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
     std::copy(data.begin(), data.end(), mem.begin() + pos);
 
     if (newChunksCount != 0)
-        std::cout << "Number of files added: " << GREEN << newChunksCount << " file(s) " << RESET << "in " << YELLOW << resourceInfo.Path << RESET << "." << std::endl;
+        std::cout << "Number of files added: " << GREEN << newChunksCount << " file(s) " << RESET << "in " << YELLOW << resourceContainer.Path << RESET << "." << std::endl;
 }

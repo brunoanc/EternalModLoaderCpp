@@ -22,7 +22,7 @@
 
 #include "EternalModLoader.hpp"
 
-std::string PathToResource(std::string name)
+std::string PathToResourceContainer(std::string name)
 {
     std::string searchPath = BasePath;
     std::string resourcePath;
@@ -65,7 +65,7 @@ std::string PathToResource(std::string name)
     return "";
 }
 
-std::string PathToSoundBank(std::string name)
+std::string PathToSoundContainer(std::string name)
 {
     std::string searchPath = BasePath + "sound/soundbanks/pc";
     std::string searchPattern = name + ".snd";

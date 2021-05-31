@@ -21,31 +21,31 @@
 
 #include "EternalModLoader.hpp"
 
-void ReadChunkInfo(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, ResourceInfo &resourceInfo)
+void ReadChunkInfo(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, ResourceContainer &resourceContainer)
 {
-    long dummy7Off = resourceInfo.Dummy7Offset + (resourceInfo.TypeCount * 4);
+    long dummy7Off = resourceContainer.Dummy7Offset + (resourceContainer.TypeCount * 4);
 
     long nameId, fileOffset, sizeOffset, sizeZ, size;
     std::byte compressionMode;
     ResourceName name;
 
-    for (int i = 0; i < resourceInfo.FileCount; i++) {
-        std::copy(mem.begin() + 0x20 + resourceInfo.InfoOffset + (0x90 * i), mem.begin() + 0x20 + resourceInfo.InfoOffset + (0x90 * i) + 8, (std::byte*)&nameId);
+    for (int i = 0; i < resourceContainer.FileCount; i++) {
+        std::copy(mem.begin() + 0x20 + resourceContainer.InfoOffset + (0x90 * i), mem.begin() + 0x20 + resourceContainer.InfoOffset + (0x90 * i) + 8, (std::byte*)&nameId);
 
-        std::copy(mem.begin() + 0x38 + resourceInfo.InfoOffset + (0x90 * i), mem.begin() + 0x38 + resourceInfo.InfoOffset + (0x90 * i) + 8, (std::byte*)&fileOffset);
+        std::copy(mem.begin() + 0x38 + resourceContainer.InfoOffset + (0x90 * i), mem.begin() + 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 8, (std::byte*)&fileOffset);
 
-        sizeOffset = 0x38 + resourceInfo.InfoOffset + (0x90 * i) + 8;
+        sizeOffset = 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 8;
 
-        std::copy(mem.begin() + 0x38 + resourceInfo.InfoOffset + (0x90 * i) + 8, mem.begin() + 0x38 + resourceInfo.InfoOffset + (0x90 * i) + 16, (std::byte*)&sizeZ);
+        std::copy(mem.begin() + 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 8, mem.begin() + 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 16, (std::byte*)&sizeZ);
 
-        std::copy(mem.begin() + 0x38 + resourceInfo.InfoOffset + (0x90 * i) + 16, mem.begin() + 0x38 + resourceInfo.InfoOffset + (0x90 * i) + 24, (std::byte*)&size);
+        std::copy(mem.begin() + 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 16, mem.begin() + 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 24, (std::byte*)&size);
 
-        compressionMode = mem[0x70 + resourceInfo.InfoOffset + 0x90 * i];
+        compressionMode = mem[0x70 + resourceContainer.InfoOffset + 0x90 * i];
 
         nameId = ((nameId + 1) * 8) + dummy7Off;
         std::copy(mem.begin() + nameId, mem.begin() + nameId + 8, (std::byte*)&nameId);
         
-        name = resourceInfo.NamesList[nameId];
+        name = resourceContainer.NamesList[nameId];
 
         ResourceChunk chunk = ResourceChunk(name, fileOffset);
         chunk.FileOffset = sizeOffset - 8;
@@ -53,10 +53,6 @@ void ReadChunkInfo(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
         chunk.SizeZ = sizeZ;
         chunk.Size = size;
         chunk.CompressionMode = compressionMode;
-        resourceInfo.ChunkList.push_back(chunk);
-
-        FILE *fp = fopen("chunkinfo2.txt", "a");
-        fprintf(fp, "%li;%li;%li;%li;%i\n", chunk.FileOffset, chunk.SizeOffset, chunk.SizeZ, chunk.Size, (int)chunk.CompressionMode);
-        fclose(fp);
+        resourceContainer.ChunkList.push_back(chunk);
     }
 }

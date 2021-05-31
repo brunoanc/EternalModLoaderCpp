@@ -61,7 +61,7 @@ std::vector<std::byte> OodleCompress(std::vector<std::byte> &decompressedData, O
 {
     if (!OodLZ_Compress) {
         if (OodleInit() == -1)
-            throw;
+            throw std::exception();
     }
 
     unsigned int compressedBufferSize = decompressedData.size() + 274 * ((decompressedData.size() + 0x3FFFF) / 0x40000);

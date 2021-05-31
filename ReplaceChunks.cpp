@@ -23,23 +23,26 @@
 #include "json/single_include/nlohmann/json.hpp"
 #include "EternalModLoader.hpp"
 
-void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, ResourceInfo &resourceInfo)
+void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, ResourceContainer &resourceContainer)
 {
     int fileCount = 0;
     const int bufferSize = 4096;
     std::byte buffer[bufferSize];
 
-    for (auto &mod : resourceInfo.ModList) {
+    std::stable_sort(resourceContainer.ModFileList.begin(), resourceContainer.ModFileList.end(),
+        [](ResourceModFile resource1, ResourceModFile resource2) { return resource1.Parent.LoadPriority > resource2.Parent.LoadPriority ? true : false; });
+
+    for (auto &modFile : resourceContainer.ModFileList) {
         ResourceChunk *chunk = NULL;
 
-        if (mod.IsAssetsInfoJson && mod.AssetsInfo.has_value()) {
-            if (!mod.AssetsInfo->Resources.empty()) {
+        if (modFile.IsAssetsInfoJson && modFile.AssetsInfo.has_value()) {
+            if (!modFile.AssetsInfo->Resources.empty()) {
                 std::string packageMapSpecPath = BasePath + PackageMapSpecJsonFileName;
                 FILE *packageMapSpecFile = fopen(packageMapSpecPath.c_str(), "rb");
 
                 if (!packageMapSpecFile) {
                     std::cerr << RED << "ERROR: " << RESET << packageMapSpecPath << " not found while trying to add extra resources for level "
-                        << resourceInfo.Name << std::endl;
+                        << resourceContainer.Name << std::endl;
                 }
                 else {
                     long filesize = std::filesystem::file_size(packageMapSpecPath);
@@ -47,7 +50,7 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
 
                     if (fread(packageMapSpecBytes.data(), 1, filesize, packageMapSpecFile) != filesize) {
                         std::cerr << RED << "ERROR: " << RESET << "Failed to read data from " << packageMapSpecPath
-                            << " while trying to add extra resources for level " << resourceInfo.Name << std::endl;
+                            << " while trying to add extra resources for level " << resourceContainer.Name << std::endl;
                         continue;
                     }
 
@@ -64,12 +67,12 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
                         continue;
                     }
 
-                    for (auto &extraResource : mod.AssetsInfo->Resources) {
-                        std::string extraResourcePath = PathToResource(extraResource.Name);
+                    for (auto &extraResource : modFile.AssetsInfo->Resources) {
+                        std::string extraResourcePath = PathToResourceContainer(extraResource.Name);
 
                         if (extraResourcePath.empty()) {
                             std::cerr << RED << "WARNING: " << RESET << "Trying to add non-existing extra resource " << extraResource.Name
-                                << " to " << resourceInfo.Name << ", skipping" << std::endl;
+                                << " to " << resourceContainer.Name << ", skipping" << std::endl;
                             continue;
                         }
 
@@ -83,7 +86,7 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
                             }
                         }
 
-                        std::string modNameStem = std::filesystem::path(mod.Name).stem();
+                        std::string modNameStem = std::filesystem::path(modFile.Name).stem();
 
                         for (int i = 0; i < packageMapSpec.Maps.size(); i++) {
                             if (packageMapSpec.Maps[i].Name.find(modNameStem) != std::string::npos) {
@@ -98,7 +101,7 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
                         }
 
                         if (mapIndex == -1) {
-                            std::cerr << RED << "ERROR: " << RESET << "Map reference not found for " << mod.Name << ", skipping" << std::endl;
+                            std::cerr << RED << "ERROR: " << RESET << "Map reference not found for " << modFile.Name << ", skipping" << std::endl;
                             continue;
                         }
 
@@ -149,7 +152,7 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
                         }
 
                         if (!extraResource.PlaceByName.empty()) {
-                            std::string placeBeforeResourcePath = PathToResource(extraResource.Name);
+                            std::string placeBeforeResourcePath = PathToResourceContainer(extraResource.Name);
 
                             if (placeBeforeResourcePath.empty()) {
                                 std::cerr << RED << "WARNING: " << RESET << "placeByName resource " << extraResource.PlaceByName
@@ -188,19 +191,19 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
 
                         if (!packageMapSpecFile) {
                             std::cerr << RED << "ERROR: " << RESET << "Failed to write to " << packageMapSpecPath
-                                << "while trying to add extra resources for level " << resourceInfo.Name << std::endl;
+                                << "while trying to add extra resources for level " << resourceContainer.Name << std::endl;
                         }
 
                         try {
                             std::string newPackageMapSpecJson = packageMapSpec.Dump();
 
                             if (fwrite(newPackageMapSpecJson.c_str(), 1, newPackageMapSpecJson.size(), packageMapSpecFile) != newPackageMapSpecJson.size()) {
-                                throw;
+                                throw std::exception();
                             }
                         }
                         catch (...) {
                             std::cerr << RED << "ERROR: " << RESET << "Failed to write to " << packageMapSpecPath
-                                << "while trying to add extra resources for level " << resourceInfo.Name << std::endl;
+                                << "while trying to add extra resources for level " << resourceContainer.Name << std::endl;
                             continue;
                         }
 
@@ -212,14 +215,14 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
                 }
             }
 
-            if (mod.AssetsInfo->Assets.empty() && mod.AssetsInfo->Maps.empty() && mod.AssetsInfo->Layers.empty())
+            if (modFile.AssetsInfo->Assets.empty() && modFile.AssetsInfo->Maps.empty() && modFile.AssetsInfo->Layers.empty())
                 continue;
 
-            std::vector<std::string> assetsInfoFilenameParts = SplitString(mod.Name, '/');
+            std::vector<std::string> assetsInfoFilenameParts = SplitString(modFile.Name, '/');
             std::string mapResourcesFileName = assetsInfoFilenameParts[assetsInfoFilenameParts.size() - 1];
             mapResourcesFileName = mapResourcesFileName.substr(0, mapResourcesFileName.size() - 4) + "mapresources";
 
-            for (auto &resourceChunk : resourceInfo.ChunkList) {
+            for (auto &resourceChunk : resourceContainer.ChunkList) {
                 std::vector<std::string> nameParts = SplitString(resourceChunk.ResourceName.FullFileName, '/');
 
                 if (nameParts[nameParts.size() - 1] == mapResourcesFileName) {
@@ -230,7 +233,7 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
 
             if (chunk == NULL) {
                 std::cerr << RED << "ERROR: " << RESET << "Failed to find the .mapresources counterpart for AssetsInfo file: "
-                    << mod.Name << " - please check that the name for the AssetsInfo file is correct" << std::endl;
+                    << modFile.Name << " - please check that the name for the AssetsInfo file is correct" << std::endl;
                 continue;
             }
 
@@ -247,7 +250,7 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
                 decompressedMapResources = OodleDecompress(mapResourcesBytes, chunk->Size);
 
                 if (decompressedMapResources.empty())
-                    throw;
+                    throw std::exception();
             }
             catch (...) {
                 std::cerr << RED << "ERROR: " << RESET << "Failed to decompress " << chunk->ResourceName.NormalizedFileName << std::endl;
@@ -270,8 +273,8 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
                 continue;
             }
 
-            if (!mod.AssetsInfo->Layers.empty()) {
-                for (auto &newLayers : mod.AssetsInfo->Layers) {
+            if (!modFile.AssetsInfo->Layers.empty()) {
+                for (auto &newLayers : modFile.AssetsInfo->Layers) {
                     if (std::find(mapResourcesFile.Layers.begin(), mapResourcesFile.Layers.end(), newLayers.Name) != mapResourcesFile.Layers.end()) {
                         if (Verbose) {
                             std::cerr << RED << "ERROR: " << RESET << "Trying to add layer " << newLayers.Name << " that has already been added in "
@@ -283,12 +286,12 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
 
                     mapResourcesFile.Layers.push_back(newLayers.Name);
                     std::cout << "\tAdded layer " << newLayers.Name << " to " << chunk->ResourceName.NormalizedFileName
-                        << " in " << resourceInfo.Name << "" << std::endl;
+                        << " in " << resourceContainer.Name << "" << std::endl;
                 }
             }
 
-            if (!mod.AssetsInfo->Maps.empty()) {
-                for (auto &newMaps : mod.AssetsInfo->Maps) {
+            if (!modFile.AssetsInfo->Maps.empty()) {
+                for (auto &newMaps : modFile.AssetsInfo->Maps) {
                     if (std::find(mapResourcesFile.Maps.begin(), mapResourcesFile.Maps.end(), newMaps.Name) != mapResourcesFile.Maps.end()) {
                         if (Verbose) {
                             std::cerr << RED << "ERROR: " << RESET << "Trying to add map " << newMaps.Name <<" that has already been added in "
@@ -299,15 +302,15 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
                     }
 
                     mapResourcesFile.Maps.push_back(newMaps.Name);
-                    std::cout << "Added map " << newMaps.Name << " to " << chunk->ResourceName.NormalizedFileName << " in " << resourceInfo.Name << std::endl;
+                    std::cout << "Added map " << newMaps.Name << " to " << chunk->ResourceName.NormalizedFileName << " in " << resourceContainer.Name << std::endl;
                 }
             }
 
-            if (!mod.AssetsInfo->Assets.empty()) {
-                for (auto &newAsset : mod.AssetsInfo->Assets) {
+            if (!modFile.AssetsInfo->Assets.empty()) {
+                for (auto &newAsset : modFile.AssetsInfo->Assets) {
                     if (RemoveWhitespace(newAsset.Name).empty() || RemoveWhitespace(newAsset.MapResourceType).empty()) {
                         if (Verbose)
-                            std::cerr << "WARNING: " << "Skipping empty resource declaration in " << mod.Name << std::endl;
+                            std::cerr << "WARNING: " << "Skipping empty resource declaration in " << modFile.Name << std::endl;
 
                         continue;
                     }
@@ -337,7 +340,7 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
 
                         if (assetFound) {
                             std::cout << "\tRemoved asset " << newAsset.Name << " with type " << newAsset.MapResourceType <<
-                                " from " << chunk->ResourceName.NormalizedFileName << " in " << resourceInfo.Name << std::endl;
+                                " from " << chunk->ResourceName.NormalizedFileName << " in " << resourceContainer.Name << std::endl;
                         }
                         else {
                             std::cerr << RED << "WARNING: " << RESET << "Can't remove asset " << newAsset.Name << " with type " << newAsset.MapResourceType <<
@@ -380,7 +383,7 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
                         assetTypeIndex = mapResourcesFile.AssetTypes.size() - 1;
 
                         std::cout << "Added asset type " << newAsset.MapResourceType << " to " <<
-                            chunk->ResourceName.NormalizedFileName << " in " << resourceInfo.Name << std::endl;
+                            chunk->ResourceName.NormalizedFileName << " in " << resourceContainer.Name << std::endl;
                     }
 
                     MapAsset placeByExistingAsset;
@@ -427,7 +430,7 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
 
                     if (Verbose && found) {
                         std::cout << "\tAsset " << newAsset.Name << " with type " << newAsset.MapResourceType << " will be added before asset " << placeByExistingAsset.Name << " with type "
-                            << mapResourcesFile.AssetTypes[placeByExistingAsset.AssetTypeIndex] << " to " << chunk->ResourceName.NormalizedFileName << " in "<< resourceInfo.Name << std::endl;
+                            << mapResourcesFile.AssetTypes[placeByExistingAsset.AssetTypeIndex] << " to " << chunk->ResourceName.NormalizedFileName << " in "<< resourceContainer.Name << std::endl;
                     }
 
                     MapAsset newMapAsset;
@@ -437,7 +440,7 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
 
                     mapResourcesFile.Assets.insert(mapResourcesFile.Assets.begin() + assetPosition, newMapAsset);
 
-                    std::cout << "\tAdded asset " << newAsset.Name << " with type " << newAsset.MapResourceType << " to " << chunk->ResourceName.NormalizedFileName << " in " << resourceInfo.Name << std::endl;
+                    std::cout << "\tAdded asset " << newAsset.Name << " with type " << newAsset.MapResourceType << " to " << chunk->ResourceName.NormalizedFileName << " in " << resourceContainer.Name << std::endl;
                 }
             }
 
@@ -449,7 +452,7 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
                 compressedMapResources = OodleCompress(decompressedMapResources, Kraken, Normal);
 
                 if (compressedMapResources.empty())
-                    throw;
+                    throw std::exception();
             }
             catch (...) {
                 std::cerr << RED << "ERROR: " << RESET << "Failed to compress " << chunk->ResourceName.NormalizedFileName << std::endl;
@@ -458,27 +461,27 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
 
             chunk->Size = decompressedMapResources.size();
             chunk->SizeZ = compressedMapResources.size();
-            mod.UncompressedSize = decompressedMapResources.size();
-            mod.FileBytes = compressedMapResources;
+            modFile.UncompressedSize = decompressedMapResources.size();
+            modFile.FileBytes = compressedMapResources;
         }
-        else if (mod.IsBlangJson) {
-            mod.Name = mod.Name.substr(mod.Name.find('/') + 1);
-            mod.Name = std::filesystem::path(mod.Name).replace_extension(".blang");
+        else if (modFile.IsBlangJson) {
+            modFile.Name = modFile.Name.substr(modFile.Name.find('/') + 1);
+            modFile.Name = std::filesystem::path(modFile.Name).replace_extension(".blang");
 
-            chunk = GetChunk(mod.Name, resourceInfo);
+            chunk = GetChunk(modFile.Name, resourceContainer);
 
             if (chunk == NULL)
                 continue;
         }
         else {
-            chunk = GetChunk(mod.Name, resourceInfo);
+            chunk = GetChunk(modFile.Name, resourceContainer);
 
             if (chunk == NULL) {
-                Mod newMod(mod.Name);
-                newMod.FileBytes = mod.FileBytes;
-                resourceInfo.ModListNew.push_back(newMod);
+                ResourceModFile newModFile(modFile.Parent, modFile.Name);
+                newModFile.FileBytes = modFile.FileBytes;
+                resourceContainer.NewModFileList.push_back(newModFile);
 
-                std::map<unsigned long, ResourceDataEntry>::iterator x = ResourceDataMap.find(CalculateResourceFileNameHash(mod.Name));
+                std::map<unsigned long, ResourceDataEntry>::iterator x = ResourceDataMap.find(CalculateResourceFileNameHash(modFile.Name));
 
                 if (x == ResourceDataMap.end())
                     continue;
@@ -488,18 +491,18 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
                 if (resourceData.MapResourceName.empty()) {
                     if (RemoveWhitespace(resourceData.MapResourceType).empty()) {
                         if (Verbose)
-                            std::cerr << "WARNING: " << "Mapresources data for asset " << mod.Name << " is null, skipping" << std::endl;
+                            std::cerr << "WARNING: " << "Mapresources data for asset " << modFile.Name << " is null, skipping" << std::endl;
 
                         continue;
                     }
                     else {
-                        resourceData.MapResourceName = mod.Name;
+                        resourceData.MapResourceName = modFile.Name;
                     }
                 }
 
-                for (auto &file : resourceInfo.ChunkList) {
+                for (auto &file : resourceContainer.ChunkList) {
                     if (EndsWith(file.ResourceName.NormalizedFileName, ".mapresources")) {
-                        if (resourceInfo.Name.rfind("gameresources", 0) == 0
+                        if (resourceContainer.Name.rfind("gameresources", 0) == 0
                             && EndsWith(file.ResourceName.NormalizedFileName, "init.mapresources"))
                                 continue;
 
@@ -523,7 +526,7 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
                     decompressedMapResources = OodleDecompress(mapResourcesBytes, chunk->Size);
 
                     if (decompressedMapResources.empty())
-                        throw;
+                        throw std::exception();
                 }
                 catch (...) {
                     std::cerr << RED << "ERROR: " << RESET << "Failed to decompress " << chunk->ResourceName.NormalizedFileName << std::endl;
@@ -578,7 +581,7 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
                     assetTypeIndex = mapResourcesFile.AssetTypes.size() - 1;
 
                     std::cout << "\tAdded asset type " << resourceData.MapResourceType << " to "
-                        << chunk->ResourceName.NormalizedFileName << " in " << resourceInfo.Name << std::endl;
+                        << chunk->ResourceName.NormalizedFileName << " in " << resourceContainer.Name << std::endl;
                 }
 
                 MapAsset newMapAsset;
@@ -588,7 +591,7 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
                 mapResourcesFile.Assets.push_back(newMapAsset);
 
                 std::cout << "\tAdded asset " << resourceData.MapResourceName << " with type " << resourceData.MapResourceType
-                    << " to " << chunk->ResourceName.NormalizedFileName << " in " << resourceInfo.Name << std::endl;
+                    << " to " << chunk->ResourceName.NormalizedFileName << " in " << resourceContainer.Name << std::endl;
 
                 decompressedMapResources = mapResourcesFile.ToByteVector();
                 std::vector<std::byte> compressedMapResources;
@@ -597,7 +600,7 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
                     compressedMapResources = OodleCompress(decompressedMapResources, Kraken, Normal);
 
                     if (compressedMapResources.empty())
-                        throw;
+                        throw std::exception();
                 }
                 catch (...) {
                     std::cerr << RED << "ERROR: " << RESET << "Failed to compress " << chunk->ResourceName.NormalizedFileName << std::endl;
@@ -607,9 +610,9 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
                 chunk->Size = decompressedMapResources.size();
                 chunk->SizeZ = compressedMapResources.size();
 
-                mod.IsAssetsInfoJson = true;
-                mod.UncompressedSize = decompressedMapResources.size();
-                mod.FileBytes = compressedMapResources;
+                modFile.IsAssetsInfoJson = true;
+                modFile.UncompressedSize = decompressedMapResources.size();
+                modFile.FileBytes = compressedMapResources;
             }
         }
 
@@ -617,43 +620,43 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
         std::copy(mem.begin() + chunk->FileOffset, mem.begin() + chunk->FileOffset + 8, (std::byte*)&fileOffset);
         std::copy(mem.begin() + chunk->FileOffset + 8, mem.begin() + chunk->FileOffset + 16, (std::byte*)&size);
 
-        long sizeDiff = mod.FileBytes.size() - size;
+        long sizeDiff = modFile.FileBytes.size() - size;
 
-        if (mod.IsBlangJson) {
+        if (modFile.IsBlangJson) {
             nlohmann::json blangJson;
 
             try {
-                blangJson = nlohmann::json::parse(std::string((char*)mod.FileBytes.data(), mod.FileBytes.size()));
+                blangJson = nlohmann::json::parse(std::string((char*)modFile.FileBytes.data(), modFile.FileBytes.size()));
 
                 if (blangJson == NULL || blangJson["strings"].empty())
-                    throw;
+                    throw std::exception();
 
                 for (auto &blangJsonString : blangJson["strings"]) {
                     if (blangJsonString == NULL || blangJsonString["name"].empty())
-                        throw;
+                        throw std::exception();
                 }
             }
             catch (...) {
-                std::cerr << RED << "ERROR: " << RESET << "Failed to parse EternalMod/strings/" << std::filesystem::path(mod.Name).replace_extension(".json").string() << std::endl;
+                std::cerr << RED << "ERROR: " << RESET << "Failed to parse EternalMod/strings/" << std::filesystem::path(modFile.Name).replace_extension(".json").string() << std::endl;
                 continue;
             }
 
             std::vector<std::byte> blangFileBytes(mem.begin() + fileOffset, mem.begin() + fileOffset + size);
 
-            std::vector<std::byte> decryptedBlangFileBytes = IdCrypt(blangFileBytes, mod.Name, true);
+            std::vector<std::byte> decryptedBlangFileBytes = IdCrypt(blangFileBytes, modFile.Name, true);
 
             if (decryptedBlangFileBytes.empty()) {
-                std::cerr << RED << "ERROR: " << RESET << "Failed to decrypt " << resourceInfo.Name << "/" << mod.Name << std::endl;
+                std::cerr << RED << "ERROR: " << RESET << "Failed to decrypt " << resourceContainer.Name << "/" << modFile.Name << std::endl;
                 continue;
             }
 
             BlangFile blangFile;
 
             try {
-                blangFile = ParseBlang(decryptedBlangFileBytes, resourceInfo.Name);
+                blangFile = ParseBlang(decryptedBlangFileBytes, resourceContainer.Name);
             }
             catch (...) {
-                std::cerr << RED << "ERROR: " << RESET << "Failed to parse " << resourceInfo.Name << "/" << mod.Name << std::endl;
+                std::cerr << RED << "ERROR: " << RESET << "Failed to parse " << resourceContainer.Name << "/" << modFile.Name << std::endl;
                 continue;
             }
 
@@ -665,7 +668,7 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
                         stringFound = true;
                         blangString.Text = blangJsonString["text"];
 
-                        std::cout << "\tReplaced " << blangString.Identifier << " in " << mod.Name << std::endl;
+                        std::cout << "\tReplaced " << blangString.Identifier << " in " << modFile.Name << std::endl;
                         break;
                     }
                 }
@@ -677,34 +680,34 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
                 newBlangString.Identifier = blangJsonString["name"];
                 newBlangString.Text = blangJsonString["text"];
 
-                std::cout << "\tAdded " << blangJsonString["name"].get<std::string>() << " in " << mod.Name << std::endl;
+                std::cout << "\tAdded " << blangJsonString["name"].get<std::string>() << " in " << modFile.Name << std::endl;
             }
 
-            std::vector<std::byte> cryptDataBuffer = WriteBlangToVector(blangFile, resourceInfo.Name);
-            std::vector<std::byte> encryptedBlangFileBytes = IdCrypt(cryptDataBuffer, mod.Name, false);
+            std::vector<std::byte> cryptDataBuffer = WriteBlangToVector(blangFile, resourceContainer.Name);
+            std::vector<std::byte> encryptedBlangFileBytes = IdCrypt(cryptDataBuffer, modFile.Name, false);
 
             if (encryptedBlangFileBytes.empty()) {
-                std::cerr << RED << "ERROR: " << RESET << "Failed to re-encrypt " << resourceInfo.Name << "/" << mod.Name << std::endl;
+                std::cerr << RED << "ERROR: " << RESET << "Failed to re-encrypt " << resourceContainer.Name << "/" << modFile.Name << std::endl;
                 continue;
             }
 
-            mod.FileBytes = encryptedBlangFileBytes;
+            modFile.FileBytes = encryptedBlangFileBytes;
         }
 
         if (sizeDiff > 0) {
             long length = mem.size();
             mem.munmap_file();
-            std::filesystem::resize_file(resourceInfo.Path, length + sizeDiff);
+            std::filesystem::resize_file(resourceContainer.Path, length + sizeDiff);
 
             try {
-                mem.mmap_file(resourceInfo.Path, mmap_allocator_namespace::READ_WRITE_SHARED, 0, length + sizeDiff,
+                mem.mmap_file(resourceContainer.Path, mmap_allocator_namespace::READ_WRITE_SHARED, 0, length + sizeDiff,
                     mmap_allocator_namespace::MAP_WHOLE_FILE | mmap_allocator_namespace::ALLOW_REMAP);
                 
                 if (mem.empty())
-                    throw;
+                    throw std::exception();
             }
             catch (...) {
-                std::cerr << RED << "ERROR: " << RESET << "Failed to load " << resourceInfo.Path << " into memory for writing"<< std::endl;
+                std::cerr << RED << "ERROR: " << RESET << "Failed to load " << resourceContainer.Path << " into memory for writing"<< std::endl;
                 return;
             }
 
@@ -718,47 +721,47 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
                 std::copy(buffer, buffer + toRead, mem.begin() + length + sizeDiff);
             }
 
-            std::copy(mod.FileBytes.begin(), mod.FileBytes.end(), mem.begin() + fileOffset);
+            std::copy(modFile.FileBytes.begin(), modFile.FileBytes.end(), mem.begin() + fileOffset);
         }
         else {
-            std::copy(mod.FileBytes.begin(), mod.FileBytes.end(), mem.begin() + fileOffset);
+            std::copy(modFile.FileBytes.begin(), modFile.FileBytes.end(), mem.begin() + fileOffset);
 
             if (sizeDiff < 0) {
                 std::byte emptyArray[-sizeDiff];
                 std::memset(emptyArray, 0, -sizeDiff);
 
-                std::copy(emptyArray, emptyArray - sizeDiff, mem.begin() + fileOffset + mod.FileBytes.size());
+                std::copy(emptyArray, emptyArray - sizeDiff, mem.begin() + fileOffset + modFile.FileBytes.size());
             }
         }
 
-        long modFileBytesSize = mod.FileBytes.size();
+        long modFileBytesSize = modFile.FileBytes.size();
         std::copy((std::byte*)&modFileBytesSize, (std::byte*)&modFileBytesSize + 8, mem.begin() + chunk->SizeOffset);
         
-        bool isMapResources = mod.IsAssetsInfoJson && mod.UncompressedSize != 0 && !mod.FileBytes.empty();
-        long uncompressedSize = isMapResources ? mod.UncompressedSize : mod.FileBytes.size();
+        bool isMapResources = modFile.IsAssetsInfoJson && modFile.UncompressedSize != 0 && !modFile.FileBytes.empty();
+        long uncompressedSize = isMapResources ? modFile.UncompressedSize : modFile.FileBytes.size();
         std::copy((std::byte*)&uncompressedSize, (std::byte*)&uncompressedSize + 8, mem.begin() + chunk->SizeOffset + 8);
 
         mem[chunk->SizeOffset + 0x30] = isMapResources ? chunk->CompressionMode : (std::byte)0;
 
         if (sizeDiff > 0) {
-            std::vector<ResourceChunk>::iterator x = std::find(resourceInfo.ChunkList.begin(), resourceInfo.ChunkList.end(), *chunk);
-            int index = std::distance(resourceInfo.ChunkList.begin(), x);
+            std::vector<ResourceChunk>::iterator x = std::find(resourceContainer.ChunkList.begin(), resourceContainer.ChunkList.end(), *chunk);
+            int index = std::distance(resourceContainer.ChunkList.begin(), x);
 
-            for (int i = index + 1; i < resourceInfo.ChunkList.size(); i++) {
-                std::copy(mem.begin() + resourceInfo.ChunkList[i].FileOffset, mem.begin() + resourceInfo.ChunkList[i].FileOffset + 8, (std::byte*)&fileOffset);
+            for (int i = index + 1; i < resourceContainer.ChunkList.size(); i++) {
+                std::copy(mem.begin() + resourceContainer.ChunkList[i].FileOffset, mem.begin() + resourceContainer.ChunkList[i].FileOffset + 8, (std::byte*)&fileOffset);
 
                 long fileOffsetSizeDir = fileOffset + sizeDiff;
-                std::copy((std::byte*)&fileOffsetSizeDir, (std::byte*)&fileOffsetSizeDir + 8, mem.begin() + resourceInfo.ChunkList[i].FileOffset);
+                std::copy((std::byte*)&fileOffsetSizeDir, (std::byte*)&fileOffsetSizeDir + 8, mem.begin() + resourceContainer.ChunkList[i].FileOffset);
             }
 
         }
 
-        if (!mod.IsBlangJson && !mod.IsAssetsInfoJson) {
-            std::cout << "\tReplaced " << mod.Name << std::endl;
+        if (!modFile.IsBlangJson && !modFile.IsAssetsInfoJson) {
+            std::cout << "\tReplaced " << modFile.Name << std::endl;
             fileCount++;
         }
     }
     
     if (fileCount > 0)
-        std::cout << "Number of files replaced: " << GREEN << fileCount << " file(s) " << RESET << "in " << YELLOW << resourceInfo.Path << RESET << "." << std::endl;
+        std::cout << "Number of files replaced: " << GREEN << fileCount << " file(s) " << RESET << "in " << YELLOW << resourceContainer.Path << RESET << "." << std::endl;
 }

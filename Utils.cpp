@@ -23,29 +23,29 @@
 
 #include "EternalModLoader.hpp"
 
-int GetResourceInfo(std::string resourceName)
+int GetResourceContainer(std::string &resourceContainerName)
 {
-    for (int i = 0; i < ResourceList.size(); i++) {
-        if (ResourceList[i].Name == resourceName)
+    for (int i = 0; i < ResourceContainerList.size(); i++) {
+        if (ResourceContainerList[i].Name == resourceContainerName)
             return i;
     }
 
     return -1;
 }
 
-int GetSoundBankInfo(std::string soundBankName)
+int GetSoundContainer(std::string &soundContainerName)
 {
-    for (int i = 0; i < SoundBankList.size(); i++) {
-        if (SoundBankList[i].Name == soundBankName)
+    for (int i = 0; i < SoundContainerList.size(); i++) {
+        if (SoundContainerList[i].Name == soundContainerName)
             return i;
     }
 
     return -1;
 }
 
-ResourceChunk *GetChunk(std::string name, ResourceInfo &resource)
+ResourceChunk *GetChunk(std::string name, ResourceContainer &resourceContainer)
 {
-    for (auto &chunk : resource.ChunkList) {
+    for (auto &chunk : resourceContainer.ChunkList) {
         if (chunk.ResourceName.FullFileName == name
             || chunk.ResourceName.NormalizedFileName == name) {
                 return &chunk;

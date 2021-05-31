@@ -21,7 +21,7 @@
 
 #include "EternalModLoader.hpp"
 
-void ReadResource(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, ResourceInfo &resourceInfo)
+void ReadResource(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, ResourceContainer &resourceContainer)
 {
     int fileCount;
     std::copy(mem.begin() + 0x20, mem.begin() + 0x24, (std::byte*)&fileCount);
@@ -83,20 +83,20 @@ void ReadResource(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Re
         currentNameBytes.push_back(currentByte);
     }
 
-    resourceInfo.FileCount = fileCount;
-    resourceInfo.TypeCount = dummy2Num;
-    resourceInfo.StringsSize = stringsSize;
-    resourceInfo.NamesOffset = namesOffset;
-    resourceInfo.InfoOffset = infoOffset;
-    resourceInfo.Dummy7Offset = dummy7OffOrg;
-    resourceInfo.DataOffset = dataOff;
-    resourceInfo.IdclOffset = idclOff;
-    resourceInfo.UnknownCount = unknownCount;
-    resourceInfo.FileCount2 = fileCount * 2;
-    resourceInfo.NamesOffsetEnd = namesOffsetEnd;
-    resourceInfo.UnknownOffset = namesEnd;
-    resourceInfo.UnknownOffset2 = namesEnd;
-    resourceInfo.NamesList = namesList;
+    resourceContainer.FileCount = fileCount;
+    resourceContainer.TypeCount = dummy2Num;
+    resourceContainer.StringsSize = stringsSize;
+    resourceContainer.NamesOffset = namesOffset;
+    resourceContainer.InfoOffset = infoOffset;
+    resourceContainer.Dummy7Offset = dummy7OffOrg;
+    resourceContainer.DataOffset = dataOff;
+    resourceContainer.IdclOffset = idclOff;
+    resourceContainer.UnknownCount = unknownCount;
+    resourceContainer.FileCount2 = fileCount * 2;
+    resourceContainer.NamesOffsetEnd = namesOffsetEnd;
+    resourceContainer.UnknownOffset = namesEnd;
+    resourceContainer.UnknownOffset2 = namesEnd;
+    resourceContainer.NamesList = namesList;
 
-    ReadChunkInfo(mem, resourceInfo);
+    ReadChunkInfo(mem, resourceContainer);
 }
