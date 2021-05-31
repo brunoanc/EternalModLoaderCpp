@@ -153,7 +153,8 @@ int main(int argc, char **argv)
                         if (mod.RequiredVersion > Version) {
                             std::cerr << RED << "WARNING: " << RESET << "Mod " << std::filesystem::path(zippedMod).filename().string() << " requires mod loader version "
                                 << mod.RequiredVersion << " but the current mod loader version is " << Version << ", skipping" << std::endl;
-                            continue;
+                            zippedModCount = 0;
+                            break;
                         }
                     }
                     catch (...) {
@@ -277,7 +278,7 @@ int main(int argc, char **argv)
             }
         }
             
-        if (zippedModCount > 0 && !(listResources))
+        if (zippedModCount > 0 && !listResources)
             std::cout << "Found " << BLUE << zippedModCount << " file(s) " << RESET << "in archive " << YELLOW << zippedMod << RESET << "..." << std::endl;
 
         modZip.close();
