@@ -57,6 +57,9 @@ public:
     std::optional<unsigned long> StreamDbHash = std::nullopt;
     std::string ResourceType;
     std::optional<unsigned short> Version = std::nullopt;
+    bool PlaceBefore = false;
+    std::string PlaceByName;
+    std::string PlaceByType;
     std::optional<std::byte> SpecialByte1 = std::nullopt;
     std::optional<std::byte> SpecialByte2 = std::nullopt;
     std::optional<std::byte> SpecialByte3 = std::nullopt;

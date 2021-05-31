@@ -76,9 +76,6 @@ AssetsInfo::AssetsInfo(std::string &json)
     for (auto &asset : assetsInfoJson["assets"]) {
         AssetsInfoAsset assetsInfoAsset;
 
-        if (asset.contains("path"))
-            assetsInfoAsset.Path = asset["path"].get<std::string>();
-
         if (asset.contains("streamDbHash"))
             assetsInfoAsset.StreamDbHash = asset["streamDbHash"].get<unsigned long>();
 

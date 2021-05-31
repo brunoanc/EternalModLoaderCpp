@@ -42,7 +42,6 @@ public:
 
 class AssetsInfoAsset {
 public:
-    std::string Path;
     unsigned long StreamDbHash = 0;
     std::string ResourceType;
     std::byte Version = (std::byte)0;

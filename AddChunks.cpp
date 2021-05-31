@@ -63,19 +63,28 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
         if (modFile.IsAssetsInfoJson && modFile.AssetsInfo.has_value() && !modFile.AssetsInfo.value().Assets.empty()) {
             for (auto &newModFile : resourceContainer.NewModFileList) {
                 for (auto &assetsInfoAssets : modFile.AssetsInfo.value().Assets) {
-                    if (RemoveWhitespace(assetsInfoAssets.Path).empty())
-                        continue;
+                    std::string normalPath = assetsInfoAssets.Name;
+                    std::string declPath = normalPath;
 
-                    if (assetsInfoAssets.Path == newModFile.Name) {
-                        newModFile.ResourceType = assetsInfoAssets.ResourceType;
+                    if (!assetsInfoAssets.MapResourceType.empty())
+                        declPath = "generated/decls/" + ToLower(assetsInfoAssets.MapResourceType) + "/" + assetsInfoAssets.Name + ".decl";
+
+                    if (newModFile.Name == declPath || newModFile.Name == normalPath) {
+                        newModFile.ResourceType = assetsInfoAssets.ResourceType.empty() ? "rs_streamfile" : assetsInfoAssets.ResourceType;
                         newModFile.Version = (unsigned short)assetsInfoAssets.Version;
                         newModFile.StreamDbHash = assetsInfoAssets.StreamDbHash;
                         newModFile.SpecialByte1 = assetsInfoAssets.SpecialByte1;
                         newModFile.SpecialByte2 = assetsInfoAssets.SpecialByte2;
                         newModFile.SpecialByte3 = assetsInfoAssets.SpecialByte3;
+                        newModFile.PlaceBefore = assetsInfoAssets.PlaceBefore;
+                        newModFile.PlaceByName = assetsInfoAssets.PlaceByName;
+                        newModFile.PlaceByType = assetsInfoAssets.PlaceByType;
 
-                        std::cout << "\tSet resources type " << newModFile.ResourceType << " (version: " << newModFile.Version.value()
-                            << ", streamdb hash: " << newModFile.StreamDbHash.value() << ") for new file: " << newModFile.Name << std::endl;
+                        if (Verbose) {
+                            std::cout << "\tSet resources type " << newModFile.ResourceType << " (version: " << newModFile.Version.value()
+                                << ", streamdb hash: " << newModFile.StreamDbHash.value() << ") for new file: " << newModFile.Name << std::endl;
+                        }
+
                         break;
                     }
                 }
@@ -212,34 +221,92 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
         std::copy((std::byte*)&assetTypeNameId, (std::byte*)&assetTypeNameId + 8, nameIds.end() - 16);
         std::copy((std::byte*)&nameId, (std::byte*)&nameId + 8, nameIds.end() - 8);
 
+        long newInfoSectionOffset = -1;
+
+        if (!modFile.PlaceByName.empty()) {
+            long existingNameId = -1;
+            long existingNameOffset = -1;
+
+            if (!modFile.PlaceByType.empty()) {
+                existingNameId = resourceContainer.GetResourceNameId("generated/decls/" + ToLower(modFile.PlaceByType) + "/" + modFile.PlaceByName + ".decl");
+            }
+
+            if (existingNameId == -1) {
+                existingNameId = resourceContainer.GetResourceNameId(modFile.PlaceByName);
+            }
+
+            if (existingNameId != -1) {
+                for (int i = 0, j = nameIds.size() / 8; i < j; i++) {
+                    long currentNameId;
+                    std::copy(nameIds.begin() + i * 8, nameIds.begin() + i * 8 + 8, (std::byte*)&currentNameId);
+
+                    if (currentNameId == existingNameId) {
+                        existingNameOffset = i - 1;
+                        break;
+                    }
+                }
+
+                if (existingNameOffset != -1) {
+                    int pos = 0;
+
+                    for (int i = 0, j = info.size() / 0x90; i < j; i++) {
+                        pos += 32;
+                        long nameOffset;
+                        std::copy(info.begin() + pos, info.begin() + pos + 8, (std::byte*)&nameOffset);
+                        pos += 0x70 - 8;
+
+                        if (nameOffset == existingNameOffset) {
+                            newInfoSectionOffset = i * 0x90;
+
+                            if (!modFile.PlaceBefore)
+                                newInfoSectionOffset += 0x90;
+
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
         std::byte lastInfo[0x90];
         std::copy(info.end() - 0x90, info.end(), lastInfo);
-        info.resize(info.size() + 0x90);
-        std::copy(lastInfo, lastInfo + 0x90, info.end() - 0x90);
 
-        std::copy((std::byte*)&nameIdOffset, (std::byte*)&nameIdOffset + 8, info.end() - 0x70);
-        std::copy((std::byte*)&fileOffset, (std::byte*)&fileOffset + 8, info.end() - 0x58);
+        std::byte newFileInfo[0x90];
+        std::copy(lastInfo, lastInfo + 0x90, newFileInfo);
+
+        std::copy((std::byte*)&nameIdOffset, (std::byte*)&nameIdOffset + 8, newFileInfo - 0x70);
+        std::copy((std::byte*)&fileOffset, (std::byte*)&fileOffset + 8, newFileInfo - 0x58);
 
         long fileBytesSize = modFile.FileBytes.size();
 
-        std::copy((std::byte*)&fileBytesSize, (std::byte*)&fileBytesSize + 8, info.end() - 0x50);
-        std::copy((std::byte*)&fileBytesSize, (std::byte*)&fileBytesSize + 8, info.end() - 0x48);
+        std::copy((std::byte*)&fileBytesSize, (std::byte*)&fileBytesSize + 8, newFileInfo - 0x50);
+        std::copy((std::byte*)&fileBytesSize, (std::byte*)&fileBytesSize + 8, newFileInfo - 0x48);
 
-        std::copy((std::byte*)&modFile.StreamDbHash.value(), (std::byte*)&modFile.StreamDbHash.value() + 8, info.end() - 0x40);
-        std::copy((std::byte*)&modFile.StreamDbHash.value(), (std::byte*)&modFile.StreamDbHash.value() + 8, info.end() - 0x30);
+        std::copy((std::byte*)&modFile.StreamDbHash.value(), (std::byte*)&modFile.StreamDbHash.value() + 8, newFileInfo - 0x40);
+        std::copy((std::byte*)&modFile.StreamDbHash.value(), (std::byte*)&modFile.StreamDbHash.value() + 8, newFileInfo - 0x30);
 
         int version = modFile.Version.value();
-        std::copy((std::byte*)&version, (std::byte*)&version + 4, info.end() - 0x28);
+        std::copy((std::byte*)&version, (std::byte*)&version + 4, newFileInfo - 0x28);
 
         int SpecialByte1Int = (int)modFile.SpecialByte1.value();
         int SpecialByte2Int = (int)modFile.SpecialByte2.value();
         int SpecialByte3Int = (int)modFile.SpecialByte3.value();
 
-        std::copy((std::byte*)&SpecialByte1Int, (std::byte*)&SpecialByte1Int + 4, info.end() - 0x24);
-        std::copy((std::byte*)&SpecialByte2Int, (std::byte*)&SpecialByte2Int + 4, info.end() - 0x1E);
-        std::copy((std::byte*)&SpecialByte3Int, (std::byte*)&SpecialByte3Int + 4, info.end() - 0x1D);
+        std::copy((std::byte*)&SpecialByte1Int, (std::byte*)&SpecialByte1Int + 4, newFileInfo - 0x24);
+        std::copy((std::byte*)&SpecialByte2Int, (std::byte*)&SpecialByte2Int + 4, newFileInfo - 0x1E);
+        std::copy((std::byte*)&SpecialByte3Int, (std::byte*)&SpecialByte3Int + 4, newFileInfo - 0x1D);
 
-        info[info.size() - 0x20] = (std::byte)0;
+        newFileInfo[sizeof(newFileInfo) - 0x20] = (std::byte)0;
+
+        info.resize(info.size() + 0x90);
+
+        if (newInfoSectionOffset != -1) {
+            std::copy(info.begin() + newInfoSectionOffset, info.begin() + info.size() - newInfoSectionOffset - 0x90, info.begin() + newInfoSectionOffset + 0x90);
+            std::copy(newFileInfo, newFileInfo + sizeof(newFileInfo), info.begin() + newInfoSectionOffset);
+        }
+        else {
+            std::copy(newFileInfo, newFileInfo + sizeof(newFileInfo), info.end() - 0x90);
+        }
 
         std::cout << "\tAdded " << modFile.Name << std::endl;
         newChunksCount++;
