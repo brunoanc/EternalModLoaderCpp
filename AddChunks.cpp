@@ -223,7 +223,7 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
 
         long newInfoSectionOffset = -1;
 
-        if (!modFile.PlaceByName.empty()) {
+        /*if (!modFile.PlaceByName.empty()) {
             long existingNameId = -1;
             long existingNameOffset = -1;
 
@@ -266,7 +266,7 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
                     }
                 }
             }
-        }
+        }*/
 
         std::byte newFileInfo[0x90];
         std::copy(info.end() - 0x90, info.end(), newFileInfo);
@@ -300,7 +300,7 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
 
         info.resize(info.size() + 0x90);
 
-        if (newInfoSectionOffset != -1 && modFile.ResourceType == "rs_streamfile") {
+        if (newInfoSectionOffset != -1 /*&& modFile.ResourceType == "rs_streamfile"*/) {
             std::byte buffer[info.size() - newInfoSectionOffset - 0x90];
             std::copy(info.begin() + newInfoSectionOffset, info.begin() + newInfoSectionOffset + sizeof(buffer), buffer);
             std::copy(buffer, buffer + sizeof(buffer), info.begin() + newInfoSectionOffset + 0x90);
