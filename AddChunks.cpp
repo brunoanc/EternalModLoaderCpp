@@ -268,33 +268,30 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
             }
         }
 
-        std::byte lastInfo[0x90];
-        std::copy(info.end() - 0x90, info.end(), lastInfo);
-
         std::byte newFileInfo[0x90];
-        std::copy(lastInfo, lastInfo + sizeof(lastInfo), newFileInfo);
+        std::copy(info.end() - 0x90, info.end(), newFileInfo);
 
-        std::copy((std::byte*)&nameIdOffset, (std::byte*)&nameIdOffset + 8, newFileInfo - 0x70);
-        std::copy((std::byte*)&fileOffset, (std::byte*)&fileOffset + 8, newFileInfo - 0x58);
+        std::copy((std::byte*)&nameIdOffset, (std::byte*)&nameIdOffset + 8, newFileInfo + sizeof(newFileInfo) - 0x70);
+        std::copy((std::byte*)&fileOffset, (std::byte*)&fileOffset + 8, newFileInfo + sizeof(newFileInfo) - 0x58);
 
         long fileBytesSize = modFile.FileBytes.size();
 
-        std::copy((std::byte*)&fileBytesSize, (std::byte*)&fileBytesSize + 8, newFileInfo - 0x50);
-        std::copy((std::byte*)&fileBytesSize, (std::byte*)&fileBytesSize + 8, newFileInfo - 0x48);
+        std::copy((std::byte*)&fileBytesSize, (std::byte*)&fileBytesSize + 8, newFileInfo + sizeof(newFileInfo) - 0x50);
+        std::copy((std::byte*)&fileBytesSize, (std::byte*)&fileBytesSize + 8, newFileInfo + sizeof(newFileInfo) - 0x48);
 
-        std::copy((std::byte*)&modFile.StreamDbHash.value(), (std::byte*)&modFile.StreamDbHash.value() + 8, newFileInfo - 0x40);
-        std::copy((std::byte*)&modFile.StreamDbHash.value(), (std::byte*)&modFile.StreamDbHash.value() + 8, newFileInfo - 0x30);
+        std::copy((std::byte*)&modFile.StreamDbHash.value(), (std::byte*)&modFile.StreamDbHash.value() + 8, newFileInfo + sizeof(newFileInfo) - 0x40);
+        std::copy((std::byte*)&modFile.StreamDbHash.value(), (std::byte*)&modFile.StreamDbHash.value() + 8, newFileInfo + sizeof(newFileInfo) - 0x30);
 
         int version = modFile.Version.value();
-        std::copy((std::byte*)&version, (std::byte*)&version + 4, newFileInfo - 0x28);
+        std::copy((std::byte*)&version, (std::byte*)&version + 4, newFileInfo + sizeof(newFileInfo) - 0x28);
 
         int SpecialByte1Int = (int)modFile.SpecialByte1.value();
         int SpecialByte2Int = (int)modFile.SpecialByte2.value();
         int SpecialByte3Int = (int)modFile.SpecialByte3.value();
 
-        std::copy((std::byte*)&SpecialByte1Int, (std::byte*)&SpecialByte1Int + 4, newFileInfo - 0x24);
-        std::copy((std::byte*)&SpecialByte2Int, (std::byte*)&SpecialByte2Int + 4, newFileInfo - 0x1E);
-        std::copy((std::byte*)&SpecialByte3Int, (std::byte*)&SpecialByte3Int + 4, newFileInfo - 0x1D);
+        std::copy((std::byte*)&SpecialByte1Int, (std::byte*)&SpecialByte1Int + 4, newFileInfo + sizeof(newFileInfo) - 0x24);
+        std::copy((std::byte*)&SpecialByte2Int, (std::byte*)&SpecialByte2Int + 4, newFileInfo + sizeof(newFileInfo) - 0x1E);
+        std::copy((std::byte*)&SpecialByte3Int, (std::byte*)&SpecialByte3Int + 4, newFileInfo + sizeof(newFileInfo) - 0x1D);
 
         newFileInfo[sizeof(newFileInfo) - 0x20] = (std::byte)0;
 
