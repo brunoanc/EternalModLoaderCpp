@@ -89,7 +89,7 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
                         std::string modNameStem = std::filesystem::path(modFile.Name).stem();
 
                         for (int i = 0; i < packageMapSpec.Maps.size(); i++) {
-                            if (packageMapSpec.Maps[i].Name.find(modNameStem) != std::string::npos) {
+                            if (EndsWith(packageMapSpec.Maps[i].Name, modNameStem)) {
                                 mapIndex = i;
                                 break;
                             }
