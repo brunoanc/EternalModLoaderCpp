@@ -253,7 +253,7 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
                         pos += 32;
                         long nameOffset;
                         std::copy(info.begin() + pos, info.begin() + pos + 8, (std::byte*)&nameOffset);
-                        pos += 0x70 - 8;
+                        pos += 0x70;
 
                         if (nameOffset == existingNameOffset) {
                             newInfoSectionOffset = i * 0x90;
@@ -272,7 +272,7 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
         std::copy(info.end() - 0x90, info.end(), lastInfo);
 
         std::byte newFileInfo[0x90];
-        std::copy(lastInfo, lastInfo + 0x90, newFileInfo);
+        std::copy(lastInfo, lastInfo + sizeof(lastInfo), newFileInfo);
 
         std::copy((std::byte*)&nameIdOffset, (std::byte*)&nameIdOffset + 8, newFileInfo - 0x70);
         std::copy((std::byte*)&fileOffset, (std::byte*)&fileOffset + 8, newFileInfo - 0x58);
@@ -304,7 +304,9 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
         info.resize(info.size() + 0x90);
 
         if (newInfoSectionOffset != -1 && modFile.ResourceType == "rs_streamfile") {
-            std::copy(info.begin() + newInfoSectionOffset, info.begin() + info.size() - newInfoSectionOffset - 0x90, info.begin() + newInfoSectionOffset + 0x90);
+            std::byte buffer[info.size() - newInfoSectionOffset - 0x90];
+            std::copy(info.begin() + newInfoSectionOffset, info.begin() + newInfoSectionOffset + sizeof(buffer), buffer);
+            std::copy(buffer, buffer + sizeof(buffer), info.begin() + newInfoSectionOffset + 0x90);
             std::copy(newFileInfo, newFileInfo + sizeof(newFileInfo), info.begin() + newInfoSectionOffset);
         }
         else {
