@@ -4,7 +4,7 @@
 C++ port of EternalModLoader by proteh, coded specifically for Linux users.
 
 ## Features
-* Smaller file size (only around ~300 KB).
+* Smaller file size (only around ~750 KB).
 
 * Faster mod loading times.
 
@@ -42,3 +42,5 @@ The DEternal_loadMods executable will be in the "build" folder.
 * leveste: For helping to test the debug versions of the code.
 
 * Fry: For creating the original sound mod loading tool.
+
+* SamPT: For figuring out how to load new assets with proteh.

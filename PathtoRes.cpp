@@ -22,33 +22,57 @@
 
 #include "EternalModLoader.hpp"
 
-std::string PathToRes(std::string name, bool &isSnd)
+std::string PathToResourceContainer(std::string name)
 {
+    std::string searchPath = BasePath;
     std::string resourcePath;
+    bool recursive = true;
 
     if (ToLower(name).find("dlc_hub", 0) == 0) {
         std::string dlcHubFileName = name.substr(4, name.size() - 4);
-        resourcePath = "./base/game/dlc/hub/" + dlcHubFileName;
+        resourcePath = BasePath + "game/dlc/hub/" + dlcHubFileName;
     }
     else if (ToLower(name).find("hub", 0) == 0) {
-        resourcePath = "./base/game/hub/" + name;
+        resourcePath = BasePath + "game/hub/" + name;
     }
     else {
         resourcePath = name;
+
+        if (resourcePath.find("gameresources") != std::string::npos
+            || resourcePath.find("warehouse") != std::string::npos
+            || resourcePath.find("meta") != std::string::npos
+            || resourcePath.find(".streamdb") != std::string::npos) {
+            recursive = false;
+        }
+        else {
+            searchPath = BasePath + "game/";
+        }
     }
 
-    for (auto &file : std::filesystem::recursive_directory_iterator(BasePath)) {
-        std::string path = file.path();
-        std::string base_filename = path.substr(path.find_last_of('/') + 1);
+    if (recursive) {
+        for (auto &file : std::filesystem::recursive_directory_iterator(searchPath)) {
+            if (std::filesystem::equivalent(file.path(), resourcePath) || file.path().filename() == resourcePath)
+                return file.path().string();
+        }
+    }
+    else {
+        for (auto &file : std::filesystem::directory_iterator(searchPath)) {
+            if (std::filesystem::equivalent(file.path(), resourcePath) || file.path().filename() == resourcePath)
+                return file.path().string();
+        }
+    }
 
-        if (base_filename == resourcePath + ".resources" || path == resourcePath + ".resources") {
-            isSnd = false;
-            return path;
-        }
-        else if (base_filename == resourcePath + ".snd" || path == resourcePath + ".snd") {
-            isSnd = true;
-            return path;
-        }
+    return "";
+}
+
+std::string PathToSoundContainer(std::string name)
+{
+    std::string searchPath = BasePath + "sound/soundbanks/pc";
+    std::string searchPattern = name + ".snd";
+
+    for (auto &file : std::filesystem::recursive_directory_iterator(searchPath)) {
+        if (std::filesystem::equivalent(file.path(), searchPattern) || file.path().filename() == searchPattern)
+            return file.path().string();
     }
 
     return "";

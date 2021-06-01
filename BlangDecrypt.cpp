@@ -38,7 +38,7 @@ std::byte* HashData(const std::byte *data1, size_t data1Len, const std::byte *da
         SHA256_CTX sha256;
         SHA256_Init(&sha256);
 
-        std::byte *md = (std::byte*)malloc(SHA256_DIGEST_LENGTH);
+        std::byte *md = new std::byte[SHA256_DIGEST_LENGTH];
 
         SHA256_Update(&sha256, (uint8_t*)data1, data1Len);
         SHA256_Update(&sha256, (uint8_t*)data2, data2Len);
@@ -198,6 +198,9 @@ std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string inte
     }
 
     if (decrypt) {
+        delete[] encKey;
+        delete[] hmac;
+
         return cryptedText;
     }
     else {
@@ -210,6 +213,9 @@ std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string inte
 
         hmac = HashData(fileSalt, 0xC, fileIV, 0x10, cryptedText.data(), cryptedText.size(), encKey, 0x20);
         fullData.insert(fullData.end(), hmac, hmac + 0x20);
+
+        delete[] encKey;
+        delete[] hmac;
 
         return fullData;
     }

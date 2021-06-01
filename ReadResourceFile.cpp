@@ -21,7 +21,7 @@
 
 #include "EternalModLoader.hpp"
 
-void ReadResource(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, int resourceIndex)
+void ReadResource(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, ResourceContainer &resourceContainer)
 {
     int fileCount;
     std::copy(mem.begin() + 0x20, mem.begin() + 0x24, (std::byte*)&fileCount);
@@ -56,41 +56,26 @@ void ReadResource(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, in
     long namesNum;
     std::copy(mem.begin() + namesOffset, mem.begin() + namesOffset + 8, (std::byte*)&namesNum);
 
-    std::vector<long> namesOffsetList;
-    namesOffsetList.reserve(namesNum);
-
-    long buffer;
-    for (int i = 0; i < namesNum; i++) {
-        std::copy(mem.begin() + namesOffset + 8 + i * 8, mem.begin() + namesOffset + 8 + (i + 1) * 8, (std::byte*)&buffer);
-        namesOffsetList.push_back(buffer);
-    }
-
     long namesOffsetEnd = namesOffset + (namesNum + 1) * 8;
     long namesSize = namesEnd - namesOffsetEnd;
 
-    std::vector<std::string> namesList;
+    std::vector<ResourceName> namesList;
     std::vector<std::byte> currentNameBytes;
     std::byte currentByte;
     
     for (int i = 0; i < namesSize; i++) {
-        currentByte = mem[namesOffset + (namesNum + 1) * 8 + i];
+        currentByte = mem[namesOffsetEnd+ i];
 
         if (currentByte == (std::byte)0 || i == namesSize - 1) {
             if (currentNameBytes.empty())
                 continue;
 
-            std::string name((char*)currentNameBytes.data());
+            std::string fullFileName((char*)currentNameBytes.data(), currentNameBytes.size());
+            std::string normalizedFileName = NormalizeResourceFilename(fullFileName);
 
-            if (name.find_first_of('$') != std::string::npos)
-                name = name.substr(0, name.find_first_of('$'));
-
-            if (name.find_last_of('#') != std::string::npos)
-                name = name.substr(0, name.find_last_of('#'));
-
-            if (name.find_first_of('#') != std::string::npos)
-                name = name.substr(0, name.find_first_of('#'));
-
-            namesList.push_back(name);
+            ResourceName resourceName(fullFileName, normalizedFileName);
+            namesList.push_back(resourceName);
+            
             currentNameBytes.clear();
             continue;
         }
@@ -98,20 +83,20 @@ void ReadResource(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, in
         currentNameBytes.push_back(currentByte);
     }
 
-    ResourceList[resourceIndex].FileCount = fileCount;
-    ResourceList[resourceIndex].TypeCount = dummy2Num;
-    ResourceList[resourceIndex].StringsSize = stringsSize;
-    ResourceList[resourceIndex].NamesOffset = namesOffset;
-    ResourceList[resourceIndex].InfoOffset = infoOffset;
-    ResourceList[resourceIndex].Dummy7Offset = dummy7OffOrg;
-    ResourceList[resourceIndex].DataOffset = dataOff;
-    ResourceList[resourceIndex].IdclOffset = idclOff;
-    ResourceList[resourceIndex].UnknownCount = unknownCount;
-    ResourceList[resourceIndex].FileCount2 = fileCount * 2;
-    ResourceList[resourceIndex].NamesOffsetEnd = namesOffsetEnd;
-    ResourceList[resourceIndex].UnknownOffset = namesEnd;
-    ResourceList[resourceIndex].UnknownOffset2 = namesEnd;
-    ResourceList[resourceIndex].NamesList = namesList;
+    resourceContainer.FileCount = fileCount;
+    resourceContainer.TypeCount = dummy2Num;
+    resourceContainer.StringsSize = stringsSize;
+    resourceContainer.NamesOffset = namesOffset;
+    resourceContainer.InfoOffset = infoOffset;
+    resourceContainer.Dummy7Offset = dummy7OffOrg;
+    resourceContainer.DataOffset = dataOff;
+    resourceContainer.IdclOffset = idclOff;
+    resourceContainer.UnknownCount = unknownCount;
+    resourceContainer.FileCount2 = fileCount * 2;
+    resourceContainer.NamesOffsetEnd = namesOffsetEnd;
+    resourceContainer.UnknownOffset = namesEnd;
+    resourceContainer.UnknownOffset2 = namesEnd;
+    resourceContainer.NamesList = namesList;
 
-    ReadChunkInfo(mem, resourceIndex);
+    ReadChunkInfo(mem, resourceContainer);
 }

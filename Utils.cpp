@@ -23,24 +23,36 @@
 
 #include "EternalModLoader.hpp"
 
-int GetResourceInfo(std::string resourceName)
+int GetResourceContainer(std::string &resourceContainerName)
 {
-    for (int i = 0; i < ResourceList.size(); i++) {
-        if (ResourceList[i].Name == resourceName)
+    for (int i = 0; i < ResourceContainerList.size(); i++) {
+        if (ResourceContainerList[i].Name == resourceContainerName)
             return i;
     }
 
     return -1;
 }
 
-int GetChunk(std::string name, int resourceIndex)
+int GetSoundContainer(std::string &soundContainerName)
 {
-    for (int i = 0; i < ResourceList[resourceIndex].ChunkList.size(); i++) {
-        if (ResourceList[resourceIndex].ChunkList[i].Name.find(name) != std::string::npos)
+    for (int i = 0; i < SoundContainerList.size(); i++) {
+        if (SoundContainerList[i].Name == soundContainerName)
             return i;
     }
 
     return -1;
+}
+
+ResourceChunk *GetChunk(std::string name, ResourceContainer &resourceContainer)
+{
+    for (auto &chunk : resourceContainer.ChunkList) {
+        if (chunk.ResourceName.FullFileName == name
+            || chunk.ResourceName.NormalizedFileName == name) {
+                return &chunk;
+        }
+    }
+
+    return NULL;
 }
 
 std::string RemoveWhitespace(std::string &stringWithWhitespace)
@@ -74,4 +86,28 @@ std::vector<std::string> SplitString(std::string stringToSplit, char delimiter)
     resultVector.push_back(stringToSplit);
 
     return resultVector;
+}
+
+bool EndsWith(const std::string &fullString, const std::string &ending)
+{
+    if (fullString.length() >= ending.length()) {
+        return 0 == fullString.compare(fullString.length() - ending.length(), ending.length(), ending);
+    }
+    else {
+        return false;
+    }
+}
+
+std::string NormalizeResourceFilename(std::string filename)
+{
+    if (filename.find_first_of('$') != std::string::npos)
+        filename = filename.substr(0, filename.find_first_of('$'));
+
+    if (filename.find_last_of('#') != std::string::npos)
+        filename = filename.substr(0, filename.find_last_of('#'));
+
+    if (filename.find_first_of('#') != std::string::npos)
+        filename = filename.substr(0, filename.find_first_of('#'));
+
+    return filename;
 }
