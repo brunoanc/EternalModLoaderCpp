@@ -679,6 +679,7 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
                 BlangString newBlangString;
                 newBlangString.Identifier = blangJsonString["name"];
                 newBlangString.Text = blangJsonString["text"];
+                blangFile.Strings.push_back(newBlangString);
 
                 std::cout << "\tAdded " << blangJsonString["name"].get<std::string>() << " in " << modFile.Name << std::endl;
             }
