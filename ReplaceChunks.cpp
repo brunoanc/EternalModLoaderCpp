@@ -90,6 +90,11 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
 
                         for (int i = 0; i < packageMapSpec.Maps.size(); i++) {
                             if (EndsWith(packageMapSpec.Maps[i].Name, modNameStem)) {
+                                if (modFile.Name.find("dlc") == std::string::npos
+                                    && modFile.Name.find("hub") != std::string::npos
+                                        && packageMapSpec.Maps[i].Name.find("dlc") != std::string::npos)
+                                            continue;
+
                                 mapIndex = i;
                                 break;
                             }
