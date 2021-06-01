@@ -86,15 +86,17 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
                             }
                         }
 
-                        std::string modNameStem = std::filesystem::path(modFile.Name).stem();
+                        std::string modFileMapName = std::filesystem::path(modFile.Name).stem();
+
+                        if (resourceContainer.Name.rfind("dlc_hub") == 0) {
+                            modFileMapName = "game/dlc/hub/hub";
+                        }
+                        else if (resourceContainer.Name.rfind("hub") == 0) {
+                            modFileMapName = "game/hub/hub";
+                        }
 
                         for (int i = 0; i < packageMapSpec.Maps.size(); i++) {
-                            if (EndsWith(packageMapSpec.Maps[i].Name, modNameStem)) {
-                                if (modFile.Name.find("dlc") == std::string::npos
-                                    && modFile.Name.find("hub") != std::string::npos
-                                        && packageMapSpec.Maps[i].Name.find("dlc") != std::string::npos)
-                                            continue;
-
+                            if (EndsWith(packageMapSpec.Maps[i].Name, modFileMapName)) {
                                 mapIndex = i;
                                 break;
                             }
