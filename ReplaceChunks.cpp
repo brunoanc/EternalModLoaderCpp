@@ -88,10 +88,10 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
 
                         std::string modFileMapName = std::filesystem::path(modFile.Name).stem();
 
-                        if (resourceContainer.Name.rfind("dlc_hub") == 0) {
+                        if (resourceContainer.Name.rfind("dlc_hub", 0) == 0) {
                             modFileMapName = "game/dlc/hub/hub";
                         }
-                        else if (resourceContainer.Name.rfind("hub") == 0) {
+                        else if (resourceContainer.Name.rfind("hub", 0) == 0) {
                             modFileMapName = "game/hub/hub";
                         }
 
