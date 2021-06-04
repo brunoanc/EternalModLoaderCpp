@@ -120,13 +120,22 @@ int main(int argc, char **argv)
     }
 
     std::vector<std::string> zippedMods;
+    std::vector<std::string> unzippedMods;
 
-    for (const auto &zippedMod : std::filesystem::directory_iterator(std::string(argv[1]) + "/Mods")) {
-        if (std::filesystem::is_regular_file(zippedMod) && zippedMod.path().extension() == ".zip")
-            zippedMods.push_back(zippedMod.path());
+    for (const auto &file : std::filesystem::directory_iterator(std::string(argv[1]) + "/Mods")) {
+        if (!std::filesystem::is_regular_file(file))
+            continue;
+
+        if (file.path().extension() == ".zip" && std::filesystem::equivalent(file.path(), std::string(argv[1]) + "/Mods/" + file.path().filename().string())) {
+            zippedMods.push_back(file.path());
+        }
+        else {
+            unzippedMods.push_back(file.path());
+        }
     }
 
     std::sort(zippedMods.begin(), zippedMods.end(), [](std::string str1, std::string str2) { return std::strcoll(str1.c_str(), str2.c_str()) <= 0 ? true : false; });
+    std::sort(unzippedMods.begin(), unzippedMods.end(), [](std::string str1, std::string str2) { return std::strcoll(str1.c_str(), str2.c_str()) <= 0 ? true : false; });
 
     for (const auto &zippedMod : zippedMods) {
         int zippedModCount = 0;
@@ -280,15 +289,6 @@ int main(int argc, char **argv)
 
         modZip.close();
     }
-
-    std::vector<std::string> unzippedMods;
-
-    for (const auto &unzippedMod : std::filesystem::recursive_directory_iterator(std::string(argv[1]) + "/Mods")) {
-        if (std::filesystem::is_regular_file(unzippedMod) && !(unzippedMod.path().extension() == ".zip"))
-            unzippedMods.push_back(unzippedMod.path());
-    }
-
-    std::sort(unzippedMods.begin(), unzippedMods.end(), [](std::string str1, std::string str2) { return std::strcoll(str1.c_str(), str2.c_str()) <= 0 ? true : false; });
 
     int unzippedModCount = 0;
 
