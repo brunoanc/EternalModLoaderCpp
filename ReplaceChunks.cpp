@@ -702,45 +702,25 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
             modFile.FileBytes = encryptedBlangFileBytes;
         }
 
-        if (sizeDiff > 0) {
-            long length = mem.size();
+        long newContainerSize = mem.size() + modFile.FileBytes.size();
+        long placement = (0x10 - (newContainerSize % 0x10)) + 0x30;
+        newContainerSize += placement;
+        long dataOffset = newContainerSize - modFile.FileBytes.size();
+
+        try {
             mem.munmap_file();
-            std::filesystem::resize_file(resourceContainer.Path, length + sizeDiff);
+            std::filesystem::resize_file(resourceContainer.Path, newContainerSize);
 
-            try {
-                mem.mmap_file(resourceContainer.Path, mmap_allocator_namespace::READ_WRITE_SHARED, 0, length + sizeDiff,
-                    mmap_allocator_namespace::MAP_WHOLE_FILE | mmap_allocator_namespace::ALLOW_REMAP);
-                
-                if (mem.empty())
-                    throw std::exception();
-            }
-            catch (...) {
-                std::cerr << RED << "ERROR: " << RESET << "Failed to load " << resourceContainer.Path << " into memory for writing"<< std::endl;
-                return;
-            }
-
-            int toRead;
-
-            while (length > fileOffset + size) {
-                toRead = (length - bufferSize) >= (fileOffset + size) ? bufferSize : (length - fileOffset - size);
-                length -= toRead;
-
-                std::copy(mem.begin() + length, mem.begin() + length + toRead, buffer);
-                std::copy(buffer, buffer + toRead, mem.begin() + length + sizeDiff);
-            }
-
-            std::copy(modFile.FileBytes.begin(), modFile.FileBytes.end(), mem.begin() + fileOffset);
+            mem.mmap_file(resourceContainer.Path, mmap_allocator_namespace::READ_WRITE_SHARED, 0, newContainerSize,
+                mmap_allocator_namespace::MAP_WHOLE_FILE | mmap_allocator_namespace::ALLOW_REMAP);
         }
-        else {
-            std::copy(modFile.FileBytes.begin(), modFile.FileBytes.end(), mem.begin() + fileOffset);
-
-            if (sizeDiff < 0) {
-                std::byte emptyArray[-sizeDiff];
-                std::memset(emptyArray, 0, -sizeDiff);
-
-                std::copy(emptyArray, emptyArray - sizeDiff, mem.begin() + fileOffset + modFile.FileBytes.size());
-            }
+        catch (...) {
+            std::cerr << RED << "ERROR: " << RESET << "Failed to resize " << resourceContainer.Path << std::endl;
+            return;
         }
+
+        std::copy(modFile.FileBytes.begin(), modFile.FileBytes.end(), mem.begin() + dataOffset);
+        std::copy((std::byte*)&dataOffset, (std::byte*)&dataOffset + 8, mem.begin() + chunk->FileOffset);
 
         long modFileBytesSize = modFile.FileBytes.size();
         std::copy((std::byte*)&modFileBytesSize, (std::byte*)&modFileBytesSize + 8, mem.begin() + chunk->SizeOffset);
@@ -750,19 +730,6 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
         std::copy((std::byte*)&uncompressedSize, (std::byte*)&uncompressedSize + 8, mem.begin() + chunk->SizeOffset + 8);
 
         mem[chunk->SizeOffset + 0x30] = isMapResources ? chunk->CompressionMode : (std::byte)0;
-
-        if (sizeDiff > 0) {
-            std::vector<ResourceChunk>::iterator x = std::find(resourceContainer.ChunkList.begin(), resourceContainer.ChunkList.end(), *chunk);
-            int index = std::distance(resourceContainer.ChunkList.begin(), x);
-
-            for (int i = index + 1; i < resourceContainer.ChunkList.size(); i++) {
-                std::copy(mem.begin() + resourceContainer.ChunkList[i].FileOffset, mem.begin() + resourceContainer.ChunkList[i].FileOffset + 8, (std::byte*)&fileOffset);
-
-                long fileOffsetSizeDir = fileOffset + sizeDiff;
-                std::copy((std::byte*)&fileOffsetSizeDir, (std::byte*)&fileOffsetSizeDir + 8, mem.begin() + resourceContainer.ChunkList[i].FileOffset);
-            }
-
-        }
 
         if (!modFile.IsBlangJson && !modFile.IsAssetsInfoJson) {
             std::cout << "\tReplaced " << modFile.Name << std::endl;

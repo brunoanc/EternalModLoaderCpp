@@ -28,7 +28,7 @@
 #include "zipper/unzipper.h"
 #include "EternalModLoader.hpp"
 
-const int Version = 6;
+const int Version = 7;
 const std::string ResourceDataFileName = "rs_data";
 const std::string PackageMapSpecJsonFileName = "packagemapspec.json";
 std::string BasePath;
