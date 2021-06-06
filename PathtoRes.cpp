@@ -28,11 +28,11 @@ std::string PathToResourceContainer(std::string name)
     std::string resourcePath;
     bool recursive = true;
 
-    if (ToLower(name).find("dlc_hub", 0) == 0) {
+    if (ToLower(name).rfind("dlc_hub", 0) == 0) {
         std::string dlcHubFileName = name.substr(4, name.size() - 4);
         resourcePath = BasePath + "game/dlc/hub/" + dlcHubFileName;
     }
-    else if (ToLower(name).find("hub", 0) == 0) {
+    else if (ToLower(name).rfind("hub", 0) == 0) {
         resourcePath = BasePath + "game/hub/" + name;
     }
     else {
@@ -51,13 +51,13 @@ std::string PathToResourceContainer(std::string name)
 
     if (recursive) {
         for (auto &file : std::filesystem::recursive_directory_iterator(searchPath)) {
-            if (std::filesystem::equivalent(file.path(), resourcePath) || file.path().filename() == resourcePath)
+            if (std::filesystem::equivalent(file.path(), resourcePath) || std::filesystem::equivalent(file.path(), searchPath + resourcePath) || file.path().filename() == resourcePath)
                 return file.path().string();
         }
     }
     else {
         for (auto &file : std::filesystem::directory_iterator(searchPath)) {
-            if (std::filesystem::equivalent(file.path(), resourcePath) || file.path().filename() == resourcePath)
+            if (std::filesystem::equivalent(file.path(), resourcePath) || std::filesystem::equivalent(file.path(), searchPath + resourcePath) || file.path().filename() == resourcePath)
                 return file.path().string();
         }
     }
@@ -68,10 +68,10 @@ std::string PathToResourceContainer(std::string name)
 std::string PathToSoundContainer(std::string name)
 {
     std::string searchPath = BasePath + "sound/soundbanks/pc";
-    std::string searchPattern = name + ".snd";
+    std::string sndPath = name + ".snd";
 
     for (auto &file : std::filesystem::recursive_directory_iterator(searchPath)) {
-        if (std::filesystem::equivalent(file.path(), searchPattern) || file.path().filename() == searchPattern)
+        if (std::filesystem::equivalent(file.path(), sndPath) || std::filesystem::equivalent(file.path(), searchPath + sndPath) || file.path().filename() == sndPath)
             return file.path().string();
     }
 

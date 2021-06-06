@@ -49,7 +49,6 @@ class ResourceModFile {
 public:
     Mod Parent;
     std::string Name;
-    long UncompressedSize = 0;
     std::vector<std::byte> FileBytes;
     bool IsBlangJson = false;
     bool IsAssetsInfoJson = false;

@@ -32,7 +32,7 @@
 
 #include "EternalModLoader.hpp"
 
-std::byte* HashData(const std::byte *data1, size_t data1Len, const std::byte *data2, size_t data2Len, const std::byte *data3, size_t data3Len, const std::byte *hmacKey, size_t hmacKeyLen)
+std::byte *HashData(const std::byte *data1, size_t data1Len, const std::byte *data2, size_t data2Len, const std::byte *data3, size_t data3Len, const std::byte *hmacKey, size_t hmacKeyLen)
 {
     if (hmacKey == NULL) {
         SHA256_CTX sha256;

@@ -53,8 +53,6 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
 
     std::vector<std::byte> idcl(mem.begin() + resourceContainer.IdclOffset, mem.begin() + resourceContainer.DataOffset);
 
-    std::vector<std::byte> data(mem.begin() + resourceContainer.DataOffset, mem.begin() + fileSize);
-
     int infoOldLength = info.size();
     int nameIdsOldLength = nameIds.size();
     int newChunksCount = 0;
@@ -93,6 +91,9 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
     }
 
     for (auto &modFile : resourceContainer.NewModFileList) {
+        if (modFile.IsAssetsInfoJson || modFile.IsBlangJson)
+            continue;
+
         if (resourceContainer.ContainsResourceWithName(modFile.Name)) {
             if (Verbose) {
                 std::cerr << RED << "WARNING: " << RESET << "Trying to add resource " << modFile.Name
@@ -101,9 +102,6 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
 
             continue;
         }
-
-        if (modFile.IsAssetsInfoJson || modFile.IsBlangJson)
-            continue;
 
         ResourceDataEntry resourceData;
         std::map<unsigned long, ResourceDataEntry>::iterator x = ResourceDataMap.find(CalculateResourceFileNameHash(modFile.Name));
@@ -201,12 +199,27 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
         ResourceName newResourceName(modFile.Name, modFile.Name);
         resourceContainer.NamesList.push_back(newResourceName);
 
-        long placement = 0x10 - (data.size() % 0x10) + 0x30;
-        data.resize(data.size() + placement);
+        long currentDataSectionLength = mem.size() - resourceContainer.DataOffset;
+        long placement = 0x10 - (currentDataSectionLength % 0x10) + 0x30;
+        long newContainerSize = mem.size() + modFile.FileBytes.size() + placement;
+        long fileOffset = newContainerSize - modFile.FileBytes.size();
 
-        long fileOffset = data.size() + resourceContainer.DataOffset;
-        data.resize(data.size() + modFile.FileBytes.size());
-        std::copy(modFile.FileBytes.begin(), modFile.FileBytes.end(), data.end() - modFile.FileBytes.size());
+        try {
+            mem.munmap_file();
+            std::filesystem::resize_file(resourceContainer.Path, newContainerSize);
+
+            mem.mmap_file(resourceContainer.Path, mmap_allocator_namespace::READ_WRITE_SHARED, 0, newContainerSize,
+                mmap_allocator_namespace::MAP_WHOLE_FILE | mmap_allocator_namespace::ALLOW_REMAP);
+
+            if (mem.empty())
+                throw std::exception();
+        }
+        catch (...) {
+            std::cerr << RED << "ERROR: " << RESET << "Failed to resize " << resourceContainer.Path << std::endl;
+            return;
+        }
+
+        std::copy(modFile.FileBytes.begin(), modFile.FileBytes.end(), mem.begin() + fileOffset);
 
         long nameId = resourceContainer.GetResourceNameId(modFile.Name);
         nameIds.resize(nameIds.size() + 8);
@@ -360,21 +373,37 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
         std::copy((std::byte*)&newOffsetPlusDataAdd, (std::byte*)&newOffsetPlusDataAdd + 8, info.begin() + fileOffset);
     }
 
-    long newContainerLength = header.size() + info.size() + nameOffsets.size() + names.size() + unknown.size() + typeIds.size() + nameIds.size() + idcl.size() + data.size();
+    long dataSectionLength = mem.size() - resourceContainer.DataOffset;
+    long newContainerSize = header.size() + info.size() + nameOffsets.size() + names.size() + unknown.size() + typeIds.size() + nameIds.size() + idcl.size() + dataSectionLength;
 
-    mem.munmap_file();
-    std::filesystem::resize_file(resourceContainer.Path, newContainerLength);
+    const int bufferSize = 4096;
+    std::byte buffer[bufferSize];
+
+    long extraBytes = newContainerSize - mem.size();
+    long currentPos = mem.size();
+    int bytesToRead;
 
     try {
-        mem.mmap_file(resourceContainer.Path, mmap_allocator_namespace::READ_WRITE_SHARED, 0, newContainerLength,
+        mem.munmap_file();
+        std::filesystem::resize_file(resourceContainer.Path, newContainerSize);
+
+        mem.mmap_file(resourceContainer.Path, mmap_allocator_namespace::READ_WRITE_SHARED, 0, newContainerSize,
             mmap_allocator_namespace::MAP_WHOLE_FILE | mmap_allocator_namespace::ALLOW_REMAP);
-                
+
         if (mem.empty())
             throw std::exception();
-        }
+    }
     catch (...) {
-        std::cerr << RED << "ERROR: " << RESET << "Failed to load " << resourceContainer.Path << " into memory for writing"<< std::endl;
+        std::cerr << RED << "ERROR: " << RESET << "Failed to resize " << resourceContainer.Path << std::endl;
         return;
+    }
+
+    while (currentPos > resourceContainer.DataOffset) {
+        bytesToRead = currentPos - bufferSize >= resourceContainer.DataOffset ? bufferSize : currentPos - resourceContainer.DataOffset;
+        currentPos -= bytesToRead;
+
+        std::copy(mem.begin() + currentPos, mem.begin() + currentPos + bytesToRead, buffer);
+        std::copy(buffer, buffer + bufferSize, mem.begin() + currentPos + extraBytes);
     }
 
     unsigned long pos = 0;
@@ -401,8 +430,6 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
 
     std::copy(idcl.begin(), idcl.end(), mem.begin() + pos);
     pos += idcl.size();
-
-    std::copy(data.begin(), data.end(), mem.begin() + pos);
 
     if (newChunksCount != 0)
         std::cout << "Number of files added: " << GREEN << newChunksCount << " file(s) " << RESET << "in " << YELLOW << resourceContainer.Path << RESET << "." << std::endl;
