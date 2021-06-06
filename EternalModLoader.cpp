@@ -24,6 +24,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <climits>
+#include <ctime>
 
 #include "zipper/unzipper.h"
 #include "EternalModLoader.hpp"
@@ -455,6 +456,8 @@ int main(int argc, char **argv)
         return 0;
     }
 
+    clock_t before = clock();
+
     for (auto &resourceContainer : ResourceContainerList) {
         if (resourceContainer.Path.empty()) {
             std::cerr << RED << "WARNING: " << YELLOW << resourceContainer.Name << ".resources" << RESET << " was not found! Skipping " << RED << resourceContainer.ModFileList.size() << " file(s)" << RESET << "..." << std::endl;
@@ -520,7 +523,10 @@ int main(int argc, char **argv)
 
         mem.munmap_file();
     }
+
+    clock_t difference = clock() - before;
+    double time = (double)difference / CLOCKS_PER_SEC;
     
-    std::cout << GREEN << "Finished." << RESET << std::endl;
+    std::cout << GREEN << "Finished in " << time << " seconds." << RESET << std::endl;
     return 0;
 }
