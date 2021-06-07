@@ -9,7 +9,6 @@ set(JSON_BuildTests OFF CACHE INTERNAL "")
 add_subdirectory(json)
 
 file(GLOB SOURCES
-        ./EternalModLoader.hpp
         ./EternalModLoader.cpp
         ./AddChunks.cpp
         ./AssetsInfo.cpp
@@ -26,7 +25,7 @@ file(GLOB SOURCES
         ./ResourceData.cpp
         ./SoundMods.cpp
         ./Utils.cpp
-        ./mmap_allocator/mmap*
+        ./mmap_allocator/mmap*.cpp
         )
 
 set (CMAKE_CXX_FLAGS "-Ofast -DNDEBUG -ftree-vectorize -msse2")
