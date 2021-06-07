@@ -403,7 +403,7 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
         currentPos -= bytesToRead;
 
         std::copy(mem.begin() + currentPos, mem.begin() + currentPos + bytesToRead, buffer);
-        std::copy(buffer, buffer + bufferSize, mem.begin() + currentPos + extraBytes);
+        std::copy(buffer, buffer + bytesToRead, mem.begin() + currentPos + extraBytes);
     }
 
     unsigned long pos = 0;
