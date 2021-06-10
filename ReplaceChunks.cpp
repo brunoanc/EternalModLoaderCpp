@@ -158,7 +158,7 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
 
                             if (mapFileRefRemoved) {
                                 std::cout << "\tRemoved resource " << packageMapSpec.Files[fileIndex].Name << " to be loaded in map "
-                                    << packageMapSpec.Maps[mapIndex].Name << " in " << packageMapSpecPath << "" << std::endl;
+                                    << packageMapSpec.Maps[mapIndex].Name << std::endl;
                             }
                             else {
                                 if (Verbose) {
@@ -170,36 +170,34 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
                             continue;
                         }
 
+                        for (int i = packageMapSpec.MapFileRefs.size() - 1; i >= 0; i--) {
+                            if (packageMapSpec.MapFileRefs[i].File == fileIndex
+                                && packageMapSpec.MapFileRefs[i].Map == mapIndex) {
+                                    packageMapSpec.MapFileRefs.erase(packageMapSpec.MapFileRefs.begin() + i);
+
+                                    if (Verbose) {
+                                        std::cout << "\tResource " << packageMapSpec.Files[fileIndex].Name << " being added to map "
+                                            << packageMapSpec.Maps[mapIndex].Name << " already exists. The load order will be modified as specified." << std::endl;
+                                    }
+
+                                    break;
+                            }
+                        }
+
                         int insertIndex = -1;
-                        bool alreadyExists = false;
 
                         for (int i = 0; i < packageMapSpec.MapFileRefs.size(); i++) {
                             if (packageMapSpec.MapFileRefs[i].Map == mapIndex) {
-                                insertIndex = i + 1;
-
-                                if (packageMapSpec.MapFileRefs[i].File == fileIndex) {
-                                    alreadyExists = true;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (alreadyExists) {
-                            if (Verbose) {
-                                std::cerr << RED << "WARNING: " << RESET << "Extra resource " << extraResource.Name << " for map "
-                                    << packageMapSpec.Maps[mapIndex].Name << " was already added, skipping" << std::endl;
-                            }
-                        }
-
-                        if (extraResource.PlaceFirst) {
-                            for (int i = 0; i < packageMapSpec.MapFileRefs.size(); i++) {
-                                if (packageMapSpec.MapFileRefs[i].Map == mapIndex) {
+                                if (extraResource.PlaceFirst) {
                                     insertIndex = i;
                                     break;
                                 }
+
+                                insertIndex = i + 1;
                             }
                         }
-                        else if (!extraResource.PlaceByName.empty()) {
+
+                        if (!extraResource.PlaceByName.empty() && !extraResource.PlaceFirst) {
                             std::string placeBeforeResourcePath = PathToResourceContainer(extraResource.PlaceByName);
 
                             if (placeBeforeResourcePath.empty()) {
@@ -207,7 +205,7 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
                                     << " not found for extra resource entry " << extraResource.Name << ", using normal placement" << std::endl;
                             }
                             else {
-                                int placeBeforeFileIndex = 1;
+                                int placeBeforeFileIndex = -1;
 
                                 for (int i = 0; i < packageMapSpec.Files.size(); i++) {
                                     if (packageMapSpec.Files[i].Name.find(extraResource.PlaceByName) != std::string::npos) {
@@ -217,10 +215,9 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
                                 }
 
                                 for (int i = 0; i < packageMapSpec.MapFileRefs.size(); i++) {
-                                    if (packageMapSpec.MapFileRefs[i].Map == mapIndex
-                                        && packageMapSpec.MapFileRefs[i].File == placeBeforeFileIndex) {
-                                            insertIndex = i + (!extraResource.PlaceBefore ? 1 : 0);
-                                            break;
+                                    if (packageMapSpec.MapFileRefs[i].Map == mapIndex && packageMapSpec.MapFileRefs[i].File == placeBeforeFileIndex) {
+                                        insertIndex = i + (!extraResource.PlaceBefore ? 1 : 0);
+                                        break;
                                     }
                                 }
                             }
@@ -245,9 +242,8 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
                         try {
                             std::string newPackageMapSpecJson = packageMapSpec.Dump();
 
-                            if (fwrite(newPackageMapSpecJson.c_str(), 1, newPackageMapSpecJson.size(), packageMapSpecFile) != newPackageMapSpecJson.size()) {
+                            if (fwrite(newPackageMapSpecJson.c_str(), 1, newPackageMapSpecJson.size(), packageMapSpecFile) != newPackageMapSpecJson.size())
                                 throw std::exception();
-                            }
                         }
                         catch (...) {
                             std::cerr << RED << "ERROR: " << RESET << "Failed to write to " << packageMapSpecPath
@@ -258,7 +254,17 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
                         fclose(packageMapSpecFile);
 
                         std::cout << "\tAdded extra resource " << packageMapSpec.Files[fileIndex].Name << " to be loaded in map "
-                            << packageMapSpec.Maps[mapIndex].Name<< " in " << packageMapSpecPath << "" << std::endl;
+                            << packageMapSpec.Maps[mapIndex].Name;
+
+                        if (extraResource.PlaceFirst) {
+                            std::cout << " with the highest priority" << std::endl;
+                        }
+                        else if (!extraResource.PlaceByName.empty() && insertIndex != -1) {
+                            std::cout << " " << (extraResource.PlaceBefore ? "before" : "after") << " " << extraResource.PlaceByName << std::endl;
+                        }
+                        else {
+                            std::cout << " with the lowest priority" << std::endl;
+                        }
                     }
                 }
             }
