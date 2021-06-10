@@ -27,6 +27,7 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
 {
     ResourceChunk *mapResourcesChunk = NULL;
     MapResourcesFile *mapResourcesFile = NULL;
+    std::vector<std::byte> originalDecompressedMapResources;
     int fileCount = 0;
     
     for (auto &file : resourceContainer.ChunkList) {
@@ -40,16 +41,16 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
             std::copy(mem.begin() + mapResourcesChunk->FileOffset, mem.begin() + mapResourcesChunk->FileOffset + 8, (std::byte*)&mapResourcesFileOffset);
             std::vector<std::byte> mapResourcesBytes(mem.begin() + mapResourcesFileOffset, mem.begin() + mapResourcesFileOffset + mapResourcesChunk->SizeZ);
 
-            std::vector<std::byte> decompressedMapResources = OodleDecompress(mapResourcesBytes, mapResourcesChunk->Size);
+            originalDecompressedMapResources = OodleDecompress(mapResourcesBytes, mapResourcesChunk->Size);
 
-            if (decompressedMapResources.empty()) {
+            if (originalDecompressedMapResources.empty()) {
                 std::cerr << RED << "ERROR: " << RESET << "Failed to decompress " << mapResourcesChunk->ResourceName.NormalizedFileName
                     << " - are you trying to add assets in the wrong .resources archive?" << std::endl;
                 break;
             }
 
             try {
-                mapResourcesFile = new MapResourcesFile(decompressedMapResources);
+                mapResourcesFile = new MapResourcesFile(originalDecompressedMapResources);
             }
             catch (...) {
                 std::cerr << RED << "ERROR: " << RESET << "Failed to parse " << mapResourcesChunk->ResourceName.NormalizedFileName
@@ -190,8 +191,16 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
                             }
                         }
 
-                        if (!extraResource.PlaceByName.empty()) {
-                            std::string placeBeforeResourcePath = PathToResourceContainer(extraResource.Name);
+                        if (extraResource.PlaceFirst) {
+                            for (int i = 0; i < packageMapSpec.MapFileRefs.size(); i++) {
+                                if (packageMapSpec.MapFileRefs[i].Map == mapIndex) {
+                                    insertIndex = i;
+                                    break;
+                                }
+                            }
+                        }
+                        else if (!extraResource.PlaceByName.empty()) {
+                            std::string placeBeforeResourcePath = PathToResourceContainer(extraResource.PlaceByName);
 
                             if (placeBeforeResourcePath.empty()) {
                                 std::cerr << RED << "WARNING: " << RESET << "placeByName resource " << extraResource.PlaceByName
@@ -629,48 +638,50 @@ void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, R
         }
     }
 
-    std::vector<std::byte> decompressedMapResourcesData = mapResourcesFile->ToByteVector();
+    if (mapResourcesFile != NULL && mapResourcesChunk != NULL && !originalDecompressedMapResources.empty()) {
+        std::vector<std::byte> decompressedMapResourcesData = mapResourcesFile->ToByteVector();
 
-    if (decompressedMapResourcesData.size() != mapResourcesChunk->Size) {
-        std::vector<std::byte> compressedMapResourcesData = OodleCompress(decompressedMapResourcesData, Kraken, Normal);
+        if (decompressedMapResourcesData != originalDecompressedMapResources) {
+            std::vector<std::byte> compressedMapResourcesData = OodleCompress(decompressedMapResourcesData, Kraken, Normal);
 
-        if (compressedMapResourcesData.empty()) {
-            std::cerr << "ERROR: " << RESET << "Failed to compress " << mapResourcesChunk->ResourceName.NormalizedFileName << std::endl;
-        }
-        else {
-            mapResourcesChunk->Size = decompressedMapResourcesData.size();
-            mapResourcesChunk->SizeZ = compressedMapResourcesData.size();
-
-            long dataSectionLength = mem.size() - resourceContainer.DataOffset;
-            long placement = 0x10 - (dataSectionLength % 0x10) + 0x30;
-            long newContainerSize = mem.size() + compressedMapResourcesData.size() + placement;
-            long dataOffset = newContainerSize - compressedMapResourcesData.size();
-
-            try {
-                mem.munmap_file();
-                std::filesystem::resize_file(resourceContainer.Path, newContainerSize);
-
-                mem.mmap_file(resourceContainer.Path, mmap_allocator_namespace::READ_WRITE_SHARED, 0, newContainerSize,
-                    mmap_allocator_namespace::MAP_WHOLE_FILE | mmap_allocator_namespace::ALLOW_REMAP);
-
-                if (mem.empty())
-                    throw std::exception();
+            if (compressedMapResourcesData.empty()) {
+                std::cerr << "ERROR: " << RESET << "Failed to compress " << mapResourcesChunk->ResourceName.NormalizedFileName << std::endl;
             }
-            catch (...) {
-                std::cerr << RED << "ERROR: " << RESET << "Failed to resize " << resourceContainer.Path << std::endl;
-                return;
+            else {
+                mapResourcesChunk->Size = decompressedMapResourcesData.size();
+                mapResourcesChunk->SizeZ = compressedMapResourcesData.size();
+
+                long dataSectionLength = mem.size() - resourceContainer.DataOffset;
+                long placement = 0x10 - (dataSectionLength % 0x10) + 0x30;
+                long newContainerSize = mem.size() + compressedMapResourcesData.size() + placement;
+                long dataOffset = newContainerSize - compressedMapResourcesData.size();
+
+                try {
+                    mem.munmap_file();
+                    std::filesystem::resize_file(resourceContainer.Path, newContainerSize);
+
+                    mem.mmap_file(resourceContainer.Path, mmap_allocator_namespace::READ_WRITE_SHARED, 0, newContainerSize,
+                        mmap_allocator_namespace::MAP_WHOLE_FILE | mmap_allocator_namespace::ALLOW_REMAP);
+
+                    if (mem.empty())
+                        throw std::exception();
+                }
+                catch (...) {
+                    std::cerr << RED << "ERROR: " << RESET << "Failed to resize " << resourceContainer.Path << std::endl;
+                    return;
+                }
+
+                std::copy(compressedMapResourcesData.begin(), compressedMapResourcesData.end(), mem.begin() + dataOffset);
+                std::copy((std::byte*)&dataOffset, (std::byte*)&dataOffset + 8, mem.begin() + mapResourcesChunk->FileOffset);
+
+                long compressedMapResourcesSize = compressedMapResourcesData.size();
+                long decompressedMapResourcesSize = decompressedMapResourcesData.size();
+                std::copy((std::byte*)&compressedMapResourcesSize, (std::byte*)&compressedMapResourcesSize + 8, mem.begin() + mapResourcesChunk->SizeOffset);
+                std::copy((std::byte*)&decompressedMapResourcesSize, (std::byte*)&decompressedMapResourcesSize + 8, mem.begin() + mapResourcesChunk->SizeOffset + 8);
+
+                std::cout << "\tModified " << mapResourcesChunk->ResourceName.NormalizedFileName << std::endl;
+                delete mapResourcesFile;
             }
-
-            std::copy(compressedMapResourcesData.begin(), compressedMapResourcesData.end(), mem.begin() + dataOffset);
-            std::copy((std::byte*)&dataOffset, (std::byte*)&dataOffset + 8, mem.begin() + mapResourcesChunk->FileOffset);
-
-            long compressedMapResourcesSize = compressedMapResourcesData.size();
-            long decompressedMapResourcesSize = decompressedMapResourcesData.size();
-            std::copy((std::byte*)&compressedMapResourcesSize, (std::byte*)&compressedMapResourcesSize + 8, mem.begin() + mapResourcesChunk->SizeOffset);
-            std::copy((std::byte*)&decompressedMapResourcesSize, (std::byte*)&decompressedMapResourcesSize + 8, mem.begin() + mapResourcesChunk->SizeOffset + 8);
-
-            std::cout << "\tModified " << mapResourcesChunk->ResourceName.NormalizedFileName << std::endl;
-            delete mapResourcesFile;
         }
     }
     

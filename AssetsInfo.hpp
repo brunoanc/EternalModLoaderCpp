@@ -36,6 +36,7 @@ class AssetsInfoResource {
 public:
     std::string Name;
     bool Remove = false;
+    bool PlaceFirst = false;
     bool PlaceBefore = false;
     std::string PlaceByName;
 };

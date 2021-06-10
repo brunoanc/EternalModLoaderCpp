@@ -24,12 +24,12 @@
 #include <cstring>
 #include <cstdlib>
 #include <climits>
-#include <ctime>
+#include <chrono>
 
 #include "zipper/unzipper.h"
 #include "EternalModLoader.hpp"
 
-const int Version = 7;
+const int Version = 8;
 const std::string ResourceDataFileName = "rs_data";
 const std::string PackageMapSpecJsonFileName = "packagemapspec.json";
 std::string BasePath;
@@ -456,7 +456,7 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    clock_t before = clock();
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
     for (auto &resourceContainer : ResourceContainerList) {
         if (resourceContainer.Path.empty()) {
@@ -524,9 +524,9 @@ int main(int argc, char **argv)
         mem.munmap_file();
     }
 
-    clock_t difference = clock() - before;
-    double time = (double)difference / CLOCKS_PER_SEC;
-    
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    double time = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() / 1000000.0;
+
     std::cout << GREEN << "Finished in " << time << " seconds." << RESET << std::endl;
     return 0;
 }

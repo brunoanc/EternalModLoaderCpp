@@ -379,8 +379,9 @@ void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Resou
     const int bufferSize = 4096;
     std::byte buffer[bufferSize];
 
-    long extraBytes = newContainerSize - mem.size();
-    long currentPos = mem.size();
+    long oldContainerSize = mem.size();
+    long extraBytes = newContainerSize - oldContainerSize;
+    long currentPos = oldContainerSize;
     int bytesToRead;
 
     try {
