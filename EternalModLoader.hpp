@@ -31,7 +31,7 @@
 class Mod {
 public:
     std::string Name;
-    std::string Authors;
+    std::string Author;
     std::string Description;
     std::string Version;
     int LoadPriority = 0;
