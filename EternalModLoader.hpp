@@ -16,6 +16,7 @@
 * along with EternalModLoaderCpp. If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <map>
 #include <optional>
 #include <vector>
 #include <cmath>
@@ -23,10 +24,13 @@
 #ifndef ETERNALMODLOADER_HPP
 #define ETERNALMODLOADER_HPP
 
-#include "mmap_allocator/mmappable_vector.h"
 #include "AssetsInfo.hpp"
 #include "Oodle.hpp"
 #include "PackageMapSpec.hpp"
+
+#ifdef __CYGWIN__
+#define _WIN32
+#endif
 
 class Mod {
 public:
@@ -225,7 +229,7 @@ public:
 
 class ResourceDataEntry {
 public:
-    unsigned long StreamDbHash;
+    unsigned long StreamDbHash = 0;
     std::string ResourceType;
     std::string MapResourceType;
     std::string MapResourceName;
@@ -284,14 +288,16 @@ extern std::string GREEN;
 extern std::string YELLOW;
 extern std::string BLUE;
 
+extern char separator;
+
 extern std::vector<std::string> SupportedFileFormats;
 
 std::string PathToResourceContainer(std::string name);
-void ReadChunkInfo(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, ResourceContainer &resourceContainer);
+void ReadChunkInfo(FILE *&resourceFile, ResourceContainer &resourceContainer);
 ResourceChunk *GetChunk(std::string name, ResourceContainer &resourceContainer);
-void ReplaceChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, ResourceContainer &resourceContainer);
-void AddChunks(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, ResourceContainer &resourceContainer);
-void ReadResource(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, ResourceContainer &resourceContainer);
+void ReplaceChunks(FILE *&resourceFile, ResourceContainer &resourceContainer);
+void AddChunks(FILE *&resourceFile, ResourceContainer &resourceContainer);
+void ReadResource(FILE *&resourceFile, ResourceContainer &resourceContainer);
 int GetResourceContainer(std::string &resourceContainerName);
 std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string internalPath, bool decrypt);
 BlangFile ParseBlang(std::vector<std::byte> &blangBytes, std::string &resourceName);
@@ -299,8 +305,8 @@ std::vector<std::byte> WriteBlangToVector(BlangFile blangFile, std::string &reso
 std::string RemoveWhitespace(std::string &stringWithWhitespace);
 std::string ToLower(std::string &str);
 std::vector<std::string> SplitString(std::string stringToSplit, char delimiter);
-void LoadSoundMods(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, SoundContainer &soundContainer);
-std::map<unsigned long, ResourceDataEntry> ParseResourceData(std::string &filename);
+void LoadSoundMods(FILE *&resourceFile, SoundContainer &soundContainer);
+int ParseResourceData(std::string &filename);
 unsigned long CalculateResourceFileNameHash(std::string &input);
 std::string NormalizeResourceFilename(std::string filename);
 bool EndsWith(const std::string &fullString, const std::string &ending);

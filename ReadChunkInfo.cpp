@@ -21,31 +21,39 @@
 
 #include "EternalModLoader.hpp"
 
-void ReadChunkInfo(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, ResourceContainer &resourceContainer)
+void ReadChunkInfo(FILE *&resourceFile, ResourceContainer &resourceContainer)
 {
-    long dummy7Off = resourceContainer.Dummy7Offset + (resourceContainer.TypeCount * 4);
-
-    long nameId, fileOffset, sizeOffset, sizeZ, size;
-    std::byte compressionMode;
-    ResourceName name;
+    long dummy7Offset = resourceContainer.Dummy7Offset + (resourceContainer.TypeCount * 4);
+    fseek(resourceFile, dummy7Offset, SEEK_SET);
 
     for (int i = 0; i < resourceContainer.FileCount; i++) {
-        std::copy(mem.begin() + 0x20 + resourceContainer.InfoOffset + (0x90 * i), mem.begin() + 0x20 + resourceContainer.InfoOffset + (0x90 * i) + 8, (std::byte*)&nameId);
+        fseek(resourceFile, 0x20 + resourceContainer.InfoOffset + (0x90 * i), SEEK_SET);
 
-        std::copy(mem.begin() + 0x38 + resourceContainer.InfoOffset + (0x90 * i), mem.begin() + 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 8, (std::byte*)&fileOffset);
+        long nameId;
+        fread(&nameId, 8, 1, resourceFile);
 
-        sizeOffset = 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 8;
+        fseek(resourceFile, 0x38 + resourceContainer.InfoOffset + (0x90 * i), SEEK_SET);
 
-        std::copy(mem.begin() + 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 8, mem.begin() + 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 16, (std::byte*)&sizeZ);
+        long fileOffset;
+        fread(&fileOffset, 8, 1, resourceFile);
 
-        std::copy(mem.begin() + 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 16, mem.begin() + 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 24, (std::byte*)&size);
+        long sizeOffset = ftell(resourceFile);
 
-        compressionMode = mem[0x70 + resourceContainer.InfoOffset + 0x90 * i];
+        long sizeZ;
+        fread(&sizeZ, 8, 1, resourceFile);
 
-        nameId = ((nameId + 1) * 8) + dummy7Off;
-        std::copy(mem.begin() + nameId, mem.begin() + nameId + 8, (std::byte*)&nameId);
-        
-        name = resourceContainer.NamesList[nameId];
+        long size;
+        fread(&size, 8, 1, resourceFile);
+
+        fseek(resourceFile, 0x70 + resourceContainer.InfoOffset + (0x90 * i), SEEK_SET);
+
+        std::byte compressionMode = (std::byte)fgetc(resourceFile);
+        nameId = ((nameId + 1) * 8) + dummy7Offset;
+
+        fseek(resourceFile, nameId, SEEK_SET);
+        fread(&nameId, 8, 1, resourceFile);
+
+        ResourceName name = resourceContainer.NamesList[nameId];
 
         ResourceChunk chunk = ResourceChunk(name, fileOffset);
         chunk.FileOffset = sizeOffset - 8;

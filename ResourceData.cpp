@@ -21,10 +21,8 @@
 
 #include "EternalModLoader.hpp"
 
-std::map<unsigned long, ResourceDataEntry> ParseResourceData(std::string &fileName)
+int ParseResourceData(std::string &fileName)
 {
-    std::map<unsigned long, ResourceDataEntry> resourceData;
-
     long filesize = std::filesystem::file_size(fileName);
     long decompressedSize;
     std::vector<std::byte> compressedData(filesize - 8);
@@ -32,13 +30,15 @@ std::map<unsigned long, ResourceDataEntry> ParseResourceData(std::string &fileNa
     FILE *resourceDataFile = fopen(fileName.c_str(), "rb");
 
     if (!resourceDataFile)
-        return resourceData;
+        return -1;
     
     if (fread(&decompressedSize, 8, 1, resourceDataFile) != 1)
-        return resourceData;
+        return -1;
 
     if (fread(compressedData.data(), 1, compressedData.size(), resourceDataFile) != compressedData.size())
-        return resourceData;
+        return -1;
+
+    fclose(resourceDataFile);
 
     std::vector<std::byte> decompressedData;
 
@@ -50,11 +50,8 @@ std::map<unsigned long, ResourceDataEntry> ParseResourceData(std::string &fileNa
     }
     catch (...) {
         std::cerr << RED << "ERROR: " << RESET << "Failed to decompress " << fileName << std::endl;
-        return resourceData;
+        return -1;
     }
-
-    if (decompressedData.empty())
-        return resourceData;
 
     long pos = 0;
 
@@ -96,7 +93,6 @@ std::map<unsigned long, ResourceDataEntry> ParseResourceData(std::string &fileNa
         pos += 2;
 
         resourceDataEntry.MapResourceType = resourceDataEntry.ResourceType;
-        resourceDataEntry.MapResourceName = "";
 
         if (mapResourceTypeSize > 0) {
             resourceDataEntry.MapResourceType = std::string((char*)decompressedData.data() + pos, mapResourceTypeSize);
@@ -110,10 +106,13 @@ std::map<unsigned long, ResourceDataEntry> ParseResourceData(std::string &fileNa
             pos += mapResourceNameSize;
         }
 
-        resourceData[fileNameHash] = resourceDataEntry;
+        ResourceDataMap[fileNameHash] = resourceDataEntry;
     }
 
-    return resourceData;
+    std::cout << "outside" << std::endl;
+    exit(1);
+
+    return 0;
 }
 
 unsigned long CalculateResourceFileNameHash(std::string &input)

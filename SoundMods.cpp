@@ -17,7 +17,9 @@
 */
 
 #include <iostream>
+#include <string>
 #include <filesystem>
+#include <cstdio>
 
 #include "EternalModLoader.hpp"
 
@@ -25,7 +27,11 @@ std::vector<std::string> SupportedFileFormats = { ".ogg", ".opus", ".wav", ".wem
 
 int GetDecodedOpusFileSize(SoundModFile &soundModFile)
 {
+#ifdef _WIN32
+    FILE *p = _popen(std::string(BasePath + "opusdec.exe - tmp.wav > nul 2>&1").c_str(), "w");
+#else
     FILE *p = popen("opusdec - tmp.wav >/dev/null 2>&1", "w");
+#endif
 
     if (!p)
         return -1;
@@ -33,7 +39,12 @@ int GetDecodedOpusFileSize(SoundModFile &soundModFile)
     if (fwrite(soundModFile.FileBytes.data(), 1, soundModFile.FileBytes.size(), p) != soundModFile.FileBytes.size()) 
         return -1;
 
-    pclose(p);
+#ifdef _WIN32
+    if (_pclose(p) == -1)
+#else
+    if (pclose(p) == -1)
+#endif
+        return -1;
 
     long decSize = -1;
 
@@ -54,7 +65,11 @@ int GetDecodedOpusFileSize(SoundModFile &soundModFile)
 
 int EncodeSoundMod(SoundModFile &soundModFile)
 {
+#ifdef _WIN32
+    FILE *p = _popen(std::string(BasePath + "opusenc.exe - tmp.ogg > nul 2>&1").c_str(), "w");
+#else
     FILE *p = popen("opusenc - tmp.ogg >/dev/null 2>&1", "w");
+#endif
 
     if (!p)
         return -1;
@@ -62,7 +77,12 @@ int EncodeSoundMod(SoundModFile &soundModFile)
     if (fwrite(soundModFile.FileBytes.data(), 1, soundModFile.FileBytes.size(), p) != soundModFile.FileBytes.size())
         return -1;
 
-    pclose(p);
+#ifdef _WIN32
+    if (_pclose(p) == -1)
+#else
+    if (pclose(p) == -1)
+#endif
+        return -1;
 
     try {
         soundModFile.FileBytes.resize(std::filesystem::file_size("tmp.ogg"));
@@ -90,12 +110,12 @@ int EncodeSoundMod(SoundModFile &soundModFile)
     return 0;
 }
 
-void LoadSoundMods(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, SoundContainer &soundContainer)
+void LoadSoundMods(FILE *&soundBankFile, SoundContainer &soundContainer)
 {
     int fileCount = 0;
 
     for (auto &soundModFile : soundContainer.ModFileList) {
-        std::string soundFileNameStem = std::filesystem::path(soundModFile.Name).stem();
+        std::string soundFileNameStem = std::filesystem::path(soundModFile.Name).stem().string();
         int soundModId = -1;
 
         try {
@@ -122,7 +142,7 @@ void LoadSoundMods(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, S
             continue;
         }
 
-        std::string soundExtension = std::filesystem::path(soundModFile.Name).extension();
+        std::string soundExtension = std::filesystem::path(soundModFile.Name).extension().string();
         int encodedSize = soundModFile.FileBytes.size();
         int decodedSize = encodedSize;
         bool needsEncoding = false;
@@ -176,53 +196,48 @@ void LoadSoundMods(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, S
 
         bool soundFound = false;
 
-        unsigned int soundModOffset = mem.size();
+        unsigned int soundModOffset = std::filesystem::file_size(soundContainer.Path);
 
-        mem.munmap_file();
-        std::filesystem::resize_file(soundContainer.Path, soundModOffset + soundModFile.FileBytes.size());
-        
         try {
-            mem.mmap_file(soundContainer.Path, mmap_allocator_namespace::READ_WRITE_SHARED, 0, soundModOffset + soundModFile.FileBytes.size(),
-                mmap_allocator_namespace::MAP_WHOLE_FILE | mmap_allocator_namespace::ALLOW_REMAP);
-
-            if (mem.empty())
-                throw std::exception();
+            std::filesystem::resize_file(soundContainer.Path, soundModOffset + soundModFile.FileBytes.size());
         }
         catch (...) {
             std::cerr << RED << "ERROR: " << RESET << "Failed to load " << soundContainer.Path << " into memory for writing"<< std::endl;
             return;
         }
-        
-        std::copy(soundModFile.FileBytes.begin(), soundModFile.FileBytes.end(), mem.begin() + soundModOffset);
+
+        fseek(soundBankFile, soundModOffset, SEEK_SET);
+        fwrite(soundModFile.FileBytes.data(), 1, soundModFile.FileBytes.size(), soundBankFile);
+
+        fseek(soundBankFile, 4, SEEK_SET);
 
         unsigned int infoSize, headerSize;
-        std::copy(mem.begin() + 4, mem.begin() + 8, (std::byte*)&infoSize);
-        std::copy(mem.begin() + 8, mem.begin() + 12, (std::byte*)&headerSize);
+        fread(&infoSize, 1, 4, soundBankFile);
+        fread(&headerSize, 1, 4, soundBankFile);
 
-        long pos = headerSize + 12;
+        fseek(soundBankFile, headerSize, SEEK_CUR);
 
         for (unsigned int i = 0, j = (infoSize - headerSize) / 32; i < j; i++) {
-            pos += 8;
+            fseek(soundBankFile, 8, SEEK_CUR);
 
             unsigned int soundId;
-            std::copy(mem.begin() + pos, mem.begin() + pos + 4, (std::byte*)&soundId);
-            pos += 4;
+            fread(&soundId, 4, 1, soundBankFile);
 
             if (soundId != soundModId) {
-                pos += 20;
+                fseek(soundBankFile, 20, SEEK_CUR);
                 continue;
             }
 
             soundFound = true;
 
-            std::copy((std::byte*)&encodedSize, (std::byte*)&encodedSize + 4, mem.begin() + pos);
-            std::copy((std::byte*)&soundModOffset, (std::byte*)&soundModOffset + 4, mem.begin() + pos + 4);
-            std::copy((std::byte*)&decodedSize, (std::byte*)&decodedSize + 4, mem.begin() + pos + 8);
-            pos += 12;
+            fwrite(&encodedSize, 4, 1, soundBankFile);
+            fwrite(&soundModOffset, 4, 1, soundBankFile);
+            fwrite(&decodedSize, 4, 1, soundBankFile);
 
             unsigned short currentFormat;
-            std::copy(mem.begin() + pos, mem.begin() + pos + 2, (std::byte*)&currentFormat);
-            pos += 8;
+            fread(&currentFormat, 2, 1, soundBankFile);
+
+            fseek(soundBankFile, 6, SEEK_CUR);
 
             if (currentFormat != format) {
                 std::cerr << RED << "WARNING: " << RESET << "Format mismatch: sound file " << soundModFile.Name << " needs to be " << (currentFormat == 3 ? "WEM" : "OPUS") << " format." << std::endl;

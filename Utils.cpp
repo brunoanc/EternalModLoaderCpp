@@ -58,7 +58,7 @@ ResourceChunk *GetChunk(std::string name, ResourceContainer &resourceContainer)
 std::string RemoveWhitespace(std::string &stringWithWhitespace)
 {
     std::string stringWithoutWhitespace = stringWithWhitespace;
-    stringWithoutWhitespace.erase(std::remove_if(stringWithoutWhitespace.begin(), stringWithoutWhitespace.end(), [](char ch) { return std::isspace<char>(ch, std::locale::classic()); }), stringWithoutWhitespace.end());
+    stringWithoutWhitespace.erase(std::remove_if(stringWithoutWhitespace.begin(), stringWithoutWhitespace.end(), [](char ch) { return std::isspace(ch); }), stringWithoutWhitespace.end());
 
     return stringWithoutWhitespace;
 }

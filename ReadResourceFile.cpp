@@ -21,56 +21,70 @@
 
 #include "EternalModLoader.hpp"
 
-void ReadResource(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, ResourceContainer &resourceContainer)
+void ReadResource(FILE *&resourceFile, ResourceContainer &resourceContainer)
 {
+    fseek(resourceFile, 0x20, SEEK_SET);
+
     int fileCount;
-    std::copy(mem.begin() + 0x20, mem.begin() + 0x24, (std::byte*)&fileCount);
+    fread(&fileCount, 4, 1, resourceFile);
 
     int unknownCount;
-    std::copy(mem.begin() + 0x24, mem.begin() + 0x28, (std::byte*)&unknownCount);
+    fread(&unknownCount, 4, 1, resourceFile);
 
     int dummy2Num;
-    std::copy(mem.begin() + 0x28, mem.begin() + 0x32, (std::byte*)&dummy2Num);
+    fread(&dummy2Num, 4, 1, resourceFile);
+
+    fseek(resourceFile, 0x38, SEEK_SET);
 
     int stringsSize;
-    std::copy(mem.begin() + 0x38, mem.begin() + 0x42, (std::byte*)&stringsSize);
+    fread(&stringsSize, 4, 1, resourceFile);
+
+    fseek(resourceFile, 0x40, SEEK_SET);
 
     long namesOffset;
-    std::copy(mem.begin() + 0x40, mem.begin() + 0x48, (std::byte*)&namesOffset);
+    fread(&namesOffset, 8, 1, resourceFile);
 
     long namesEnd;
-    std::copy(mem.begin() + 0x48, mem.begin() + 0x56, (std::byte*)&namesEnd);
+    fread(&namesEnd, 8, 1, resourceFile);
 
     long infoOffset;
-    std::copy(mem.begin() + 0x50, mem.begin() + 0x58, (std::byte*)&infoOffset);
+    fread(&infoOffset, 8, 1, resourceFile);
 
-    long dummy7OffOrg;
-    std::copy(mem.begin() + 0x60, mem.begin() + 0x68, (std::byte*)&dummy7OffOrg);
+    fseek(resourceFile, 0x60, SEEK_SET);
 
-    long dataOff;
-    std::copy(mem.begin() + 0x68, mem.begin() + 0x76, (std::byte*)&dataOff);
+    long dummy7OffsetOrg;
+    fread(&dummy7OffsetOrg, 8, 1, resourceFile);
 
-    long idclOff;
-    std::copy(mem.begin() + 0x74, mem.begin() + 0x82, (std::byte*)&idclOff);
+    long dataOffset;
+    fread(&dataOffset, 8, 1, resourceFile);
+
+    fseek(resourceFile, 0x74, SEEK_SET);
+
+    long idclOffset;
+    fread(&idclOffset, 8, 1, resourceFile);
+
+    fseek(resourceFile, namesOffset, SEEK_SET);
 
     long namesNum;
-    std::copy(mem.begin() + namesOffset, mem.begin() + namesOffset + 8, (std::byte*)&namesNum);
+    fread(&namesNum, 8, 1, resourceFile);
 
-    long namesOffsetEnd = namesOffset + (namesNum + 1) * 8;
+    fseek(resourceFile, namesOffset + 8 + (namesNum * 8), SEEK_SET);
+
+    long namesOffsetEnd = ftell(resourceFile);
     long namesSize = namesEnd - namesOffsetEnd;
 
     std::vector<ResourceName> namesList;
-    std::vector<std::byte> currentNameBytes;
-    std::byte currentByte;
+    std::vector<char> currentNameBytes;
+    char currentByte;
     
     for (int i = 0; i < namesSize; i++) {
-        currentByte = mem[namesOffsetEnd+ i];
+        currentByte = fgetc(resourceFile);
 
-        if (currentByte == (std::byte)0 || i == namesSize - 1) {
+        if (currentByte == 0 || i == namesSize - 1) {
             if (currentNameBytes.empty())
                 continue;
 
-            std::string fullFileName((char*)currentNameBytes.data(), currentNameBytes.size());
+            std::string fullFileName(currentNameBytes.data(), currentNameBytes.size());
             std::string normalizedFileName = NormalizeResourceFilename(fullFileName);
 
             ResourceName resourceName(fullFileName, normalizedFileName);
@@ -88,9 +102,9 @@ void ReadResource(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Re
     resourceContainer.StringsSize = stringsSize;
     resourceContainer.NamesOffset = namesOffset;
     resourceContainer.InfoOffset = infoOffset;
-    resourceContainer.Dummy7Offset = dummy7OffOrg;
-    resourceContainer.DataOffset = dataOff;
-    resourceContainer.IdclOffset = idclOff;
+    resourceContainer.Dummy7Offset = dummy7OffsetOrg;
+    resourceContainer.DataOffset = dataOffset;
+    resourceContainer.IdclOffset = idclOffset;
     resourceContainer.UnknownCount = unknownCount;
     resourceContainer.FileCount2 = fileCount * 2;
     resourceContainer.NamesOffsetEnd = namesOffsetEnd;
@@ -98,5 +112,5 @@ void ReadResource(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, Re
     resourceContainer.UnknownOffset2 = namesEnd;
     resourceContainer.NamesList = namesList;
 
-    ReadChunkInfo(mem, resourceContainer);
+    ReadChunkInfo(resourceFile, resourceContainer);
 }

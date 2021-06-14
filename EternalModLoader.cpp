@@ -26,7 +26,7 @@
 #include <climits>
 #include <chrono>
 
-#include "zipper/unzipper.h"
+#include "miniz/miniz.h"
 #include "EternalModLoader.hpp"
 
 const int Version = 8;
@@ -44,9 +44,12 @@ std::string GREEN = "";
 std::string YELLOW = "";
 std::string BLUE = "";
 
+char separator;
+
 int main(int argc, char **argv)
 {
     std::ios::sync_with_stdio(false);
+    separator = std::filesystem::path::preferred_separator;
 
     if (std::getenv("ETERNALMODLOADER_NO_COLORS") == NULL) {
         RESET = "\033[0m";
@@ -72,7 +75,7 @@ int main(int argc, char **argv)
         return Version;
     }
 
-    BasePath = std::string(argv[1]) + "/base/";
+    BasePath = std::string(argv[1]) + separator + "base" + separator;
 
     if (!std::filesystem::exists(BasePath)) {
         std::cerr << RED << "ERROR: " << RESET << "Game directory does not exist!" << std::endl;
@@ -104,7 +107,8 @@ int main(int argc, char **argv)
 
         if (std::filesystem::exists(resourceDataFilePath)) {
             try {
-                ResourceDataMap = ParseResourceData(resourceDataFilePath);
+                if (ParseResourceData(resourceDataFilePath) == -1)
+                    throw std::exception();
 
                 if (ResourceDataMap.empty())
                     throw std::exception();
@@ -123,15 +127,15 @@ int main(int argc, char **argv)
     std::vector<std::string> zippedMods;
     std::vector<std::string> unzippedMods;
 
-    for (const auto &file : std::filesystem::directory_iterator(std::string(argv[1]) + "/Mods")) {
-        if (!std::filesystem::is_regular_file(file))
+    for (const auto &file : std::filesystem::directory_iterator(std::string(argv[1]) + separator + "Mods")) {
+        if (!std::filesystem::is_regular_file(file.path()))
             continue;
 
-        if (file.path().extension() == ".zip" && std::filesystem::equivalent(file.path(), std::string(argv[1]) + "/Mods/" + file.path().filename().string())) {
-            zippedMods.push_back(file.path());
+        if (file.path().extension() == ".zip" && file.path() == std::string(argv[1]) + separator + "Mods" + separator + file.path().filename().string()) {
+            zippedMods.push_back(file.path().string());
         }
         else {
-            unzippedMods.push_back(file.path());
+            unzippedMods.push_back(file.path().string());
         }
     }
 
@@ -141,15 +145,20 @@ int main(int argc, char **argv)
     for (const auto &zippedMod : zippedMods) {
         int zippedModCount = 0;
         std::vector<std::string> modFileNameList;
-        zipper::Unzipper modZip(zippedMod);
 
-        Mod mod(std::filesystem::path(zippedMod).filename());
+        mz_zip_archive modZip;
+        mz_zip_zero_struct(&modZip);
+        mz_zip_reader_init_file(&modZip, zippedMod.c_str(), 0);
+
+        Mod mod(std::filesystem::path(zippedMod).filename().string());
 
         if (!listResources) {
-            std::vector<unsigned char> unzippedModJson;
+            char *unzippedModJson;
+            size_t unzippedModJsonSize;
 
-            if (modZip.extractEntryToMemory("EternalMod.json", unzippedModJson)) {
-                std::string modJson((char*)unzippedModJson.data(), unzippedModJson.size());
+            if ((unzippedModJson = (char*)mz_zip_reader_extract_file_to_heap(&modZip, "EternalMod.json", &unzippedModJsonSize, 0)) != NULL) {
+                std::string modJson(unzippedModJson, unzippedModJsonSize);
+                free(unzippedModJson);
 
                 try {
                     mod = Mod(mod.Name, modJson);
@@ -166,12 +175,24 @@ int main(int argc, char **argv)
             }
         }
 
-        for (auto &zipEntry : modZip.entries()) {
-            if (0 == zipEntry.name.compare(zipEntry.name.length() - 1, 1, "/"))
+        for (int i = 0; i < modZip.m_total_files; i++) {
+            int zipEntryNameSize = mz_zip_reader_get_filename(&modZip, i, NULL, 0);
+            char *zipEntryNameBuffer = new char[zipEntryNameSize];
+
+            if (mz_zip_reader_get_filename(&modZip, i, zipEntryNameBuffer, zipEntryNameSize) != zipEntryNameSize || zipEntryNameBuffer == NULL) {
+                std::cerr << RED << "ERROR: " << RESET << "Failed to read zip file entry from " << zippedMod << std::endl;
+                delete[] zipEntryNameBuffer;
+                continue;
+            }
+
+            std::string zipEntryName(zipEntryNameBuffer);
+            delete[] zipEntryNameBuffer;
+
+            if (0 == zipEntryName.compare(zipEntryName.length() - 1, 1, "/"))
                 continue;
 
             bool isSoundMod = false;
-            std::string modFileName = zipEntry.name;
+            std::string modFileName = zipEntryName;
             std::vector<std::string> modFilePathParts = SplitString(modFileName, '/');
 
             if (modFilePathParts.size() < 2)
@@ -206,21 +227,24 @@ int main(int argc, char **argv)
                 }
 
                 if (!listResources) {
-                    std::string soundExtension = std::filesystem::path(modFileName).extension();
+                    std::string soundExtension = std::filesystem::path(modFileName).extension().string();
 
                     if (std::find(SupportedFileFormats.begin(), SupportedFileFormats.end(), soundExtension) == SupportedFileFormats.end()) {
                         std::cerr << RED << "WARNING: " << RESET << "Unsupported sound mod file format " << soundExtension << " for file " << modFileName << std::endl;
                         continue;
                     }
 
-                    std::vector<unsigned char> unzippedEntry;
-                    unzippedEntry.reserve(zipEntry.uncompressedSize);
-                    modZip.extractEntryToMemory(zipEntry.name, unzippedEntry);
+                    std::byte *unzippedEntry;
+                    size_t unzippedEntrySize;
 
-                    SoundModFile soundModFile(mod, std::filesystem::path(modFileName).filename());
+                    if ((unzippedEntry = (std::byte*)mz_zip_reader_extract_to_heap(&modZip, i, &unzippedEntrySize, 0)) == NULL) {
+                        std::cerr << RED << "ERROR: " << "Failed to extract zip entry from " << zippedMod << std::endl;
+                        continue;
+                    }
 
-                    soundModFile.FileBytes.resize(unzippedEntry.size());
-                    std::copy((std::byte*)unzippedEntry.data(), (std::byte*)unzippedEntry.data() + unzippedEntry.size(), soundModFile.FileBytes.begin());
+                    SoundModFile soundModFile(mod, std::filesystem::path(modFileName).filename().string());
+                    soundModFile.FileBytes = std::vector<std::byte>(unzippedEntry, unzippedEntry + unzippedEntrySize);
+                    free(unzippedEntry);
 
                     SoundContainerList[soundContainerIndex].ModFileList.push_back(soundModFile);
                     zippedModCount++;
@@ -237,21 +261,17 @@ int main(int argc, char **argv)
                 }
 
                 if (!listResources) {
-                    unsigned long streamSize = zipEntry.uncompressedSize;
+                    std::byte *unzippedEntry;
+                    size_t unzippedEntrySize;
 
-                    if (streamSize > ResourceContainerList.max_size()) {
-                        std::cerr << RED << "WARNING: " << RESET << "Skipped " << modFileName << " - too large." << std::endl;
+                    if ((unzippedEntry = (std::byte*)mz_zip_reader_extract_to_heap(&modZip, i, &unzippedEntrySize, 0)) == NULL) {
+                        std::cerr << RED << "ERROR: " << "Failed to extract zip entry from " << zippedMod << std::endl;
                         continue;
                     }
 
-                    std::vector<unsigned char> unzippedEntry;
-                    unzippedEntry.reserve(zipEntry.uncompressedSize);
-                    modZip.extractEntryToMemory(zipEntry.name, unzippedEntry);
-
                     ResourceModFile resourceModFile(mod, modFileName);
-
-                    resourceModFile.FileBytes.resize(unzippedEntry.size());
-                    std::copy((std::byte*)unzippedEntry.data(), (std::byte*)unzippedEntry.data() + unzippedEntry.size(), resourceModFile.FileBytes.begin());
+                    resourceModFile.FileBytes = std::vector<std::byte>(unzippedEntry, unzippedEntry + unzippedEntrySize);
+                    free(unzippedEntry);
 
                     if (ToLower(modFilePathParts[1]) == "eternalmod") {
                         if (modFilePathParts.size() == 4
@@ -288,7 +308,7 @@ int main(int argc, char **argv)
         if (zippedModCount > 0 && !listResources)
             std::cout << "Found " << BLUE << zippedModCount << " file(s) " << RESET << "in archive " << YELLOW << zippedMod << RESET << "..." << std::endl;
 
-        modZip.close();
+        mz_zip_reader_end(&modZip);
     }
 
     int unzippedModCount = 0;
@@ -298,7 +318,7 @@ int main(int argc, char **argv)
 
     for (const auto &unzippedMod : unzippedMods) {
         std::string unzippedModPath = unzippedMod;
-        std::vector<std::string> modFilePathParts = SplitString(unzippedModPath, '/');
+        std::vector<std::string> modFilePathParts = SplitString(unzippedModPath, separator);
 
         if (modFilePathParts.size() < 4)
             continue;
@@ -335,7 +355,7 @@ int main(int argc, char **argv)
             }
 
             if (!listResources) {
-                std::string soundExtension = std::filesystem::path(fileName).extension();
+                std::string soundExtension = std::filesystem::path(fileName).extension().string();
 
                 if (std::find(SupportedFileFormats.begin(), SupportedFileFormats.end(), soundExtension) == SupportedFileFormats.end()) {
                     std::cerr << RED << "WARNING: " << RESET << "Unsupported sound mod file format " << soundExtension << " for file " << fileName << std::endl;
@@ -347,7 +367,7 @@ int main(int argc, char **argv)
                 if (unzippedModSize > ResourceContainerList.max_size())
                     std::cerr << RED << "WARNING: " << RESET << "Skipped " << fileName << " - too large." << std::endl;
                 
-                SoundModFile soundModFile(globalLooseMod, std::filesystem::path(fileName).filename());
+                SoundModFile soundModFile(globalLooseMod, std::filesystem::path(fileName).filename().string());
                 
                 FILE *unzippedModFile = fopen(unzippedModPath.c_str(), "rb");
 
@@ -471,25 +491,18 @@ int main(int argc, char **argv)
             continue;
         }
 
-        mmap_allocator_namespace::mmappable_vector<std::byte> mem;
+        FILE *resourceFile = fopen(resourceContainer.Path.c_str(), "rb+");
 
-        try {
-            mem.mmap_file(resourceContainer.Path, mmap_allocator_namespace::READ_WRITE_SHARED, 0, fileSize,
-                mmap_allocator_namespace::MAP_WHOLE_FILE | mmap_allocator_namespace::ALLOW_REMAP);
-            
-            if (mem.empty())
-                throw std::exception();
-        }
-        catch (...) {
+        if (resourceFile == NULL) {
             std::cerr << RED << "ERROR: " << RESET << "Failed to open " << YELLOW << resourceContainer.Path << RESET << " for writing!" << std::endl;
             continue;
         }
 
-        ReadResource(mem, resourceContainer);
-        ReplaceChunks(mem, resourceContainer);
-        AddChunks(mem, resourceContainer);
+        ReadResource(resourceFile, resourceContainer);
+        ReplaceChunks(resourceFile, resourceContainer);
+        AddChunks(resourceFile, resourceContainer);
 
-        mem.munmap_file();
+        fclose(resourceFile);
     }
 
     for (auto &soundContainer : SoundContainerList) {
@@ -505,23 +518,16 @@ int main(int argc, char **argv)
             continue;
         }
 
-        mmap_allocator_namespace::mmappable_vector<std::byte> mem;
+        FILE *soundBankFile = fopen(soundContainer.Path.c_str(), "rb+");
 
-        try {
-            mem.mmap_file(soundContainer.Path, mmap_allocator_namespace::READ_WRITE_SHARED, 0, fileSize,
-                mmap_allocator_namespace::MAP_WHOLE_FILE | mmap_allocator_namespace::ALLOW_REMAP);
-            
-            if (mem.empty())
-                throw std::exception();
-        }
-        catch (...) {
+        if (soundBankFile == NULL) {
             std::cerr << RED << "ERROR: " << RESET << "Failed to open " << YELLOW << soundContainer.Path << RESET << " for writing!" << std::endl;
             continue;
         }
 
-        LoadSoundMods(mem, soundContainer);
+        LoadSoundMods(soundBankFile, soundContainer);
 
-        mem.munmap_file();
+        fclose(soundBankFile);
     }
 
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();

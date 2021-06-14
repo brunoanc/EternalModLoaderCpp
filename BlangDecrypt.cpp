@@ -17,15 +17,15 @@
 */
 
 #include <iostream>
+#include <algorithm>
 #include <iomanip>
 #include <sstream>
 #include <string>
 #include <vector>
 #include <fstream>
-#include <sys/random.h>
 #include <filesystem>
 #include <cstring>
-
+#include <ctime>
 #include <openssl/sha.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
@@ -127,9 +127,8 @@ std::vector<std::byte> CryptData(bool decrypt, std::byte *inputData, size_t inpu
 
 std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string internalPath, bool decrypt)
 {
-    std::vector<std::byte> emptyVector;
-
     std::string keyDeriveStatic = "swapTeam\n";
+    srand(time(NULL));
 
     std::byte fileSalt[0xC];
 
@@ -137,8 +136,7 @@ std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string inte
         std::copy(fileData.begin(), fileData.begin() + 0xC, fileSalt);
     }
     else {
-        if (getrandom(fileSalt, 0xC, 0) == -1)
-            return emptyVector;
+        std::generate((char*)fileSalt, (char*)fileSalt + 0xC, rand);
     }
 
     std::byte *encKey;
@@ -147,7 +145,7 @@ std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string inte
         encKey = HashData(fileSalt, 0xC, (std::byte*)keyDeriveStatic.c_str(), 0xA, (std::byte*)internalPath.c_str(), internalPath.size(), NULL, 0);
     }
     catch (...) {
-        return emptyVector;
+        return std::vector<std::byte>();
     }
 
     std::byte fileIV[0x10];
@@ -156,8 +154,7 @@ std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string inte
         std::copy(fileData.begin() + 0xC, fileData.begin() + 0xC + 0x10, fileIV);
     }
     else {
-        if (getrandom(fileIV, 0x10, 0) == -1)
-            return emptyVector;
+        std::generate((char*)fileIV, (char*)fileIV + 0x10, rand);
     }
 
     std::vector<std::byte> fileText;
@@ -174,11 +171,11 @@ std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string inte
             hmac = HashData(fileSalt, 0xC, fileIV, 0x10, fileText.data(), fileText.size(), encKey, 0x20);
         }
         catch (...) {
-            return emptyVector;
+            return std::vector<std::byte>();
         }
 
         if (std::memcmp(hmac, fileHmac, 0x20))
-            return emptyVector;
+            return std::vector<std::byte>();
     }
     else {
         fileText.resize(fileData.size());
@@ -194,7 +191,7 @@ std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string inte
         cryptedText = CryptData(decrypt, fileText.data(), fileText.size(), realKey, fileIV);
     }
     catch (...) {
-        return emptyVector;
+        return std::vector<std::byte>();
     }
 
     if (decrypt) {

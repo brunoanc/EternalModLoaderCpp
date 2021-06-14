@@ -25,15 +25,15 @@
 std::string PathToResourceContainer(std::string name)
 {
     std::string searchPath = BasePath;
-    std::string resourcePath;
+    std::string resourcePath = name;
     bool recursive = true;
 
     if (ToLower(name).rfind("dlc_hub", 0) == 0) {
-        std::string dlcHubFileName = name.substr(4, name.size() - 4);
-        resourcePath = BasePath + "game/dlc/hub/" + dlcHubFileName;
+        resourcePath = resourcePath.substr(4, name.size() - 4);
+        return BasePath + "game" + separator + "dlc" + separator + "hub" + separator + resourcePath;
     }
     else if (ToLower(name).rfind("hub", 0) == 0) {
-        resourcePath = BasePath + "game/hub/" + name;
+        return BasePath + "game" + separator + "hub" + separator + resourcePath;
     }
     else {
         resourcePath = name;
@@ -42,22 +42,20 @@ std::string PathToResourceContainer(std::string name)
             || resourcePath.find("warehouse") != std::string::npos
             || resourcePath.find("meta") != std::string::npos
             || resourcePath.find(".streamdb") != std::string::npos) {
-            recursive = false;
+                recursive = false;
         }
         else {
-            searchPath = BasePath + "game/";
+            searchPath = BasePath + "game" + separator;
         }
+    }
+
+    if (std::filesystem::is_regular_file(searchPath + resourcePath)) {
+        return searchPath + resourcePath;
     }
 
     if (recursive) {
         for (auto &file : std::filesystem::recursive_directory_iterator(searchPath)) {
-            if (std::filesystem::equivalent(file.path(), resourcePath) || std::filesystem::equivalent(file.path(), searchPath + resourcePath) || file.path().filename() == resourcePath)
-                return file.path().string();
-        }
-    }
-    else {
-        for (auto &file : std::filesystem::directory_iterator(searchPath)) {
-            if (std::filesystem::equivalent(file.path(), resourcePath) || std::filesystem::equivalent(file.path(), searchPath + resourcePath) || file.path().filename() == resourcePath)
+            if (file.path().filename() == resourcePath)
                 return file.path().string();
         }
     }
@@ -67,13 +65,11 @@ std::string PathToResourceContainer(std::string name)
 
 std::string PathToSoundContainer(std::string name)
 {
-    std::string searchPath = BasePath + "sound/soundbanks/pc";
+    std::string searchPath = BasePath + "sound" + separator + "soundbanks" + separator + "pc" + separator;
     std::string sndPath = name + ".snd";
 
-    for (auto &file : std::filesystem::recursive_directory_iterator(searchPath)) {
-        if (std::filesystem::equivalent(file.path(), sndPath) || std::filesystem::equivalent(file.path(), searchPath + sndPath) || file.path().filename() == sndPath)
-            return file.path().string();
-    }
+    if (std::filesystem::is_regular_file(searchPath + sndPath))
+        return searchPath + sndPath;
 
     return "";
 }

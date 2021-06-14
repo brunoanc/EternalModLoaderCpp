@@ -18,15 +18,31 @@
 
 #include <iostream>
 #include <vector>
-#include <dlfcn.h>
 
 #include "EternalModLoader.hpp"
 
-OodLZ_CompressFunc* OodLZ_Compress;
-OodLZ_DecompressFunc* OodLZ_Decompress;
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#else
+#include <dlfcn.h>
+#endif
+
+static OodLZ_CompressFunc* OodLZ_Compress;
+static OodLZ_DecompressFunc* OodLZ_Decompress;
 
 int OodleInit()
 {
+#ifdef _WIN32
+    std::string oo2corePath = BasePath + "..\\oo2core_8_win64.dll";
+    HMODULE oodle = LoadLibraryA(oo2corePath.c_str());
+    
+    if (!oodle)
+        return -1;
+
+    OodLZ_Compress = (OodLZ_CompressFunc*)GetProcAddress(oodle, "OodleLZ_Compress");
+    OodLZ_Decompress = (OodLZ_DecompressFunc*)GetProcAddress(oodle, "OodleLZ_Decompress");
+#else
     std::string linoodlePath = BasePath + "liblinoodle.so";
     void *oodle = dlopen(linoodlePath.c_str(), RTLD_LAZY);
 
@@ -35,6 +51,7 @@ int OodleInit()
 
     OodLZ_Compress = (OodLZ_CompressFunc*)dlsym(oodle, "OodleLZ_Compress");
     OodLZ_Decompress = (OodLZ_DecompressFunc*)dlsym(oodle, "OodleLZ_Decompress");
+#endif
 
     if (!OodLZ_Compress || !OodLZ_Decompress)
         return -1;
