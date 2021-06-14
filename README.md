@@ -11,7 +11,7 @@ C++ port of EternalModLoader by proteh, coded specifically for Linux users, but 
 * Better Linux compatibility (should solve issues for people having problems with the C# port).
 
 ## Compiling
-The project uses Cmake to compile, and requires the OpenSSL library to be installed.
+The project uses Cmake to compile, and requires the OpenSSL library to be installed. It also needs the MinGW toolchain on MSYS to compile on Windows (MSVC untested).
 
 First clone the repo and all submodules by running:
 
@@ -24,7 +24,7 @@ Then, generate the makefile by running:
 cd EternalModLoaderCpp
 mkdir build
 cd build
-cmake ..
+cmake .. # Append "-G 'MSYS Makefiles'" on Windows
 ```
 
 Finally, build with:
