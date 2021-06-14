@@ -1,7 +1,7 @@
 # EternalModLoaderCpp
 ![Build Status](https://github.com/PowerBall253/EternalModLoaderCpp/actions/workflows/cmake.yml/badge.svg)
 
-C++ port of EternalModLoader by proteh, coded specifically for Linux users.
+C++ port of EternalModLoader by proteh, coded specifically for Linux users, but also Windows compatible.
 
 ## Features
 * Smaller file size (only around ~750 KB).
@@ -11,7 +11,7 @@ C++ port of EternalModLoader by proteh, coded specifically for Linux users.
 * Better Linux compatibility (should solve issues for people having problems with the C# port).
 
 ## Compiling
-The project uses Cmake to compile, and requires the zlib, OpenSSL and opus-tools libraries to be installed.
+The project uses Cmake to compile, and requires the OpenSSL library to be installed.
 
 First clone the repo and all submodules by running:
 
@@ -44,3 +44,5 @@ The DEternal_loadMods executable will be in the "build" folder.
 * Fry: For creating the original sound mod loading tool.
 
 * SamPT: For figuring out how to load new assets with proteh.
+
+* d3vilguard: For helping me test the latest versions of the code.
