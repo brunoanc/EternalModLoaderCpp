@@ -16,11 +16,11 @@
 * along with EternalModLoaderCpp. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <iostream>
-#include <vector>
-
 #ifndef PACKAGEMAPSPEC_HPP
 #define PACKAGEMAPSPEC_HPP
+
+#include <iostream>
+#include <vector>
 
 class PackageMapSpecFile {
 public:
@@ -29,8 +29,8 @@ public:
 
 class PackageMapSpecMapFileRef {
 public:
-    int File;
-    int Map;
+    int32_t File;
+    int32_t Map;
 
     PackageMapSpecMapFileRef()
     {
@@ -38,7 +38,7 @@ public:
         Map = -1;
     }
 
-    PackageMapSpecMapFileRef(int file, int map)
+    PackageMapSpecMapFileRef(int32_t file, int32_t map)
     {
         File = file;
         Map = map;

@@ -18,7 +18,6 @@
 
 #include <iostream>
 #include <algorithm>
-#include <memory>
 
 #include "EternalModLoader.hpp"
 
@@ -28,36 +27,36 @@ std::vector<std::byte> MapResourcesFile::ToByteVector()
 
     mapResourcesBytes.insert(mapResourcesBytes.end(), (std::byte*)&Magic, (std::byte*)&Magic + 4);
 
-    int layerCount = Layers.size();
+    int32_t layerCount = Layers.size();
     std::reverse((std::byte*)&layerCount, (std::byte*)&layerCount + 4);
     mapResourcesBytes.insert(mapResourcesBytes.end(), (std::byte*)&layerCount, (std::byte*)&layerCount + 4);
 
     for (auto &layer : Layers) {
-        int layerSize = layer.size();
+        int32_t layerSize = layer.size();
         mapResourcesBytes.insert(mapResourcesBytes.end(), (std::byte*)&layerSize, (std::byte*)&layerSize + 4);
         mapResourcesBytes.insert(mapResourcesBytes.end(), (std::byte*)layer.c_str(), (std::byte*)layer.c_str() + layerSize);
     }
 
-    long assetTypesCount = AssetTypes.size();
+    int64_t assetTypesCount = AssetTypes.size();
     std::reverse((std::byte*)&assetTypesCount, (std::byte*)&assetTypesCount + 8);
     mapResourcesBytes.insert(mapResourcesBytes.end(), (std::byte*)&assetTypesCount, (std::byte*)&assetTypesCount + 8);
 
     for (auto &assetType : AssetTypes) {
-        int assetTypeSize = assetType.size();
+        int32_t assetTypeSize = assetType.size();
         mapResourcesBytes.insert(mapResourcesBytes.end(), (std::byte*)&assetTypeSize, (std::byte*)&assetTypeSize + 4);
         mapResourcesBytes.insert(mapResourcesBytes.end(), (std::byte*)assetType.c_str(), (std::byte*)assetType.c_str() + assetTypeSize);
     }
 
-    int assetCount = Assets.size();
+    int32_t assetCount = Assets.size();
     std::reverse((std::byte*)&assetCount, (std::byte*)&assetCount + 4);
     mapResourcesBytes.insert(mapResourcesBytes.end(), (std::byte*)&assetCount, (std::byte*)&assetCount + 4);
 
     for (auto &asset : Assets) {
-        int assetTypeIndex = asset.AssetTypeIndex;
+        int32_t assetTypeIndex = asset.AssetTypeIndex;
         std::reverse((std::byte*)&assetTypeIndex, (std::byte*)&assetTypeIndex + 4);
         mapResourcesBytes.insert(mapResourcesBytes.end(), (std::byte*)&assetTypeIndex, (std::byte*)&assetTypeIndex + 4);
 
-        int assetNameSize = asset.Name.size();
+        int32_t assetNameSize = asset.Name.size();
         mapResourcesBytes.insert(mapResourcesBytes.end(), (std::byte*)&assetNameSize, (std::byte*)&assetNameSize + 4);
         mapResourcesBytes.insert(mapResourcesBytes.end(), (std::byte*)asset.Name.c_str(), (std::byte*)asset.Name.c_str() + assetNameSize);
 
@@ -73,12 +72,12 @@ std::vector<std::byte> MapResourcesFile::ToByteVector()
         mapResourcesBytes.insert(mapResourcesBytes.end(), (std::byte*)&asset.UnknownData4, (std::byte*)&asset.UnknownData4 + 8);
     }
 
-    int mapCount = Maps.size();
+    int32_t mapCount = Maps.size();
     std::reverse((std::byte*)&mapCount, (std::byte*)&mapCount + 4);
     mapResourcesBytes.insert(mapResourcesBytes.end(), (std::byte*)&mapCount, (std::byte*)&mapCount + 4);
 
     for (auto &map : Maps) {
-        int mapSize = map.size();
+        int32_t mapSize = map.size();
         mapResourcesBytes.insert(mapResourcesBytes.end(), (std::byte*)&mapSize, (std::byte*)&mapSize + 4);
         mapResourcesBytes.insert(mapResourcesBytes.end(), (std::byte*)map.c_str(), (std::byte*)map.c_str() + mapSize);
     }
@@ -88,20 +87,20 @@ std::vector<std::byte> MapResourcesFile::ToByteVector()
 
 MapResourcesFile::MapResourcesFile(std::vector<std::byte> &rawData)
 {
-    long pos = 0;
+    int64_t pos = 0;
 
     std::copy(rawData.begin() + pos, rawData.begin() + pos + 4, (std::byte*)&Magic);
     pos += 4;
 
     std::reverse(rawData.begin() + pos, rawData.begin() + pos + 4);
-    int layerCount;
+    int32_t layerCount;
     std::copy(rawData.begin() + pos, rawData.begin() + pos + 4, (std::byte*)&layerCount);
     pos += 4;
 
     Layers.reserve(layerCount);
 
-    for (int i = 0; i < layerCount; i++) {
-        int stringSize;
+    for (int32_t i = 0; i < layerCount; i++) {
+        int32_t stringSize;
         std::copy(rawData.begin() + pos, rawData.begin() + pos + 4, (std::byte*)&stringSize);
         pos += 4;
 
@@ -111,14 +110,14 @@ MapResourcesFile::MapResourcesFile(std::vector<std::byte> &rawData)
     }
 
     std::reverse(rawData.begin() + pos, rawData.begin() + pos + 8);
-    long assetTypeCount;
+    int64_t assetTypeCount;
     std::copy(rawData.begin() + pos, rawData.begin() + pos + 8, (std::byte*)&assetTypeCount);
     pos += 8;
 
     AssetTypes.reserve(assetTypeCount);
 
-    for (int i = 0; i < assetTypeCount; i++) {
-        int stringSize;
+    for (int32_t i = 0; i < assetTypeCount; i++) {
+        int32_t stringSize;
         std::copy(rawData.begin() + pos, rawData.begin() + pos + 4, (std::byte*)&stringSize);
         pos += 4;
 
@@ -128,20 +127,20 @@ MapResourcesFile::MapResourcesFile(std::vector<std::byte> &rawData)
     }
 
     std::reverse(rawData.begin() + pos, rawData.begin() + pos + 4);
-    int assetCount;
+    int32_t assetCount;
     std::copy(rawData.begin() + pos, rawData.begin() + pos + 4, (std::byte*)&assetCount);
     pos += 4;
 
     Assets.reserve(assetCount);
 
-    for (int i = 0; i < assetCount; i++) {
+    for (int32_t i = 0; i < assetCount; i++) {
         MapAsset mapAsset;
 
         std::reverse(rawData.begin() + pos, rawData.begin() + pos + 4);
         std::copy(rawData.begin() + pos, rawData.begin() + pos + 4, (std::byte*)&mapAsset.AssetTypeIndex);
         pos += 4;
 
-        int stringSize;
+        int32_t stringSize;
         std::copy(rawData.begin() + pos, rawData.begin() + pos + 4, (std::byte*)&stringSize);
         pos += 4;
 
@@ -167,14 +166,14 @@ MapResourcesFile::MapResourcesFile(std::vector<std::byte> &rawData)
     }
 
     std::reverse(rawData.begin() + pos, rawData.begin() + pos + 4);
-    int mapCount;
+    int32_t mapCount;
     std::copy(rawData.begin() + pos, rawData.begin() + pos + 4, (std::byte*)&mapCount);
     pos += 4;
 
     Maps.reserve(mapCount);
 
-    for (int i = 0; i < mapCount; i++) {
-        int stringSize;
+    for (int32_t i = 0; i < mapCount; i++) {
+        int32_t stringSize;
         std::copy(rawData.begin() + pos, rawData.begin() + pos + 4, (std::byte*)&stringSize);
         pos += 4;
 

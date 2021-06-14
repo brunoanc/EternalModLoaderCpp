@@ -1,9 +1,7 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.10)
 project(EternalModLoader)
 
 set(CMAKE_CXX_STANDARD 17)
-
-add_subdirectory(zipper)
 
 set(JSON_BuildTests OFF CACHE INTERNAL "")
 add_subdirectory(json)
@@ -25,10 +23,16 @@ file(GLOB SOURCES
         ./ResourceData.cpp
         ./SoundMods.cpp
         ./Utils.cpp
-        ./mmap_allocator/mmap*.cpp
+        ./miniz/miniz.c
         )
 
-set (CMAKE_CXX_FLAGS "-Ofast -DNDEBUG -ftree-vectorize -msse2")
+if(DEFINED ENV{ETERNALMODLOADERCPP_STATIC})
+        set(OPENSSL_USE_STATIC_LIBS TRUE)
+        set (CMAKE_CXX_FLAGS "-Ofast -DNDEBUG -ftree-vectorize -msse2 -static")
+else()
+        set (CMAKE_CXX_FLAGS "-Ofast -DNDEBUG -ftree-vectorize -msse2")
+endif()
+
 add_executable(DEternal_loadMods ${SOURCES})
 
 find_package(OpenSSL REQUIRED)
@@ -36,7 +40,6 @@ find_package(OpenSSL REQUIRED)
 target_link_libraries(
         DEternal_loadMods
         PUBLIC
-        staticZipper
         nlohmann_json::nlohmann_json
         OpenSSL::Crypto
         ${CMAKE_DL_LIBS}

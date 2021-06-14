@@ -23,9 +23,9 @@
 
 #include "EternalModLoader.hpp"
 
-int GetResourceContainer(std::string &resourceContainerName)
+int32_t GetResourceContainer(std::string &resourceContainerName)
 {
-    for (int i = 0; i < ResourceContainerList.size(); i++) {
+    for (int32_t i = 0; i < ResourceContainerList.size(); i++) {
         if (ResourceContainerList[i].Name == resourceContainerName)
             return i;
     }
@@ -33,9 +33,9 @@ int GetResourceContainer(std::string &resourceContainerName)
     return -1;
 }
 
-int GetSoundContainer(std::string &soundContainerName)
+int32_t GetSoundContainer(std::string &soundContainerName)
 {
-    for (int i = 0; i < SoundContainerList.size(); i++) {
+    for (int32_t i = 0; i < SoundContainerList.size(); i++) {
         if (SoundContainerList[i].Name == soundContainerName)
             return i;
     }
@@ -58,7 +58,7 @@ ResourceChunk *GetChunk(std::string name, ResourceContainer &resourceContainer)
 std::string RemoveWhitespace(std::string &stringWithWhitespace)
 {
     std::string stringWithoutWhitespace = stringWithWhitespace;
-    stringWithoutWhitespace.erase(std::remove_if(stringWithoutWhitespace.begin(), stringWithoutWhitespace.end(), [](char ch) { return std::isspace<char>(ch, std::locale::classic()); }), stringWithoutWhitespace.end());
+    stringWithoutWhitespace.erase(std::remove_if(stringWithoutWhitespace.begin(), stringWithoutWhitespace.end(), [](char ch) { return std::isspace(ch); }), stringWithoutWhitespace.end());
 
     return stringWithoutWhitespace;
 }

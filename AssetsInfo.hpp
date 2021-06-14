@@ -16,11 +16,11 @@
 * along with EternalModLoaderCpp. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <iostream>
-#include <vector>
-
 #ifndef ASSETSINFO_HPP
 #define ASSETSINFO_HPP
+
+#include <iostream>
+#include <vector>
 
 class AssetsInfoLayer {
 public:
@@ -43,7 +43,7 @@ public:
 
 class AssetsInfoAsset {
 public:
-    unsigned long StreamDbHash = 0;
+    uint64_t StreamDbHash = 0;
     std::string ResourceType;
     std::byte Version = (std::byte)0;
     std::string Name;

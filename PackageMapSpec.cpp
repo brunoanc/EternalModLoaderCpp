@@ -33,8 +33,8 @@ PackageMapSpec::PackageMapSpec(std::string &json)
 
     for (auto &mapFileRef : packageMapSpecJson["mapFileRefs"]) {
         PackageMapSpecMapFileRef packageMapSpecMapFileRef;
-        packageMapSpecMapFileRef.File = mapFileRef["file"].get<int>();
-        packageMapSpecMapFileRef.Map = mapFileRef["map"].get<int>();
+        packageMapSpecMapFileRef.File = mapFileRef["file"].get<int32_t>();
+        packageMapSpecMapFileRef.Map = mapFileRef["map"].get<int32_t>();
         MapFileRefs.push_back(packageMapSpecMapFileRef);
     }
 

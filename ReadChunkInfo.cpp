@@ -21,29 +21,29 @@
 
 #include "EternalModLoader.hpp"
 
-void ReadChunkInfo(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, ResourceContainer &resourceContainer)
+void ReadChunkInfo(std::byte *&mem, ResourceContainer &resourceContainer)
 {
-    long dummy7Off = resourceContainer.Dummy7Offset + (resourceContainer.TypeCount * 4);
+    int64_t dummy7Off = resourceContainer.Dummy7Offset + (resourceContainer.TypeCount * 4);
 
-    long nameId, fileOffset, sizeOffset, sizeZ, size;
+    int64_t nameId, fileOffset, sizeOffset, sizeZ, size;
     std::byte compressionMode;
     ResourceName name;
 
-    for (int i = 0; i < resourceContainer.FileCount; i++) {
-        std::copy(mem.begin() + 0x20 + resourceContainer.InfoOffset + (0x90 * i), mem.begin() + 0x20 + resourceContainer.InfoOffset + (0x90 * i) + 8, (std::byte*)&nameId);
+    for (int32_t i = 0; i < resourceContainer.FileCount; i++) {
+        std::copy(mem + 0x20 + resourceContainer.InfoOffset + (0x90 * i), mem + 0x20 + resourceContainer.InfoOffset + (0x90 * i) + 8, (std::byte*)&nameId);
 
-        std::copy(mem.begin() + 0x38 + resourceContainer.InfoOffset + (0x90 * i), mem.begin() + 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 8, (std::byte*)&fileOffset);
+        std::copy(mem + 0x38 + resourceContainer.InfoOffset + (0x90 * i), mem + 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 8, (std::byte*)&fileOffset);
 
         sizeOffset = 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 8;
 
-        std::copy(mem.begin() + 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 8, mem.begin() + 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 16, (std::byte*)&sizeZ);
+        std::copy(mem + 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 8, mem + 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 16, (std::byte*)&sizeZ);
 
-        std::copy(mem.begin() + 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 16, mem.begin() + 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 24, (std::byte*)&size);
+        std::copy(mem + 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 16, mem + 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 24, (std::byte*)&size);
 
         compressionMode = mem[0x70 + resourceContainer.InfoOffset + 0x90 * i];
 
         nameId = ((nameId + 1) * 8) + dummy7Off;
-        std::copy(mem.begin() + nameId, mem.begin() + nameId + 8, (std::byte*)&nameId);
+        std::copy(mem + nameId, mem + nameId + 8, (std::byte*)&nameId);
         
         name = resourceContainer.NamesList[nameId];
 

@@ -17,15 +17,15 @@
 */
 
 #include <iostream>
+#include <algorithm>
 #include <iomanip>
 #include <sstream>
 #include <string>
 #include <vector>
 #include <fstream>
-#include <sys/random.h>
 #include <filesystem>
 #include <cstring>
-
+#include <ctime>
 #include <openssl/sha.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
@@ -48,7 +48,7 @@ std::byte *HashData(const std::byte *data1, size_t data1Len, const std::byte *da
         return md;
     }
     else {
-        unsigned int md_len;
+        uint32_t md_len;
 
         HMAC_CTX *ctx = HMAC_CTX_new();
         HMAC_Init_ex(ctx, hmacKey, hmacKeyLen, EVP_sha256(), NULL);
@@ -66,10 +66,10 @@ std::byte *HashData(const std::byte *data1, size_t data1Len, const std::byte *da
     }
 }
 
-int EncryptData(unsigned char *plaintext, int plaintext_len, unsigned char *key, unsigned char *iv, unsigned char *ciphertext)
+int32_t EncryptData(unsigned char *plaintext, int32_t plaintext_len, unsigned char *key, unsigned char *iv, unsigned char *ciphertext)
 {
-    int len;
-    int ciphertext_len;
+    int32_t len;
+    int32_t ciphertext_len;
 
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
     EVP_EncryptInit_ex(ctx, EVP_aes_128_cbc(), NULL, key, iv);
@@ -86,10 +86,10 @@ int EncryptData(unsigned char *plaintext, int plaintext_len, unsigned char *key,
     return ciphertext_len;
 }
 
-int DecryptData(unsigned char *ciphertext, int ciphertext_len, unsigned char *key, unsigned char *iv, unsigned char *plaintext)
+int32_t DecryptData(unsigned char *ciphertext, int32_t ciphertext_len, unsigned char *key, unsigned char *iv, unsigned char *plaintext)
 {
-    int len;
-    int plaintext_len;
+    int32_t len;
+    int32_t plaintext_len;
 
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
     EVP_DecryptInit_ex(ctx, EVP_aes_128_cbc(), NULL, key, iv);
@@ -109,7 +109,7 @@ int DecryptData(unsigned char *ciphertext, int ciphertext_len, unsigned char *ke
 std::vector<std::byte> CryptData(bool decrypt, std::byte *inputData, size_t inputDataLen, std::byte *key, std::byte *iv)
 {
     unsigned char *output = new unsigned char[inputDataLen + (inputDataLen % 16 == 0 ? 0 : (16 - inputDataLen % 16))];
-    unsigned long newSize;
+    uint64_t newSize;
 
     if (decrypt) {
         newSize = DecryptData((unsigned char*)inputData, inputDataLen, (unsigned char*)key, (unsigned char*)iv, output);
@@ -127,9 +127,8 @@ std::vector<std::byte> CryptData(bool decrypt, std::byte *inputData, size_t inpu
 
 std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string internalPath, bool decrypt)
 {
-    std::vector<std::byte> emptyVector;
-
     std::string keyDeriveStatic = "swapTeam\n";
+    srand(time(NULL));
 
     std::byte fileSalt[0xC];
 
@@ -137,8 +136,7 @@ std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string inte
         std::copy(fileData.begin(), fileData.begin() + 0xC, fileSalt);
     }
     else {
-        if (getrandom(fileSalt, 0xC, 0) == -1)
-            return emptyVector;
+        std::generate((char*)fileSalt, (char*)fileSalt + 0xC, rand);
     }
 
     std::byte *encKey;
@@ -147,7 +145,7 @@ std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string inte
         encKey = HashData(fileSalt, 0xC, (std::byte*)keyDeriveStatic.c_str(), 0xA, (std::byte*)internalPath.c_str(), internalPath.size(), NULL, 0);
     }
     catch (...) {
-        return emptyVector;
+        return std::vector<std::byte>();
     }
 
     std::byte fileIV[0x10];
@@ -156,8 +154,7 @@ std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string inte
         std::copy(fileData.begin() + 0xC, fileData.begin() + 0xC + 0x10, fileIV);
     }
     else {
-        if (getrandom(fileIV, 0x10, 0) == -1)
-            return emptyVector;
+        std::generate((char*)fileIV, (char*)fileIV + 0x10, rand);
     }
 
     std::vector<std::byte> fileText;
@@ -174,11 +171,11 @@ std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string inte
             hmac = HashData(fileSalt, 0xC, fileIV, 0x10, fileText.data(), fileText.size(), encKey, 0x20);
         }
         catch (...) {
-            return emptyVector;
+            return std::vector<std::byte>();
         }
 
         if (std::memcmp(hmac, fileHmac, 0x20))
-            return emptyVector;
+            return std::vector<std::byte>();
     }
     else {
         fileText.resize(fileData.size());
@@ -194,7 +191,7 @@ std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string inte
         cryptedText = CryptData(decrypt, fileText.data(), fileText.size(), realKey, fileIV);
     }
     catch (...) {
-        return emptyVector;
+        return std::vector<std::byte>();
     }
 
     if (decrypt) {

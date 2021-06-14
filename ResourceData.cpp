@@ -21,24 +21,25 @@
 
 #include "EternalModLoader.hpp"
 
-std::map<unsigned long, ResourceDataEntry> ParseResourceData(std::string &fileName)
+std::map<uint64_t, ResourceDataEntry> ParseResourceData(std::string &fileName)
 {
-    std::map<unsigned long, ResourceDataEntry> resourceData;
-
-    long filesize = std::filesystem::file_size(fileName);
-    long decompressedSize;
+    std::map<uint64_t, ResourceDataEntry> resourceDataMap;
+    int64_t filesize = std::filesystem::file_size(fileName);
+    int64_t decompressedSize;
     std::vector<std::byte> compressedData(filesize - 8);
 
     FILE *resourceDataFile = fopen(fileName.c_str(), "rb");
 
     if (!resourceDataFile)
-        return resourceData;
+        return resourceDataMap;
     
     if (fread(&decompressedSize, 8, 1, resourceDataFile) != 1)
-        return resourceData;
+        return resourceDataMap;
 
     if (fread(compressedData.data(), 1, compressedData.size(), resourceDataFile) != compressedData.size())
-        return resourceData;
+        return resourceDataMap;
+
+    fclose(resourceDataFile);
 
     std::vector<std::byte> decompressedData;
 
@@ -50,22 +51,19 @@ std::map<unsigned long, ResourceDataEntry> ParseResourceData(std::string &fileNa
     }
     catch (...) {
         std::cerr << RED << "ERROR: " << RESET << "Failed to decompress " << fileName << std::endl;
-        return resourceData;
+        return resourceDataMap;
     }
 
-    if (decompressedData.empty())
-        return resourceData;
+    int64_t pos = 0;
 
-    long pos = 0;
-
-    unsigned long amount;
+    uint64_t amount;
     std::copy(decompressedData.begin() + pos, decompressedData.begin() + pos + 8, (std::byte*)&amount);
     pos += 8;
 
-    for (unsigned long i = 0; i < amount; i++) {
+    for (uint64_t i = 0; i < amount; i++) {
         ResourceDataEntry resourceDataEntry;
         
-        unsigned long fileNameHash;
+        uint64_t fileNameHash;
         std::copy(decompressedData.begin() + pos, decompressedData.begin() + pos + 8, (std::byte*)&fileNameHash);
         pos += 8;
 
@@ -84,25 +82,24 @@ std::map<unsigned long, ResourceDataEntry> ParseResourceData(std::string &fileNa
         resourceDataEntry.SpecialByte3 = decompressedData[pos];
         pos += 1;
 
-        unsigned short resourceTypeSize;
+        uint16_t resourceTypeSize;
         std::copy(decompressedData.begin() + pos, decompressedData.begin() + pos + 2, (std::byte*)&resourceTypeSize);
         pos += 2;
 
         resourceDataEntry.ResourceType = std::string((char*)decompressedData.data() + pos, resourceTypeSize);
         pos += resourceTypeSize;
 
-        unsigned short mapResourceTypeSize;
+        uint16_t mapResourceTypeSize;
         std::copy(decompressedData.begin() + pos, decompressedData.begin() + pos + 2, (std::byte*)&mapResourceTypeSize);
         pos += 2;
 
         resourceDataEntry.MapResourceType = resourceDataEntry.ResourceType;
-        resourceDataEntry.MapResourceName = "";
 
         if (mapResourceTypeSize > 0) {
             resourceDataEntry.MapResourceType = std::string((char*)decompressedData.data() + pos, mapResourceTypeSize);
             pos += mapResourceTypeSize;
 
-            unsigned short mapResourceNameSize;
+            uint16_t mapResourceNameSize;
             std::copy(decompressedData.begin() + pos, decompressedData.begin() + pos + 2, (std::byte*)&mapResourceNameSize);
             pos += 2;
 
@@ -110,17 +107,17 @@ std::map<unsigned long, ResourceDataEntry> ParseResourceData(std::string &fileNa
             pos += mapResourceNameSize;
         }
 
-        resourceData[fileNameHash] = resourceDataEntry;
+        resourceDataMap[fileNameHash] = resourceDataEntry;
     }
 
-    return resourceData;
+    return resourceDataMap;
 }
 
-unsigned long CalculateResourceFileNameHash(std::string &input)
+uint64_t CalculateResourceFileNameHash(std::string &input)
 {
-    unsigned long hashedValue = 3074457345618258791;
+    uint64_t hashedValue = 3074457345618258791;
 
-    for (int i = 0; i < input.size(); i++) {
+    for (int32_t i = 0; i < input.size(); i++) {
         hashedValue += input[i];
         hashedValue *= 3074457345618258799;
     }

@@ -21,56 +21,56 @@
 
 #include "EternalModLoader.hpp"
 
-void ReadResource(mmap_allocator_namespace::mmappable_vector<std::byte> &mem, ResourceContainer &resourceContainer)
+void ReadResource(std::byte *&mem, ResourceContainer &resourceContainer)
 {
-    int fileCount;
-    std::copy(mem.begin() + 0x20, mem.begin() + 0x24, (std::byte*)&fileCount);
+    int32_t fileCount;
+    std::copy(mem + 0x20, mem + 0x24, (std::byte*)&fileCount);
 
-    int unknownCount;
-    std::copy(mem.begin() + 0x24, mem.begin() + 0x28, (std::byte*)&unknownCount);
+    int32_t unknownCount;
+    std::copy(mem + 0x24, mem + 0x28, (std::byte*)&unknownCount);
 
-    int dummy2Num;
-    std::copy(mem.begin() + 0x28, mem.begin() + 0x32, (std::byte*)&dummy2Num);
+    int32_t dummy2Num;
+    std::copy(mem + 0x28, mem + 0x32, (std::byte*)&dummy2Num);
 
-    int stringsSize;
-    std::copy(mem.begin() + 0x38, mem.begin() + 0x42, (std::byte*)&stringsSize);
+    int32_t stringsSize;
+    std::copy(mem + 0x38, mem + 0x42, (std::byte*)&stringsSize);
 
-    long namesOffset;
-    std::copy(mem.begin() + 0x40, mem.begin() + 0x48, (std::byte*)&namesOffset);
+    int64_t namesOffset;
+    std::copy(mem + 0x40, mem + 0x48, (std::byte*)&namesOffset);
 
-    long namesEnd;
-    std::copy(mem.begin() + 0x48, mem.begin() + 0x56, (std::byte*)&namesEnd);
+    int64_t namesEnd;
+    std::copy(mem + 0x48, mem + 0x56, (std::byte*)&namesEnd);
 
-    long infoOffset;
-    std::copy(mem.begin() + 0x50, mem.begin() + 0x58, (std::byte*)&infoOffset);
+    int64_t infoOffset;
+    std::copy(mem + 0x50, mem + 0x58, (std::byte*)&infoOffset);
 
-    long dummy7OffOrg;
-    std::copy(mem.begin() + 0x60, mem.begin() + 0x68, (std::byte*)&dummy7OffOrg);
+    int64_t dummy7OffOrg;
+    std::copy(mem + 0x60, mem + 0x68, (std::byte*)&dummy7OffOrg);
 
-    long dataOff;
-    std::copy(mem.begin() + 0x68, mem.begin() + 0x76, (std::byte*)&dataOff);
+    int64_t dataOff;
+    std::copy(mem + 0x68, mem + 0x76, (std::byte*)&dataOff);
 
-    long idclOff;
-    std::copy(mem.begin() + 0x74, mem.begin() + 0x82, (std::byte*)&idclOff);
+    int64_t idclOff;
+    std::copy(mem + 0x74, mem + 0x82, (std::byte*)&idclOff);
 
-    long namesNum;
-    std::copy(mem.begin() + namesOffset, mem.begin() + namesOffset + 8, (std::byte*)&namesNum);
+    int64_t namesNum;
+    std::copy(mem + namesOffset, mem + namesOffset + 8, (std::byte*)&namesNum);
 
-    long namesOffsetEnd = namesOffset + (namesNum + 1) * 8;
-    long namesSize = namesEnd - namesOffsetEnd;
+    int64_t namesOffsetEnd = namesOffset + (namesNum + 1) * 8;
+    int64_t namesSize = namesEnd - namesOffsetEnd;
 
     std::vector<ResourceName> namesList;
-    std::vector<std::byte> currentNameBytes;
-    std::byte currentByte;
+    std::vector<char> currentNameBytes;
+    char currentByte;
     
-    for (int i = 0; i < namesSize; i++) {
-        currentByte = mem[namesOffsetEnd+ i];
+    for (int32_t i = 0; i < namesSize; i++) {
+        currentByte = (char)mem[namesOffsetEnd+ i];
 
-        if (currentByte == (std::byte)0 || i == namesSize - 1) {
+        if (currentByte == 0 || i == namesSize - 1) {
             if (currentNameBytes.empty())
                 continue;
 
-            std::string fullFileName((char*)currentNameBytes.data(), currentNameBytes.size());
+            std::string fullFileName(currentNameBytes.data(), currentNameBytes.size());
             std::string normalizedFileName = NormalizeResourceFilename(fullFileName);
 
             ResourceName resourceName(fullFileName, normalizedFileName);

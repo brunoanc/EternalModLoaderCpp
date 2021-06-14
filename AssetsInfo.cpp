@@ -77,7 +77,7 @@ AssetsInfo::AssetsInfo(std::string &json)
         AssetsInfoAsset assetsInfoAsset;
 
         if (asset.contains("streamDbHash"))
-            assetsInfoAsset.StreamDbHash = asset["streamDbHash"].get<unsigned long>();
+            assetsInfoAsset.StreamDbHash = asset["streamDbHash"].get<unsigned uint64_t>();
 
         if (asset.contains("resourceType"))
             assetsInfoAsset.ResourceType = asset["resourceType"].get<std::string>();
