@@ -19,7 +19,7 @@
 #include <iostream>
 #include <string>
 #include <filesystem>
-#include <cstdio>
+#include <cstdlib>
 
 #include "EternalModLoader.hpp"
 
@@ -27,23 +27,23 @@ std::vector<std::string> SupportedFileFormats = { ".ogg", ".opus", ".wav", ".wem
 
 int32_t GetDecodedOpusFileSize(SoundModFile &soundModFile)
 {
-#ifdef _WIN32
-    FILE *p = _popen(std::string(BasePath + "opusdec.exe - tmp.wav > NUL 2>&1").c_str(), "w");
-#else
-    FILE *p = popen("opusdec - tmp.wav >/dev/null 2>&1", "w");
-#endif
+    FILE *encFile = fopen("tmp.opus", "wb");
 
-    if (!p)
+    if (!encFile)
         return -1;
 
-    if (fwrite(soundModFile.FileBytes.data(), 1, soundModFile.FileBytes.size(), p) != soundModFile.FileBytes.size()) 
+    if (fwrite(soundModFile.FileBytes.data(), 1, soundModFile.FileBytes.size(), encFile) != soundModFile.FileBytes.size())
         return -1;
 
+    fclose(encFile);
+
 #ifdef _WIN32
-    if (_pclose(p) == -1)
+    std::string command = BasePath + "opusdec.exe tmp.opus tmp.wav > NUL 2>&1";
 #else
-    if (pclose(p) == -1)
+    std::string command = "opusdec tmp.opus tmp.wav >/dev/null 2>&1";
 #endif
+
+    if (system(command.c_str()) != 0)
         return -1;
 
     int64_t decSize = -1;
@@ -65,27 +65,27 @@ int32_t GetDecodedOpusFileSize(SoundModFile &soundModFile)
 
 int32_t EncodeSoundMod(SoundModFile &soundModFile)
 {
-#ifdef _WIN32
-    FILE *p = _popen(std::string(BasePath + "opusenc.exe - tmp.ogg > NUL 2>&1").c_str(), "w");
-#else
-    FILE *p = popen("opusenc - tmp.ogg >/dev/null 2>&1", "w");
-#endif
+    FILE *decFile = fopen("tmp.wav", "wb");
 
-    if (!p)
+    if (!decFile)
         return -1;
 
-    if (fwrite(soundModFile.FileBytes.data(), 1, soundModFile.FileBytes.size(), p) != soundModFile.FileBytes.size())
+    if (fwrite(soundModFile.FileBytes.data(), 1, soundModFile.FileBytes.size(), decFile) != soundModFile.FileBytes.size())
         return -1;
 
+    fclose(decFile);
+
 #ifdef _WIN32
-    if (_pclose(p) == -1)
+    std::string command = BasePath + "opusenc.exe tmp.wav tmp.opus > NUL 2>&1";
 #else
-    if (pclose(p) == -1)
+    std::string command = "opusenc tmp.wav tmp.opus >/dev/null 2>&1";
 #endif
+
+    if (system(command.c_str()) != 0)
         return -1;
 
     try {
-        soundModFile.FileBytes.resize(std::filesystem::file_size("tmp.ogg"));
+        soundModFile.FileBytes.resize(std::filesystem::file_size("tmp.opus"));
 
         if (soundModFile.FileBytes.size() == 0)
             throw std::exception();
@@ -95,7 +95,7 @@ int32_t EncodeSoundMod(SoundModFile &soundModFile)
         return -1;
     }
 
-    FILE *encFile = fopen("tmp.ogg", "rb");
+    FILE *encFile = fopen("tmp.opus", "rb");
 
     if (!encFile)
         return -1;
@@ -104,13 +104,16 @@ int32_t EncodeSoundMod(SoundModFile &soundModFile)
         return -1;
 
     fclose(encFile);
-
     remove("tmp.ogg");
 
     return 0;
 }
 
-void LoadSoundMods(FILE *&soundBankFile, SoundContainer &soundContainer)
+#ifdef _WIN32
+void LoadSoundMods(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, SoundContainer &soundContainer)
+#else
+void LoadSoundMods(std::byte *&mem, int32_t &fd, SoundContainer &soundContainer)
+#endif
 {
     int32_t fileCount = 0;
 
@@ -146,6 +149,7 @@ void LoadSoundMods(FILE *&soundBankFile, SoundContainer &soundContainer)
         int32_t encodedSize = soundModFile.FileBytes.size();
         int32_t decodedSize = encodedSize;
         bool needsEncoding = false;
+        bool needsDecoding = true;
         int16_t format = -1;
 
         if (soundExtension == ".wem") {
@@ -153,6 +157,12 @@ void LoadSoundMods(FILE *&soundBankFile, SoundContainer &soundContainer)
         }
         else if (soundExtension == ".ogg" || soundExtension == ".opus") {
             format = 2;
+        }
+        else if (soundExtension == ".wav") {
+            format = 2;
+            decodedSize = encodedSize + 20;
+            needsDecoding = false;
+            needsEncoding = true;
         }
         else {
             needsEncoding = true;
@@ -181,9 +191,9 @@ void LoadSoundMods(FILE *&soundBankFile, SoundContainer &soundContainer)
             std::cerr << RED << "ERROR: " << RESET << "Couldn't determine the sound file format for " << soundModFile.Name << ", skipping" << std::endl;
             continue;
         }
-        else if (format == 2) {
+        else if (format == 2 && needsDecoding) {
             try {
-                decodedSize = needsEncoding ? decodedSize : GetDecodedOpusFileSize(soundModFile);
+                decodedSize = GetDecodedOpusFileSize(soundModFile);
 
                 if (decodedSize == -1)
                     throw std::exception();
@@ -195,55 +205,73 @@ void LoadSoundMods(FILE *&soundBankFile, SoundContainer &soundContainer)
         }
 
         bool soundFound = false;
-
         uint32_t soundModOffset = std::filesystem::file_size(soundContainer.Path);
+        int64_t newContainerSize = soundModOffset + soundModFile.FileBytes.size();
 
         try {
-            std::filesystem::resize_file(soundContainer.Path, soundModOffset + soundModFile.FileBytes.size());
+#ifdef _WIN32
+            UnmapViewOfFile(mem);
+            CloseHandle(fileMapping);
+
+            fileMapping = CreateFileMappingA(hFile, NULL, PAGE_READWRITE, *((DWORD*)&newContainerSize + 1), *(DWORD*)&newContainerSize, NULL);
+
+            if (GetLastError() != ERROR_SUCCESS || fileMapping == NULL)
+                throw std::exception();
+
+            mem = (std::byte*)MapViewOfFile(fileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+
+            if (GetLastError() != ERROR_SUCCESS || mem == NULL)
+                throw std::exception();
+#else
+            munmap(mem, soundModOffset);
+            std::filesystem::resize_file(soundContainer.Path, newContainerSize);
+            mem = (std::byte*)mmap(0, newContainerSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+            if (mem == NULL)
+                throw std::exception();
+#endif
         }
         catch (...) {
-            std::cerr << RED << "ERROR: " << RESET << "Failed to load " << soundContainer.Path << " into memory for writing"<< std::endl;
+            std::cerr << RED << "ERROR: " << RESET << "Failed to resize " << soundContainer.Path << std::endl;
             return;
         }
-
-        fseek(soundBankFile, soundModOffset, SEEK_SET);
-        fwrite(soundModFile.FileBytes.data(), 1, soundModFile.FileBytes.size(), soundBankFile);
-
-        fseek(soundBankFile, 4, SEEK_SET);
+        
+        std::copy(soundModFile.FileBytes.begin(), soundModFile.FileBytes.end(), mem + soundModOffset);
 
         uint32_t infoSize, headerSize;
-        fread(&infoSize, 4, 1, soundBankFile);
-        fread(&headerSize, 4, 1, soundBankFile);
+        std::copy(mem + 4, mem + 8, (std::byte*)&infoSize);
+        std::copy(mem + 8, mem + 12, (std::byte*)&headerSize);
 
-        fseek(soundBankFile, headerSize, SEEK_CUR);
+        int64_t pos = headerSize + 12;
 
         for (uint32_t i = 0, j = (infoSize - headerSize) / 32; i < j; i++) {
-            fseek(soundBankFile, 8, SEEK_CUR);
+            pos += 8;
 
             uint32_t soundId;
-            fread(&soundId, 4, 1, soundBankFile);
+            std::copy(mem + pos, mem + pos + 4, (std::byte*)&soundId);
+            pos += 4;
 
             if (soundId != soundModId) {
-                fseek(soundBankFile, 20, SEEK_CUR);
+                pos += 20;
                 continue;
             }
 
             soundFound = true;
 
-            fwrite(&encodedSize, 4, 1, soundBankFile);
-            fwrite(&soundModOffset, 4, 1, soundBankFile);
-            fwrite(&decodedSize, 4, 1, soundBankFile);
+            std::copy((std::byte*)&encodedSize, (std::byte*)&encodedSize + 4, mem + pos);
+            std::copy((std::byte*)&soundModOffset, (std::byte*)&soundModOffset + 4, mem + pos + 4);
+            std::copy((std::byte*)&decodedSize, (std::byte*)&decodedSize + 4, mem + pos + 8);
+            pos += 12;
 
-            int16_t currentFormat;
-            fread(&currentFormat, 2, 1, soundBankFile);
-
-            fseek(soundBankFile, 6, SEEK_CUR);
+            uint16_t currentFormat;
+            std::copy(mem + pos, mem + pos + 2, (std::byte*)&currentFormat);
+            pos += 8;
 
             if (currentFormat != format) {
                 std::cerr << RED << "WARNING: " << RESET << "Format mismatch: sound file " << soundModFile.Name << " needs to be " << (currentFormat == 3 ? "WEM" : "OPUS") << " format." << std::endl;
                 std::cerr << "The sound will be replaced but it might not work in-game." << std::endl;
 
-                format = currentFormat;
+                format = (int16_t)currentFormat;
             }
         }
 

@@ -21,56 +21,42 @@
 
 #include "EternalModLoader.hpp"
 
-void ReadResource(FILE *&resourceFile, ResourceContainer &resourceContainer)
+void ReadResource(std::byte *&mem, ResourceContainer &resourceContainer)
 {
-    fseek(resourceFile, 0x20, SEEK_SET);
-
     int32_t fileCount;
-    fread(&fileCount, 4, 1, resourceFile);
+    std::copy(mem + 0x20, mem + 0x24, (std::byte*)&fileCount);
 
     int32_t unknownCount;
-    fread(&unknownCount, 4, 1, resourceFile);
+    std::copy(mem + 0x24, mem + 0x28, (std::byte*)&unknownCount);
 
     int32_t dummy2Num;
-    fread(&dummy2Num, 4, 1, resourceFile);
-
-    fseek(resourceFile, 0x38, SEEK_SET);
+    std::copy(mem + 0x28, mem + 0x32, (std::byte*)&dummy2Num);
 
     int32_t stringsSize;
-    fread(&stringsSize, 4, 1, resourceFile);
-
-    fseek(resourceFile, 0x40, SEEK_SET);
+    std::copy(mem + 0x38, mem + 0x42, (std::byte*)&stringsSize);
 
     int64_t namesOffset;
-    fread(&namesOffset, 8, 1, resourceFile);
+    std::copy(mem + 0x40, mem + 0x48, (std::byte*)&namesOffset);
 
     int64_t namesEnd;
-    fread(&namesEnd, 8, 1, resourceFile);
+    std::copy(mem + 0x48, mem + 0x56, (std::byte*)&namesEnd);
 
     int64_t infoOffset;
-    fread(&infoOffset, 8, 1, resourceFile);
+    std::copy(mem + 0x50, mem + 0x58, (std::byte*)&infoOffset);
 
-    fseek(resourceFile, 0x60, SEEK_SET);
+    int64_t dummy7OffOrg;
+    std::copy(mem + 0x60, mem + 0x68, (std::byte*)&dummy7OffOrg);
 
-    int64_t dummy7OffsetOrg;
-    fread(&dummy7OffsetOrg, 8, 1, resourceFile);
+    int64_t dataOff;
+    std::copy(mem + 0x68, mem + 0x76, (std::byte*)&dataOff);
 
-    int64_t dataOffset;
-    fread(&dataOffset, 8, 1, resourceFile);
-
-    fseek(resourceFile, 0x74, SEEK_SET);
-
-    int64_t idclOffset;
-    fread(&idclOffset, 8, 1, resourceFile);
-
-    fseek(resourceFile, namesOffset, SEEK_SET);
+    int64_t idclOff;
+    std::copy(mem + 0x74, mem + 0x82, (std::byte*)&idclOff);
 
     int64_t namesNum;
-    fread(&namesNum, 8, 1, resourceFile);
+    std::copy(mem + namesOffset, mem + namesOffset + 8, (std::byte*)&namesNum);
 
-    fseek(resourceFile, namesOffset + 8 + (namesNum * 8), SEEK_SET);
-
-    int64_t namesOffsetEnd = ftell(resourceFile);
+    int64_t namesOffsetEnd = namesOffset + (namesNum + 1) * 8;
     int64_t namesSize = namesEnd - namesOffsetEnd;
 
     std::vector<ResourceName> namesList;
@@ -78,7 +64,7 @@ void ReadResource(FILE *&resourceFile, ResourceContainer &resourceContainer)
     char currentByte;
     
     for (int32_t i = 0; i < namesSize; i++) {
-        currentByte = fgetc(resourceFile);
+        currentByte = (char)mem[namesOffsetEnd+ i];
 
         if (currentByte == 0 || i == namesSize - 1) {
             if (currentNameBytes.empty())
@@ -102,9 +88,9 @@ void ReadResource(FILE *&resourceFile, ResourceContainer &resourceContainer)
     resourceContainer.StringsSize = stringsSize;
     resourceContainer.NamesOffset = namesOffset;
     resourceContainer.InfoOffset = infoOffset;
-    resourceContainer.Dummy7Offset = dummy7OffsetOrg;
-    resourceContainer.DataOffset = dataOffset;
-    resourceContainer.IdclOffset = idclOffset;
+    resourceContainer.Dummy7Offset = dummy7OffOrg;
+    resourceContainer.DataOffset = dataOff;
+    resourceContainer.IdclOffset = idclOff;
     resourceContainer.UnknownCount = unknownCount;
     resourceContainer.FileCount2 = fileCount * 2;
     resourceContainer.NamesOffsetEnd = namesOffsetEnd;
@@ -112,5 +98,5 @@ void ReadResource(FILE *&resourceFile, ResourceContainer &resourceContainer)
     resourceContainer.UnknownOffset2 = namesEnd;
     resourceContainer.NamesList = namesList;
 
-    ReadChunkInfo(resourceFile, resourceContainer);
+    ReadChunkInfo(mem, resourceContainer);
 }

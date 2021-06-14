@@ -23,7 +23,11 @@
 #include "json/single_include/nlohmann/json.hpp"
 #include "EternalModLoader.hpp"
 
-void ReplaceChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
+#ifdef _WIN32
+void ReplaceChunks(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, ResourceContainer &resourceContainer)
+#else
+void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContainer)
+#endif
 {
     ResourceChunk *mapResourcesChunk = NULL;
     MapResourcesFile *mapResourcesFile = NULL;
@@ -37,15 +41,9 @@ void ReplaceChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
 
             mapResourcesChunk = &file;
 
-            fseek(resourceFile, mapResourcesChunk->FileOffset, SEEK_SET);
-
             int64_t mapResourcesFileOffset;
-            fread(&mapResourcesFileOffset, 8, 1, resourceFile);
-
-            fseek(resourceFile, mapResourcesFileOffset, SEEK_SET);
-
-            std::vector<std::byte> mapResourcesBytes(mapResourcesChunk->SizeZ);
-            fread(mapResourcesBytes.data(), 1, mapResourcesBytes.size(), resourceFile);
+            std::copy(mem + mapResourcesChunk->FileOffset, mem + mapResourcesChunk->FileOffset + 8, (std::byte*)&mapResourcesFileOffset);
+            std::vector<std::byte> mapResourcesBytes(mem + mapResourcesFileOffset, mem + mapResourcesFileOffset + mapResourcesChunk->SizeZ);
 
             originalDecompressedMapResources = OodleDecompress(mapResourcesBytes, mapResourcesChunk->Size);
 
@@ -466,7 +464,7 @@ void ReplaceChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
             if (chunk == NULL) {
                 resourceContainer.NewModFileList.push_back(modFile);
 
-                std::map<uint64_t , ResourceDataEntry>::iterator x = ResourceDataMap.find(CalculateResourceFileNameHash(modFile.Name));
+                std::map<uint64_t, ResourceDataEntry>::iterator x = ResourceDataMap.find(CalculateResourceFileNameHash(modFile.Name));
 
                 if (x == ResourceDataMap.end())
                     continue;
@@ -536,11 +534,10 @@ void ReplaceChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
             }
         }
 
-        fseek(resourceFile, chunk->FileOffset, SEEK_SET);
-
         int64_t fileOffset, size;
-        fread(&fileOffset, 8, 1, resourceFile);
-        fread(&size, 8, 1, resourceFile);
+        std::copy(mem + chunk->FileOffset, mem + chunk->FileOffset + 8, (std::byte*)&fileOffset);
+        std::copy(mem + chunk->FileOffset + 8, mem + chunk->FileOffset + 16, (std::byte*)&size);
+
         int64_t sizeDiff = modFile.FileBytes.size() - size;
 
         if (modFile.IsBlangJson) {
@@ -562,10 +559,7 @@ void ReplaceChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
                 continue;
             }
 
-            fseek(resourceFile, fileOffset, SEEK_SET);
-
-            std::vector<std::byte> blangFileBytes(size);
-            fread(blangFileBytes.data(), 1, blangFileBytes.size(), resourceFile);
+            std::vector<std::byte> blangFileBytes(mem + fileOffset, mem + fileOffset + size);
 
             std::vector<std::byte> decryptedBlangFileBytes = IdCrypt(blangFileBytes, modFile.Name, true);
 
@@ -626,27 +620,41 @@ void ReplaceChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
         int64_t dataOffset = newContainerSize - modFile.FileBytes.size();
 
         try {
+#ifdef _WIN32
+            UnmapViewOfFile(mem);
+            CloseHandle(fileMapping);
+
+            fileMapping = CreateFileMappingA(hFile, NULL, PAGE_READWRITE, *((DWORD*)&newContainerSize + 1), *(DWORD*)&newContainerSize, NULL);
+
+            if (GetLastError() != ERROR_SUCCESS || fileMapping == NULL)
+                throw std::exception();
+
+            mem = (std::byte*)MapViewOfFile(fileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+
+            if (GetLastError() != ERROR_SUCCESS || mem == NULL)
+                throw std::exception();
+#else
+            munmap(mem, resourceFileSize);
             std::filesystem::resize_file(resourceContainer.Path, newContainerSize);
+            mem = (std::byte*)mmap(0, newContainerSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+#endif
+
+            if (mem == NULL)
+                throw std::exception();
         }
         catch (...) {
             std::cerr << RED << "ERROR: " << RESET << "Failed to resize " << resourceContainer.Path << std::endl;
             return;
         }
 
-        fseek(resourceFile, dataOffset, SEEK_SET);
-        fwrite(modFile.FileBytes.data(), 1, modFile.FileBytes.size(), resourceFile);
-
-        fseek(resourceFile, chunk->FileOffset, SEEK_SET);
-        fwrite(&dataOffset, 8, 1, resourceFile);
-
-        fseek(resourceFile, chunk->SizeOffset, SEEK_SET);
+        std::copy(modFile.FileBytes.begin(), modFile.FileBytes.end(), mem + dataOffset);
+        std::copy((std::byte*)&dataOffset, (std::byte*)&dataOffset + 8, mem + chunk->FileOffset);
 
         int64_t modFileBytesSize = modFile.FileBytes.size();
-        fwrite(&modFileBytesSize, 8, 1, resourceFile);
-        fwrite(&modFileBytesSize, 8, 1, resourceFile);
+        std::copy((std::byte*)&modFileBytesSize, (std::byte*)&modFileBytesSize + 8, mem + chunk->SizeOffset);
+        std::copy((std::byte*)&modFileBytesSize, (std::byte*)&modFileBytesSize + 8, mem + chunk->SizeOffset + 8);
 
-        fseek(resourceFile, chunk->SizeOffset + 0x30, SEEK_SET);
-        fputc(0, resourceFile);
+        mem[chunk->SizeOffset + 0x30] = (std::byte)0;
 
         if (!modFile.IsBlangJson && !modFile.IsAssetsInfoJson) {
             std::cout << "\tReplaced " << modFile.Name << std::endl;
@@ -674,25 +682,40 @@ void ReplaceChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
                 int64_t dataOffset = newContainerSize - compressedMapResourcesData.size();
 
                 try {
+#ifdef _WIN32
+                    UnmapViewOfFile(mem);
+                    CloseHandle(fileMapping);
+
+                    fileMapping = CreateFileMappingA(hFile, NULL, PAGE_READWRITE, *((DWORD*)&newContainerSize + 1), *(DWORD*)&newContainerSize, NULL);
+
+                    if (GetLastError() != ERROR_SUCCESS || fileMapping == NULL)
+                        throw std::exception();
+
+                    mem = (std::byte*)MapViewOfFile(fileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+
+                    if (GetLastError() != ERROR_SUCCESS || mem == NULL)
+                        throw std::exception();
+#else
+                    munmap(mem, resourceFileSize);
                     std::filesystem::resize_file(resourceContainer.Path, newContainerSize);
+                    mem = (std::byte*)mmap(0, newContainerSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+                    if (mem == NULL)
+                        throw std::exception();
+#endif
                 }
                 catch (...) {
                     std::cerr << RED << "ERROR: " << RESET << "Failed to resize " << resourceContainer.Path << std::endl;
                     return;
                 }
 
-                fseek(resourceFile, dataOffset, SEEK_SET);
-                fwrite(compressedMapResourcesData.data(), 1, compressedMapResourcesData.size(), resourceFile);
-
-                fseek(resourceFile, mapResourcesChunk->FileOffset, SEEK_SET);
-                fwrite(&dataOffset, 1, 8, resourceFile);
-
-                fseek(resourceFile, mapResourcesChunk->SizeOffset, SEEK_SET);
+                std::copy(compressedMapResourcesData.begin(), compressedMapResourcesData.end(), mem + dataOffset);
+                std::copy((std::byte*)&dataOffset, (std::byte*)&dataOffset + 8, mem + mapResourcesChunk->FileOffset);
 
                 int64_t compressedMapResourcesSize = compressedMapResourcesData.size();
                 int64_t decompressedMapResourcesSize = decompressedMapResourcesData.size();
-                fwrite(&compressedMapResourcesSize, 8, 1, resourceFile);
-                fwrite(&decompressedMapResourcesSize, 8, 1, resourceFile);
+                std::copy((std::byte*)&compressedMapResourcesSize, (std::byte*)&compressedMapResourcesSize + 8, mem + mapResourcesChunk->SizeOffset);
+                std::copy((std::byte*)&decompressedMapResourcesSize, (std::byte*)&decompressedMapResourcesSize + 8, mem + mapResourcesChunk->SizeOffset + 8);
 
                 std::cout << "\tModified " << mapResourcesChunk->ResourceName.NormalizedFileName << std::endl;
                 delete mapResourcesFile;

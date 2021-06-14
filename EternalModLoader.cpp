@@ -46,9 +46,10 @@ std::string BLUE = "";
 
 char separator;
 
-int32_t main(int argc, char **argv)
+int32_t main(int32_t argc, char **argv)
 {
     std::ios::sync_with_stdio(false);
+
     separator = std::filesystem::path::preferred_separator;
 
     if (std::getenv("ETERNALMODLOADER_NO_COLORS") == NULL) {
@@ -284,7 +285,7 @@ int32_t main(int argc, char **argv)
                             }
                             catch (...) {
                                 std::cerr << RED << "ERROR: " << RESET << "Failed to parse EternalMod/assetsinfo/"
-                                    << std::filesystem::path(mod.Name).stem().string() << ".json" << std::endl;
+                                    << std::filesystem::path(resourceModFile.Name).stem().string() << ".json" << std::endl;
                                 continue;
                             }
                         }
@@ -490,18 +491,60 @@ int32_t main(int argc, char **argv)
             continue;
         }
 
-        FILE *resourceFile = fopen(resourceContainer.Path.c_str(), "rb+");
+#ifdef _WIN32
+        HANDLE hFile = CreateFileA(resourceContainer.Path.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
-        if (resourceFile == NULL) {
+        if (GetLastError() != ERROR_SUCCESS || hFile == INVALID_HANDLE_VALUE) {
             std::cerr << RED << "ERROR: " << RESET << "Failed to open " << YELLOW << resourceContainer.Path << RESET << " for writing!" << std::endl;
             continue;
         }
 
-        ReadResource(resourceFile, resourceContainer);
-        ReplaceChunks(resourceFile, resourceContainer);
-        AddChunks(resourceFile, resourceContainer);
+        HANDLE fileMapping = CreateFileMappingA(hFile, NULL, PAGE_READWRITE, *((DWORD*)&fileSize + 1), *(DWORD*)&fileSize, NULL);
 
-        fclose(resourceFile);
+        if (GetLastError() != ERROR_SUCCESS || fileMapping == NULL) {
+            std::cerr << RED << "ERROR: " << RESET << "Failed to open " << YELLOW << resourceContainer.Path << RESET << " for writing!" << std::endl;
+            continue;
+        }
+
+        std::byte *mem = (std::byte*)MapViewOfFile(fileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+
+        if (GetLastError() != ERROR_SUCCESS || mem == NULL) {
+            std::cerr << RED << "ERROR: " << RESET << "Failed to open " << YELLOW << resourceContainer.Path << RESET << " for writing!" << std::endl;
+            continue;
+        }
+
+        ReadResource(mem, resourceContainer);
+        ReplaceChunks(mem, hFile, fileMapping, resourceContainer);
+        AddChunks(mem, hFile, fileMapping, resourceContainer);
+
+        UnmapViewOfFile(mem);
+        CloseHandle(fileMapping);
+        CloseHandle(hFile);
+#else
+        int32_t fd = open(resourceContainer.Path.c_str(), O_RDWR);
+
+        if (fd == -1) {
+            std::cerr << RED << "ERROR: " << RESET << "Failed to open " << YELLOW << resourceContainer.Path << RESET << " for writing!" << std::endl;
+            continue;
+        }
+
+        std::byte *mem = (std::byte*)mmap(0, fileSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+        if (mem == NULL) {
+            std::cerr << RED << "ERROR: " << RESET << "Failed to open " << YELLOW << resourceContainer.Path << RESET << " for writing!" << std::endl;
+            close(fd);
+            continue;
+        }
+
+        madvise(mem, fileSize, MADV_WILLNEED);
+
+        ReadResource(mem, resourceContainer);
+        ReplaceChunks(mem, fd, resourceContainer);
+        AddChunks(mem, fd, resourceContainer);
+
+        munmap(mem, std::filesystem::file_size(resourceContainer.Path));
+        close(fd);
+#endif
     }
 
     for (auto &soundContainer : SoundContainerList) {
@@ -517,16 +560,56 @@ int32_t main(int argc, char **argv)
             continue;
         }
 
-        FILE *soundBankFile = fopen(soundContainer.Path.c_str(), "rb+");
+#ifdef _WIN32
+        HANDLE hFile = CreateFileA(soundContainer.Path.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING,  FILE_ATTRIBUTE_NORMAL, NULL);
 
-        if (soundBankFile == NULL) {
+        if (GetLastError() != ERROR_SUCCESS || hFile == INVALID_HANDLE_VALUE) {
             std::cerr << RED << "ERROR: " << RESET << "Failed to open " << YELLOW << soundContainer.Path << RESET << " for writing!" << std::endl;
             continue;
         }
 
-        LoadSoundMods(soundBankFile, soundContainer);
+        HANDLE fileMapping = CreateFileMappingA(hFile, NULL, PAGE_READWRITE, *((DWORD*)&fileSize + 1), *(DWORD*)&fileSize, NULL);
 
-        fclose(soundBankFile);
+        if (GetLastError() != ERROR_SUCCESS || fileMapping == NULL) {
+            std::cerr << RED << "ERROR: " << RESET << "Failed to open " << YELLOW << soundContainer.Path << RESET << " for writing!" << std::endl;
+            continue;
+        }
+
+        std::byte *mem = (std::byte*)MapViewOfFile(fileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+
+        if (GetLastError() != ERROR_SUCCESS || mem == NULL) {
+            std::cerr << RED << "ERROR: " << RESET << "Failed to open " << YELLOW << soundContainer.Path << RESET << " for writing!" << std::endl;
+            continue;
+        }
+
+        LoadSoundMods(mem, hFile, fileMapping, soundContainer);
+
+        UnmapViewOfFile(mem);
+        CloseHandle(fileMapping);
+        CloseHandle(hFile);
+#else
+        int32_t fd = open(soundContainer.Path.c_str(), O_RDWR);
+
+        if (fd == -1) {
+            std::cerr << RED << "ERROR: " << RESET << "Failed to open " << YELLOW << soundContainer.Path << RESET << " for writing!" << std::endl;
+            continue;
+        }
+
+        std::byte *mem = (std::byte*)mmap(0, fileSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+        if (mem == NULL) {
+            std::cerr << RED << "ERROR: " << RESET << "Failed to open " << YELLOW << soundContainer.Path << RESET << " for writing!" << std::endl;
+            close(fd);
+            continue;
+        }
+
+        madvise(mem, fileSize, MADV_WILLNEED);
+
+        LoadSoundMods(mem, fd, soundContainer);
+
+        munmap(mem, std::filesystem::file_size(soundContainer.Path));
+        close(fd);
+#endif
     }
 
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();

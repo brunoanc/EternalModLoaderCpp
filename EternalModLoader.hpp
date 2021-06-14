@@ -33,6 +33,15 @@
 #define _WIN32
 #endif
 
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#else
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#endif
+
 class Mod {
 public:
     std::string Name;
@@ -293,12 +302,20 @@ extern char separator;
 
 extern std::vector<std::string> SupportedFileFormats;
 
+#ifdef _WIN32
+void ReplaceChunks(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, ResourceContainer &resourceContainer);
+void AddChunks(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, ResourceContainer &resourceContainer);
+void LoadSoundMods(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, SoundContainer &soundContainer);
+#else
+void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContainer);
+void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContainer);
+void LoadSoundMods(std::byte *&mem, int32_t &fd, SoundContainer &soundContainer);
+#endif
+
 std::string PathToResourceContainer(std::string name);
-void ReadChunkInfo(FILE *&resourceFile, ResourceContainer &resourceContainer);
+void ReadChunkInfo(std::byte *&mem, ResourceContainer &resourceContainer);
 ResourceChunk *GetChunk(std::string name, ResourceContainer &resourceContainer);
-void ReplaceChunks(FILE *&resourceFile, ResourceContainer &resourceContainer);
-void AddChunks(FILE *&resourceFile, ResourceContainer &resourceContainer);
-void ReadResource(FILE *&resourceFile, ResourceContainer &resourceContainer);
+void ReadResource(std::byte *&mem, ResourceContainer &resourceContainer);
 int32_t GetResourceContainer(std::string &resourceContainerName);
 std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string internalPath, bool decrypt);
 BlangFile ParseBlang(std::vector<std::byte> &blangBytes, std::string &resourceName);
@@ -306,7 +323,6 @@ std::vector<std::byte> WriteBlangToVector(BlangFile blangFile, std::string &reso
 std::string RemoveWhitespace(std::string &stringWithWhitespace);
 std::string ToLower(std::string &str);
 std::vector<std::string> SplitString(std::string stringToSplit, char delimiter);
-void LoadSoundMods(FILE *&resourceFile, SoundContainer &soundContainer);
 std::map<uint64_t, ResourceDataEntry> ParseResourceData(std::string &filename);
 uint64_t CalculateResourceFileNameHash(std::string &input);
 std::string NormalizeResourceFilename(std::string filename);
