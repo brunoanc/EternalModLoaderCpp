@@ -16,13 +16,13 @@
 * along with EternalModLoaderCpp. If not, see <https://www.gnu.org/licenses/>.
 */
 
+#ifndef ETERNALMODLOADER_HPP
+#define ETERNALMODLOADER_HPP
+
 #include <map>
 #include <optional>
 #include <vector>
 #include <cmath>
-
-#ifndef ETERNALMODLOADER_HPP
-#define ETERNALMODLOADER_HPP
 
 #include "AssetsInfo.hpp"
 #include "Oodle.hpp"

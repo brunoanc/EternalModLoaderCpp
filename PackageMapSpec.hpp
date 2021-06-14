@@ -16,11 +16,11 @@
 * along with EternalModLoaderCpp. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <iostream>
-#include <vector>
-
 #ifndef PACKAGEMAPSPEC_HPP
 #define PACKAGEMAPSPEC_HPP
+
+#include <iostream>
+#include <vector>
 
 class PackageMapSpecFile {
 public:

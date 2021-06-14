@@ -16,11 +16,11 @@
 * along with EternalModLoaderCpp. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <iostream>
-#include <vector>
-
 #ifndef ASSETSINFO_HPP
 #define ASSETSINFO_HPP
+
+#include <iostream>
+#include <vector>
 
 class AssetsInfoLayer {
 public:

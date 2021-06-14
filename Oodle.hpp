@@ -16,11 +16,11 @@
 * along with EternalModLoaderCpp. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <iostream>
-#include <vector>
-
 #ifndef OODLE_HPP
 #define OODLE_HPP
+
+#include <iostream>
+#include <vector>
 
 typedef int OodLZ_CompressFunc(
     int codec, uint8_t *src_buf, size_t src_len, uint8_t *dst_buf, int level,
