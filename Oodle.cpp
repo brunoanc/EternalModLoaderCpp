@@ -31,7 +31,7 @@
 static OodLZ_CompressFunc* OodLZ_Compress;
 static OodLZ_DecompressFunc* OodLZ_Decompress;
 
-int OodleInit()
+int32_t OodleInit()
 {
 #ifdef _WIN32
     std::string oo2corePath = BasePath + "..\\oo2core_8_win64.dll";
@@ -59,7 +59,7 @@ int OodleInit()
     return 0;
 }
 
-std::vector<std::byte> OodleDecompress(std::vector<std::byte> &compressedData, long decompressedSize)
+std::vector<std::byte> OodleDecompress(std::vector<std::byte> &compressedData, int64_t decompressedSize)
 {
     if (!OodLZ_Decompress) {
         if (OodleInit() == -1)
@@ -81,10 +81,10 @@ std::vector<std::byte> OodleCompress(std::vector<std::byte> &decompressedData, O
             throw std::exception();
     }
 
-    unsigned int compressedBufferSize = decompressedData.size() + 274 * ((decompressedData.size() + 0x3FFFF) / 0x40000);
+    uint32_t compressedBufferSize = decompressedData.size() + 274 * ((decompressedData.size() + 0x3FFFF) / 0x40000);
     std::vector<std::byte> compressedData(compressedBufferSize);
 
-    int compressedSize = OodLZ_Compress(format, (uint8_t*)decompressedData.data(), decompressedData.size(), (uint8_t*)compressedData.data(), compressionLevel, NULL, 0, 0, NULL, 0);
+    int32_t compressedSize = OodLZ_Compress(format, (uint8_t*)decompressedData.data(), decompressedData.size(), (uint8_t*)compressedData.data(), compressionLevel, NULL, 0, 0, NULL, 0);
 
     if (compressedSize <= 0) {
         compressedData.resize(0);

@@ -29,14 +29,14 @@
 #include "miniz/miniz.h"
 #include "EternalModLoader.hpp"
 
-const int Version = 8;
+const int32_t Version = 8;
 const std::string ResourceDataFileName = "rs_data";
 const std::string PackageMapSpecJsonFileName = "packagemapspec.json";
 std::string BasePath;
 bool Verbose;
 std::vector<ResourceContainer> ResourceContainerList;
 std::vector<SoundContainer> SoundContainerList;
-std::map<unsigned long, ResourceDataEntry> ResourceDataMap;
+std::map<uint64_t, ResourceDataEntry> ResourceDataMap;
 
 std::string RESET = "";
 std::string RED = "";
@@ -46,7 +46,7 @@ std::string BLUE = "";
 
 char separator;
 
-int main(int argc, char **argv)
+int32_t main(int argc, char **argv)
 {
     std::ios::sync_with_stdio(false);
     separator = std::filesystem::path::preferred_separator;
@@ -85,7 +85,7 @@ int main(int argc, char **argv)
     bool listResources = false;
 
     if (argc > 2) {
-        for (int i = 2; i < argc; i++) {
+        for (int32_t i = 2; i < argc; i++) {
             if (!strcmp(argv[i], "--list-res")) {
                 listResources = true;
             }
@@ -107,8 +107,7 @@ int main(int argc, char **argv)
 
         if (std::filesystem::exists(resourceDataFilePath)) {
             try {
-                if (ParseResourceData(resourceDataFilePath) == -1)
-                    throw std::exception();
+                ResourceDataMap = ParseResourceData(resourceDataFilePath);
 
                 if (ResourceDataMap.empty())
                     throw std::exception();
@@ -143,7 +142,7 @@ int main(int argc, char **argv)
     std::sort(unzippedMods.begin(), unzippedMods.end(), [](std::string str1, std::string str2) { return std::strcoll(str1.c_str(), str2.c_str()) <= 0 ? true : false; });
 
     for (const auto &zippedMod : zippedMods) {
-        int zippedModCount = 0;
+        int32_t zippedModCount = 0;
         std::vector<std::string> modFileNameList;
 
         mz_zip_archive modZip;
@@ -175,8 +174,8 @@ int main(int argc, char **argv)
             }
         }
 
-        for (int i = 0; i < modZip.m_total_files; i++) {
-            int zipEntryNameSize = mz_zip_reader_get_filename(&modZip, i, NULL, 0);
+        for (int32_t i = 0; i < modZip.m_total_files; i++) {
+            int32_t zipEntryNameSize = mz_zip_reader_get_filename(&modZip, i, NULL, 0);
             char *zipEntryNameBuffer = new char[zipEntryNameSize];
 
             if (mz_zip_reader_get_filename(&modZip, i, zipEntryNameBuffer, zipEntryNameSize) != zipEntryNameSize || zipEntryNameBuffer == NULL) {
@@ -217,7 +216,7 @@ int main(int argc, char **argv)
             }
 
             if (isSoundMod) {
-                int soundContainerIndex = GetSoundContainer(resourceName);
+                int32_t soundContainerIndex = GetSoundContainer(resourceName);
 
                 if (soundContainerIndex == -1) {
                     SoundContainer soundContainer(resourceName, resourcePath);
@@ -251,7 +250,7 @@ int main(int argc, char **argv)
                 }
             }
             else {
-                int resourceContainerIndex = GetResourceContainer(resourceName);
+                int32_t resourceContainerIndex = GetResourceContainer(resourceName);
 
                 if (resourceContainerIndex == -1) {
                     ResourceContainer resource(resourceName, PathToResourceContainer(resourceName + ".resources"));
@@ -311,7 +310,7 @@ int main(int argc, char **argv)
         mz_zip_reader_end(&modZip);
     }
 
-    int unzippedModCount = 0;
+    int32_t unzippedModCount = 0;
 
     Mod globalLooseMod;
     globalLooseMod.LoadPriority = INT_MIN;
@@ -345,7 +344,7 @@ int main(int argc, char **argv)
         }
 
         if (isSoundMod) {
-            int soundContainerIndex = GetSoundContainer(resourceName);
+            int32_t soundContainerIndex = GetSoundContainer(resourceName);
 
             if (soundContainerIndex == -1) {
                 SoundContainer soundContainer(resourceName, resourcePath);
@@ -362,7 +361,7 @@ int main(int argc, char **argv)
                     continue;
                 }
 
-                long unzippedModSize = std::filesystem::file_size(unzippedModPath);
+                int64_t unzippedModSize = std::filesystem::file_size(unzippedModPath);
 
                 if (unzippedModSize > ResourceContainerList.max_size())
                     std::cerr << RED << "WARNING: " << RESET << "Skipped " << fileName << " - too large." << std::endl;
@@ -390,7 +389,7 @@ int main(int argc, char **argv)
             }
         }
         else {
-            int resourceContainerIndex = GetResourceContainer(resourceName);
+            int32_t resourceContainerIndex = GetResourceContainer(resourceName);
 
             if (resourceContainerIndex == -1) {
                 ResourceContainer resourceContainer(resourceName, PathToResourceContainer(resourceName));
@@ -400,7 +399,7 @@ int main(int argc, char **argv)
             }
 
             if (!listResources) {
-                long unzippedModSize = std::filesystem::file_size(unzippedModPath);
+                int64_t unzippedModSize = std::filesystem::file_size(unzippedModPath);
 
                 if (unzippedModSize > ResourceContainerList.max_size())
                     std::cerr << RED << "WARNING: " << RESET << "Skipped " << fileName << " - too large." << std::endl;
@@ -484,7 +483,7 @@ int main(int argc, char **argv)
             continue;
         }
 
-        long fileSize = std::filesystem::file_size(resourceContainer.Path);
+        int64_t fileSize = std::filesystem::file_size(resourceContainer.Path);
 
         if (fileSize == 0) {
             std::cerr << RED << "ERROR: " << RESET << "Failed to open " << YELLOW << resourceContainer.Path << RESET << " for writing!" << std::endl;
@@ -511,7 +510,7 @@ int main(int argc, char **argv)
             continue;
         }
 
-        long fileSize = std::filesystem::file_size(soundContainer.Path);
+        int64_t fileSize = std::filesystem::file_size(soundContainer.Path);
 
         if (fileSize == 0) {
             std::cerr << RED << "ERROR: " << RESET << "Failed to open " << YELLOW << soundContainer.Path << RESET << " for writing!" << std::endl;

@@ -48,7 +48,7 @@ std::byte *HashData(const std::byte *data1, size_t data1Len, const std::byte *da
         return md;
     }
     else {
-        unsigned int md_len;
+        uint32_t md_len;
 
         HMAC_CTX *ctx = HMAC_CTX_new();
         HMAC_Init_ex(ctx, hmacKey, hmacKeyLen, EVP_sha256(), NULL);
@@ -66,10 +66,10 @@ std::byte *HashData(const std::byte *data1, size_t data1Len, const std::byte *da
     }
 }
 
-int EncryptData(unsigned char *plaintext, int plaintext_len, unsigned char *key, unsigned char *iv, unsigned char *ciphertext)
+int32_t EncryptData(unsigned char *plaintext, int32_t plaintext_len, unsigned char *key, unsigned char *iv, unsigned char *ciphertext)
 {
-    int len;
-    int ciphertext_len;
+    int32_t len;
+    int32_t ciphertext_len;
 
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
     EVP_EncryptInit_ex(ctx, EVP_aes_128_cbc(), NULL, key, iv);
@@ -86,10 +86,10 @@ int EncryptData(unsigned char *plaintext, int plaintext_len, unsigned char *key,
     return ciphertext_len;
 }
 
-int DecryptData(unsigned char *ciphertext, int ciphertext_len, unsigned char *key, unsigned char *iv, unsigned char *plaintext)
+int32_t DecryptData(unsigned char *ciphertext, int32_t ciphertext_len, unsigned char *key, unsigned char *iv, unsigned char *plaintext)
 {
-    int len;
-    int plaintext_len;
+    int32_t len;
+    int32_t plaintext_len;
 
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
     EVP_DecryptInit_ex(ctx, EVP_aes_128_cbc(), NULL, key, iv);
@@ -109,7 +109,7 @@ int DecryptData(unsigned char *ciphertext, int ciphertext_len, unsigned char *ke
 std::vector<std::byte> CryptData(bool decrypt, std::byte *inputData, size_t inputDataLen, std::byte *key, std::byte *iv)
 {
     unsigned char *output = new unsigned char[inputDataLen + (inputDataLen % 16 == 0 ? 0 : (16 - inputDataLen % 16))];
-    unsigned long newSize;
+    uint64_t newSize;
 
     if (decrypt) {
         newSize = DecryptData((unsigned char*)inputData, inputDataLen, (unsigned char*)key, (unsigned char*)iv, output);

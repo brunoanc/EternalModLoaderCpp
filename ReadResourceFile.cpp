@@ -25,59 +25,59 @@ void ReadResource(FILE *&resourceFile, ResourceContainer &resourceContainer)
 {
     fseek(resourceFile, 0x20, SEEK_SET);
 
-    int fileCount;
+    int32_t fileCount;
     fread(&fileCount, 4, 1, resourceFile);
 
-    int unknownCount;
+    int32_t unknownCount;
     fread(&unknownCount, 4, 1, resourceFile);
 
-    int dummy2Num;
+    int32_t dummy2Num;
     fread(&dummy2Num, 4, 1, resourceFile);
 
     fseek(resourceFile, 0x38, SEEK_SET);
 
-    int stringsSize;
+    int32_t stringsSize;
     fread(&stringsSize, 4, 1, resourceFile);
 
     fseek(resourceFile, 0x40, SEEK_SET);
 
-    long namesOffset;
+    int64_t namesOffset;
     fread(&namesOffset, 8, 1, resourceFile);
 
-    long namesEnd;
+    int64_t namesEnd;
     fread(&namesEnd, 8, 1, resourceFile);
 
-    long infoOffset;
+    int64_t infoOffset;
     fread(&infoOffset, 8, 1, resourceFile);
 
     fseek(resourceFile, 0x60, SEEK_SET);
 
-    long dummy7OffsetOrg;
+    int64_t dummy7OffsetOrg;
     fread(&dummy7OffsetOrg, 8, 1, resourceFile);
 
-    long dataOffset;
+    int64_t dataOffset;
     fread(&dataOffset, 8, 1, resourceFile);
 
     fseek(resourceFile, 0x74, SEEK_SET);
 
-    long idclOffset;
+    int64_t idclOffset;
     fread(&idclOffset, 8, 1, resourceFile);
 
     fseek(resourceFile, namesOffset, SEEK_SET);
 
-    long namesNum;
+    int64_t namesNum;
     fread(&namesNum, 8, 1, resourceFile);
 
     fseek(resourceFile, namesOffset + 8 + (namesNum * 8), SEEK_SET);
 
-    long namesOffsetEnd = ftell(resourceFile);
-    long namesSize = namesEnd - namesOffsetEnd;
+    int64_t namesOffsetEnd = ftell(resourceFile);
+    int64_t namesSize = namesEnd - namesOffsetEnd;
 
     std::vector<ResourceName> namesList;
     std::vector<char> currentNameBytes;
     char currentByte;
     
-    for (int i = 0; i < namesSize; i++) {
+    for (int32_t i = 0; i < namesSize; i++) {
         currentByte = fgetc(resourceFile);
 
         if (currentByte == 0 || i == namesSize - 1) {

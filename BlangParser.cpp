@@ -27,7 +27,7 @@ BlangFile ParseBlang(std::vector<std::byte> &blangBytes, std::string& resourceNa
 {
     BlangFile blangFile;
     std::vector<BlangString> blangStrings;
-    int pos = 0;
+    int32_t pos = 0;
 
     if (resourceName == "gameresources_patch1") {
         std::vector<std::byte> unknownDataBytes(blangBytes.begin(), blangBytes.begin() + 8);
@@ -42,33 +42,33 @@ BlangFile ParseBlang(std::vector<std::byte> &blangBytes, std::string& resourceNa
 
     pos += 4;
 
-    int stringAmount;
+    int32_t stringAmount;
     std::copy(stringAmountBytes.begin(), stringAmountBytes.end(), (std::byte*)&stringAmount);
 
     std::vector<std::byte> identifierBytes;
     std::vector<std::byte> textBytes;
     std::vector<std::byte> unknown;
     
-    for (int i = 0; i < stringAmount; i++) {
-        unsigned int hash;
+    for (int32_t i = 0; i < stringAmount; i++) {
+        uint32_t hash;
         std::copy(blangBytes.begin() + pos, blangBytes.begin() + pos + 4, (std::byte*)&hash);
         pos += 4;
 
-        int identifierLength;
+        int32_t identifierLength;
         std::copy(blangBytes.begin() + pos, blangBytes.begin() + pos + 4, (std::byte*)&identifierLength);
         pos += 4;
 
         std::string identifier((char*)blangBytes.data() + pos, (char*)blangBytes.data() + pos + identifierLength);
         pos += identifierLength;
 
-        int textLength;
+        int32_t textLength;
         std::copy(blangBytes.begin() + pos, blangBytes.begin() + pos + 4, (std::byte*)&textLength);
         pos += 4;
 
         std::string text((char*)blangBytes.data() + pos, (char*)blangBytes.data() + pos + textLength);
         pos += textLength;
 
-        int unknownLength;
+        int32_t unknownLength;
         std::copy(blangBytes.begin() + pos, blangBytes.begin() + pos + 4, (std::byte*)&unknownLength);
         pos += 4;
 
@@ -89,7 +89,7 @@ std::vector<std::byte> WriteBlangToVector(BlangFile blangFile, std::string& reso
 {
     std::vector<std::byte> blangBytes;
 
-    for (int i = 0; i < blangFile.Strings.size(); i++) {
+    for (int32_t i = 0; i < blangFile.Strings.size(); i++) {
         if (RemoveWhitespace(blangFile.Strings[i].Identifier).empty()) {
             blangFile.Strings.erase(blangFile.Strings.begin() + i);
             i--;
@@ -102,7 +102,7 @@ std::vector<std::byte> WriteBlangToVector(BlangFile blangFile, std::string& reso
         blangBytes.insert(blangBytes.end(), unknownDataBytes.begin(), unknownDataBytes.end());
     }
 
-    int stringsAmount = blangFile.Strings.size();
+    int32_t stringsAmount = blangFile.Strings.size();
     std::vector<std::byte> stringsAmountBytes((std::byte*)&stringsAmount, (std::byte*)&stringsAmount + 4);
     std::reverse(stringsAmountBytes.begin(), stringsAmountBytes.end());
     blangBytes.insert(blangBytes.end(), stringsAmountBytes.begin(), stringsAmountBytes.end());
@@ -117,11 +117,11 @@ std::vector<std::byte> WriteBlangToVector(BlangFile blangFile, std::string& reso
         identifierBytes.resize(identifierToLower.size());
         std::copy((std::byte*)identifierToLower.c_str(), (std::byte*)identifierToLower.c_str() + identifierToLower.size(), identifierBytes.begin());
 
-        unsigned int fnvPrime = 0x01000193;
+        uint32_t fnvPrime = 0x01000193;
         blangString.Hash = 0x811C9DC5;
 
-        for (int i = 0; i < identifierBytes.size(); i++) {
-            blangString.Hash ^= (int)identifierBytes[i];
+        for (int32_t i = 0; i < identifierBytes.size(); i++) {
+            blangString.Hash ^= (int32_t)identifierBytes[i];
             blangString.Hash *= fnvPrime;
         }
 
@@ -130,13 +130,13 @@ std::vector<std::byte> WriteBlangToVector(BlangFile blangFile, std::string& reso
         std::copy(hashBytes.begin(), hashBytes.end(), (std::byte*)&blangString.Hash);
         blangBytes.insert(blangBytes.end(), hashBytes.begin(), hashBytes.end());
 
-        int identifierBytesLength = blangString.Identifier.size();
+        int32_t identifierBytesLength = blangString.Identifier.size();
         blangBytes.insert(blangBytes.end(), (std::byte*)&identifierBytesLength, (std::byte*)&identifierBytesLength + 4);
         blangBytes.insert(blangBytes.end(), (std::byte*)blangString.Identifier.c_str(), (std::byte*)blangString.Identifier.c_str() + blangString.Identifier.size());
 
         std::replace(blangString.Text.begin(), blangString.Text.end(), '\r', '\n');
 
-        int textBytesLength = blangString.Text.size();
+        int32_t textBytesLength = blangString.Text.size();
         blangBytes.insert(blangBytes.end(), (std::byte*)&textBytesLength, (std::byte*)&textBytesLength + 4);
         blangBytes.insert(blangBytes.end(), (std::byte*)blangString.Text.c_str(), (std::byte*)blangString.Text.c_str() + blangString.Text.size());
 
@@ -145,7 +145,7 @@ std::vector<std::byte> WriteBlangToVector(BlangFile blangFile, std::string& reso
             blangBytes.insert(blangBytes.end(), emptyArray, emptyArray + 4);
         }
         else {
-            int unknownLength = blangString.Unknown.size();
+            int32_t unknownLength = blangString.Unknown.size();
             blangBytes.insert(blangBytes.end(), (std::byte*)&unknownLength, (std::byte*)&unknownLength + 4);
             blangBytes.insert(blangBytes.end(), blangString.Unknown.begin(), blangString.Unknown.end());
         }

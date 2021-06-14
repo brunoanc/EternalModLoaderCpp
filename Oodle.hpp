@@ -22,13 +22,13 @@
 #include <iostream>
 #include <vector>
 
-typedef int OodLZ_CompressFunc(
-    int codec, uint8_t *src_buf, size_t src_len, uint8_t *dst_buf, int level,
+typedef int32_t OodLZ_CompressFunc(
+    int32_t codec, uint8_t *src_buf, size_t src_len, uint8_t *dst_buf, int32_t level,
     void *opts, size_t offs, size_t unused, void *scratch, size_t scratch_size);
  
-typedef int OodLZ_DecompressFunc(uint8_t *src_buf, int src_len, uint8_t *dst, size_t dst_size,
-    int fuzz, int crc, int verbose,
-    uint8_t *dst_base, size_t e, void *cb, void *cb_ctx, void *scratch, size_t scratch_size, int threadPhase);
+typedef int32_t OodLZ_DecompressFunc(uint8_t *src_buf, int32_t src_len, uint8_t *dst, size_t dst_size,
+    int32_t fuzz, int32_t crc, int32_t verbose,
+    uint8_t *dst_base, size_t e, void *cb, void *cb_ctx, void *scratch, size_t scratch_size, int32_t threadPhase);
 
 enum OodleCompressionLevel
 {
@@ -61,7 +61,7 @@ enum OodleFormat
     Akkorokamui
 };
 
-std::vector<std::byte> OodleDecompress(std::vector<std::byte> &compressedData, long decompressedSize);
+std::vector<std::byte> OodleDecompress(std::vector<std::byte> &compressedData, int64_t decompressedSize);
 std::vector<std::byte> OodleCompress(std::vector<std::byte> &compressedData, OodleFormat format, OodleCompressionLevel compressionLevel);
 
 #endif

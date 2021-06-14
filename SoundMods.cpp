@@ -25,10 +25,10 @@
 
 std::vector<std::string> SupportedFileFormats = { ".ogg", ".opus", ".wav", ".wem", ".flac", ".aiff", ".pcm" };
 
-int GetDecodedOpusFileSize(SoundModFile &soundModFile)
+int32_t GetDecodedOpusFileSize(SoundModFile &soundModFile)
 {
 #ifdef _WIN32
-    FILE *p = _popen(std::string(BasePath + "opusdec.exe - tmp.wav > nul 2>&1").c_str(), "w");
+    FILE *p = _popen(std::string(BasePath + "opusdec.exe - tmp.wav > NUL 2>&1").c_str(), "w");
 #else
     FILE *p = popen("opusdec - tmp.wav >/dev/null 2>&1", "w");
 #endif
@@ -46,7 +46,7 @@ int GetDecodedOpusFileSize(SoundModFile &soundModFile)
 #endif
         return -1;
 
-    long decSize = -1;
+    int64_t decSize = -1;
 
     try {
         decSize = std::filesystem::file_size("tmp.wav");
@@ -63,10 +63,10 @@ int GetDecodedOpusFileSize(SoundModFile &soundModFile)
     return decSize + 20;
 }
 
-int EncodeSoundMod(SoundModFile &soundModFile)
+int32_t EncodeSoundMod(SoundModFile &soundModFile)
 {
 #ifdef _WIN32
-    FILE *p = _popen(std::string(BasePath + "opusenc.exe - tmp.ogg > nul 2>&1").c_str(), "w");
+    FILE *p = _popen(std::string(BasePath + "opusenc.exe - tmp.ogg > NUL 2>&1").c_str(), "w");
 #else
     FILE *p = popen("opusenc - tmp.ogg >/dev/null 2>&1", "w");
 #endif
@@ -112,11 +112,11 @@ int EncodeSoundMod(SoundModFile &soundModFile)
 
 void LoadSoundMods(FILE *&soundBankFile, SoundContainer &soundContainer)
 {
-    int fileCount = 0;
+    int32_t fileCount = 0;
 
     for (auto &soundModFile : soundContainer.ModFileList) {
         std::string soundFileNameStem = std::filesystem::path(soundModFile.Name).stem().string();
-        int soundModId = -1;
+        int32_t soundModId = -1;
 
         try {
             soundModId = std::stoul(soundFileNameStem, nullptr, 10);
@@ -143,10 +143,10 @@ void LoadSoundMods(FILE *&soundBankFile, SoundContainer &soundContainer)
         }
 
         std::string soundExtension = std::filesystem::path(soundModFile.Name).extension().string();
-        int encodedSize = soundModFile.FileBytes.size();
-        int decodedSize = encodedSize;
+        int32_t encodedSize = soundModFile.FileBytes.size();
+        int32_t decodedSize = encodedSize;
         bool needsEncoding = false;
-        short format = -1;
+        int16_t format = -1;
 
         if (soundExtension == ".wem") {
             format = 3;
@@ -183,7 +183,7 @@ void LoadSoundMods(FILE *&soundBankFile, SoundContainer &soundContainer)
         }
         else if (format == 2) {
             try {
-                decodedSize = GetDecodedOpusFileSize(soundModFile);
+                decodedSize = needsEncoding ? decodedSize : GetDecodedOpusFileSize(soundModFile);
 
                 if (decodedSize == -1)
                     throw std::exception();
@@ -196,7 +196,7 @@ void LoadSoundMods(FILE *&soundBankFile, SoundContainer &soundContainer)
 
         bool soundFound = false;
 
-        unsigned int soundModOffset = std::filesystem::file_size(soundContainer.Path);
+        uint32_t soundModOffset = std::filesystem::file_size(soundContainer.Path);
 
         try {
             std::filesystem::resize_file(soundContainer.Path, soundModOffset + soundModFile.FileBytes.size());
@@ -211,16 +211,16 @@ void LoadSoundMods(FILE *&soundBankFile, SoundContainer &soundContainer)
 
         fseek(soundBankFile, 4, SEEK_SET);
 
-        unsigned int infoSize, headerSize;
-        fread(&infoSize, 1, 4, soundBankFile);
-        fread(&headerSize, 1, 4, soundBankFile);
+        uint32_t infoSize, headerSize;
+        fread(&infoSize, 4, 1, soundBankFile);
+        fread(&headerSize, 4, 1, soundBankFile);
 
         fseek(soundBankFile, headerSize, SEEK_CUR);
 
-        for (unsigned int i = 0, j = (infoSize - headerSize) / 32; i < j; i++) {
+        for (uint32_t i = 0, j = (infoSize - headerSize) / 32; i < j; i++) {
             fseek(soundBankFile, 8, SEEK_CUR);
 
-            unsigned int soundId;
+            uint32_t soundId;
             fread(&soundId, 4, 1, soundBankFile);
 
             if (soundId != soundModId) {
@@ -234,7 +234,7 @@ void LoadSoundMods(FILE *&soundBankFile, SoundContainer &soundContainer)
             fwrite(&soundModOffset, 4, 1, soundBankFile);
             fwrite(&decodedSize, 4, 1, soundBankFile);
 
-            unsigned short currentFormat;
+            int16_t currentFormat;
             fread(&currentFormat, 2, 1, soundBankFile);
 
             fseek(soundBankFile, 6, SEEK_CUR);
@@ -243,7 +243,7 @@ void LoadSoundMods(FILE *&soundBankFile, SoundContainer &soundContainer)
                 std::cerr << RED << "WARNING: " << RESET << "Format mismatch: sound file " << soundModFile.Name << " needs to be " << (currentFormat == 3 ? "WEM" : "OPUS") << " format." << std::endl;
                 std::cerr << "The sound will be replaced but it might not work in-game." << std::endl;
 
-                format = (short)currentFormat;
+                format = currentFormat;
             }
         }
 

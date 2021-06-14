@@ -23,26 +23,26 @@
 
 void ReadChunkInfo(FILE *&resourceFile, ResourceContainer &resourceContainer)
 {
-    long dummy7Offset = resourceContainer.Dummy7Offset + (resourceContainer.TypeCount * 4);
+    int64_t dummy7Offset = resourceContainer.Dummy7Offset + (resourceContainer.TypeCount * 4);
     fseek(resourceFile, dummy7Offset, SEEK_SET);
 
-    for (int i = 0; i < resourceContainer.FileCount; i++) {
+    for (int32_t i = 0; i < resourceContainer.FileCount; i++) {
         fseek(resourceFile, 0x20 + resourceContainer.InfoOffset + (0x90 * i), SEEK_SET);
 
-        long nameId;
+        int64_t nameId;
         fread(&nameId, 8, 1, resourceFile);
 
         fseek(resourceFile, 0x38 + resourceContainer.InfoOffset + (0x90 * i), SEEK_SET);
 
-        long fileOffset;
+        int64_t fileOffset;
         fread(&fileOffset, 8, 1, resourceFile);
 
-        long sizeOffset = ftell(resourceFile);
+        int64_t sizeOffset = ftell(resourceFile);
 
-        long sizeZ;
+        int64_t sizeZ;
         fread(&sizeZ, 8, 1, resourceFile);
 
-        long size;
+        int64_t size;
         fread(&size, 8, 1, resourceFile);
 
         fseek(resourceFile, 0x70 + resourceContainer.InfoOffset + (0x90 * i), SEEK_SET);

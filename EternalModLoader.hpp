@@ -23,6 +23,7 @@
 #include <optional>
 #include <vector>
 #include <cmath>
+#include <cstdint>
 
 #include "AssetsInfo.hpp"
 #include "Oodle.hpp"
@@ -38,8 +39,8 @@ public:
     std::string Author;
     std::string Description;
     std::string Version;
-    int LoadPriority = 0;
-    int RequiredVersion = 0;
+    int32_t LoadPriority = 0;
+    int32_t RequiredVersion = 0;
 
     Mod(std::string name)
     {
@@ -58,9 +59,9 @@ public:
     bool IsBlangJson = false;
     bool IsAssetsInfoJson = false;
     std::optional<class AssetsInfo> AssetsInfo = std::nullopt;
-    std::optional<unsigned long> StreamDbHash = std::nullopt;
+    std::optional<uint64_t> StreamDbHash = std::nullopt;
     std::string ResourceType;
-    std::optional<unsigned short> Version = std::nullopt;
+    std::optional<uint16_t> Version = std::nullopt;
     bool PlaceBefore = false;
     std::string PlaceByName;
     std::string PlaceByType;
@@ -105,13 +106,13 @@ public:
 class ResourceChunk {
 public:
     class ResourceName ResourceName;
-    long FileOffset = 0;
-    long SizeOffset = 0;
-    long SizeZ = 0;
-    long Size = 0;
+    int64_t FileOffset = 0;
+    int64_t SizeOffset = 0;
+    int64_t SizeZ = 0;
+    int64_t Size = 0;
     std::byte CompressionMode;
 
-    ResourceChunk(class ResourceName name, long fileOffset)
+    ResourceChunk(class ResourceName name, int64_t fileOffset)
     {
         ResourceName = name;
         FileOffset = fileOffset;
@@ -126,19 +127,19 @@ class ResourceContainer {
 public:
     std::string Name;
     std::string Path;
-    int FileCount = 0;
-    int TypeCount = 0;
-    int StringsSize = 0;
-    long NamesOffset = 0;
-    long InfoOffset = 0;
-    long Dummy7Offset = 0;
-    long DataOffset = 0;
-    long IdclOffset = 0;
-    int UnknownCount = 0;
-    int FileCount2 = 0;
-    long NamesOffsetEnd = 0;
-    long UnknownOffset = 0;
-    long UnknownOffset2 = 0;
+    int32_t FileCount = 0;
+    int32_t TypeCount = 0;
+    int32_t StringsSize = 0;
+    int64_t NamesOffset = 0;
+    int64_t InfoOffset = 0;
+    int64_t Dummy7Offset = 0;
+    int64_t DataOffset = 0;
+    int64_t IdclOffset = 0;
+    int32_t UnknownCount = 0;
+    int32_t FileCount2 = 0;
+    int64_t NamesOffsetEnd = 0;
+    int64_t UnknownOffset = 0;
+    int64_t UnknownOffset2 = 0;
     std::vector<ResourceName> NamesList;
     std::vector<ResourceChunk> ChunkList;
     std::vector<ResourceModFile> ModFileList;
@@ -160,9 +161,9 @@ public:
         return false;
     }
 
-    long GetResourceNameId(std::string name)
+    int64_t GetResourceNameId(std::string name)
     {
-        for (int i = 0; i < NamesList.size(); i++) {
+        for (int32_t i = 0; i < NamesList.size(); i++) {
             if (NamesList[i].FullFileName == name || NamesList[i].NormalizedFileName == name)
                 return i;
         }
@@ -186,7 +187,7 @@ public:
 
 class BlangString {
 public:
-    unsigned int Hash = 0;
+    uint32_t Hash = 0;
     std::string Identifier;
     std::string Text;
     std::vector<std::byte> Unknown;
@@ -197,7 +198,7 @@ public:
         Text = "";
     }
 
-    BlangString(unsigned int hash, std::string identifier, std::string text, std::vector<std::byte> unknown)
+    BlangString(uint32_t hash, std::string identifier, std::string text, std::vector<std::byte> unknown)
     {
         Hash = hash;
         Identifier = identifier;
@@ -208,7 +209,7 @@ public:
 
 class BlangFile {
 public:
-    long UnknownData = 0;
+    int64_t UnknownData = 0;
     std::vector<BlangString> Strings;
 
     BlangFile() {}
@@ -219,17 +220,17 @@ public:
 
 class MapAsset {
 public:
-    int AssetTypeIndex;
+    int32_t AssetTypeIndex;
     std::string Name;
-    int UnknownData1 = 0;
-    int UnknownData2 = 0;
-    long UnknownData3 = 0;
-    long UnknownData4 = 0;
+    int32_t UnknownData1 = 0;
+    int32_t UnknownData2 = 0;
+    int64_t UnknownData3 = 0;
+    int64_t UnknownData4 = 0;
 };
 
 class ResourceDataEntry {
 public:
-    unsigned long StreamDbHash = 0;
+    uint64_t StreamDbHash = 0;
     std::string ResourceType;
     std::string MapResourceType;
     std::string MapResourceName;
@@ -241,7 +242,7 @@ public:
 
 class MapResourcesFile {
 public:
-    int Magic = 0;
+    int32_t Magic = 0;
     std::vector<std::string> Layers;
     std::vector<std::string> AssetTypes;
     std::vector<MapAsset> Assets;
@@ -273,14 +274,14 @@ inline bool operator==(MapAsset& mapAsset1, const MapAsset& mapAsset2)
     }
 }
 
-extern const int Version;
+extern const int32_t Version;
 extern const std::string ResourceDataFileName;
 extern const std::string PackageMapSpecJsonFileName;
 extern std::string BasePath;
 extern std::vector<ResourceContainer> ResourceContainerList;
 extern std::vector<SoundContainer> SoundContainerList;
 extern bool Verbose;
-extern std::map<unsigned long, ResourceDataEntry> ResourceDataMap;
+extern std::map<uint64_t, ResourceDataEntry> ResourceDataMap;
 
 extern std::string RESET;
 extern std::string RED;
@@ -298,7 +299,7 @@ ResourceChunk *GetChunk(std::string name, ResourceContainer &resourceContainer);
 void ReplaceChunks(FILE *&resourceFile, ResourceContainer &resourceContainer);
 void AddChunks(FILE *&resourceFile, ResourceContainer &resourceContainer);
 void ReadResource(FILE *&resourceFile, ResourceContainer &resourceContainer);
-int GetResourceContainer(std::string &resourceContainerName);
+int32_t GetResourceContainer(std::string &resourceContainerName);
 std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string internalPath, bool decrypt);
 BlangFile ParseBlang(std::vector<std::byte> &blangBytes, std::string &resourceName);
 std::vector<std::byte> WriteBlangToVector(BlangFile blangFile, std::string &resourceName);
@@ -306,11 +307,11 @@ std::string RemoveWhitespace(std::string &stringWithWhitespace);
 std::string ToLower(std::string &str);
 std::vector<std::string> SplitString(std::string stringToSplit, char delimiter);
 void LoadSoundMods(FILE *&resourceFile, SoundContainer &soundContainer);
-int ParseResourceData(std::string &filename);
-unsigned long CalculateResourceFileNameHash(std::string &input);
+std::map<uint64_t, ResourceDataEntry> ParseResourceData(std::string &filename);
+uint64_t CalculateResourceFileNameHash(std::string &input);
 std::string NormalizeResourceFilename(std::string filename);
 bool EndsWith(const std::string &fullString, const std::string &ending);
 std::string PathToSoundContainer(std::string name);
-int GetSoundContainer(std::string &soundContainerName);
+int32_t GetSoundContainer(std::string &soundContainerName);
 
 #endif

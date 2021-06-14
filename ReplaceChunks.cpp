@@ -28,7 +28,7 @@ void ReplaceChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
     ResourceChunk *mapResourcesChunk = NULL;
     MapResourcesFile *mapResourcesFile = NULL;
     std::vector<std::byte> originalDecompressedMapResources;
-    int fileCount = 0;
+    int32_t fileCount = 0;
     
     for (auto &file : resourceContainer.ChunkList) {
         if (EndsWith(file.ResourceName.NormalizedFileName, ".mapresources")) {
@@ -39,7 +39,7 @@ void ReplaceChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
 
             fseek(resourceFile, mapResourcesChunk->FileOffset, SEEK_SET);
 
-            long mapResourcesFileOffset;
+            int64_t mapResourcesFileOffset;
             fread(&mapResourcesFileOffset, 8, 1, resourceFile);
 
             fseek(resourceFile, mapResourcesFileOffset, SEEK_SET);
@@ -84,7 +84,7 @@ void ReplaceChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
                         << resourceContainer.Name << std::endl;
                 }
                 else {
-                    long filesize = std::filesystem::file_size(packageMapSpecPath);
+                    int64_t filesize = std::filesystem::file_size(packageMapSpecPath);
                     std::vector<std::byte> packageMapSpecBytes(filesize);
 
                     if (fread(packageMapSpecBytes.data(), 1, filesize, packageMapSpecFile) != filesize) {
@@ -115,10 +115,10 @@ void ReplaceChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
                             continue;
                         }
 
-                        int fileIndex = -1;
-                        int mapIndex = -1;
+                        int32_t fileIndex = -1;
+                        int32_t mapIndex = -1;
 
-                        for (int i = 0; i < packageMapSpec.Files.size(); i++) {
+                        for (int32_t i = 0; i < packageMapSpec.Files.size(); i++) {
                             if (packageMapSpec.Files[i].Name.find(extraResource.Name) != std::string::npos) {
                                 fileIndex = i;
                                 break;
@@ -134,7 +134,7 @@ void ReplaceChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
                             modFileMapName = "game/hub/hub";
                         }
 
-                        for (int i = 0; i < packageMapSpec.Maps.size(); i++) {
+                        for (int32_t i = 0; i < packageMapSpec.Maps.size(); i++) {
                             if (EndsWith(packageMapSpec.Maps[i].Name, modFileMapName)) {
                                 mapIndex = i;
                                 break;
@@ -154,7 +154,7 @@ void ReplaceChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
                         if (extraResource.Remove) {
                             bool mapFileRefRemoved = false;
 
-                            for (int i = packageMapSpec.MapFileRefs.size() - 1; i >= 0; i--) {
+                            for (int32_t i = packageMapSpec.MapFileRefs.size() - 1; i >= 0; i--) {
                                 if (packageMapSpec.MapFileRefs[i].File == fileIndex && packageMapSpec.MapFileRefs[i].Map == mapIndex) {
                                     packageMapSpec.MapFileRefs.erase(packageMapSpec.MapFileRefs.begin() + i);
                                     mapFileRefRemoved = true;
@@ -176,7 +176,7 @@ void ReplaceChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
                             continue;
                         }
 
-                        for (int i = packageMapSpec.MapFileRefs.size() - 1; i >= 0; i--) {
+                        for (int32_t i = packageMapSpec.MapFileRefs.size() - 1; i >= 0; i--) {
                             if (packageMapSpec.MapFileRefs[i].File == fileIndex
                                 && packageMapSpec.MapFileRefs[i].Map == mapIndex) {
                                     packageMapSpec.MapFileRefs.erase(packageMapSpec.MapFileRefs.begin() + i);
@@ -190,9 +190,9 @@ void ReplaceChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
                             }
                         }
 
-                        int insertIndex = -1;
+                        int32_t insertIndex = -1;
 
-                        for (int i = 0; i < packageMapSpec.MapFileRefs.size(); i++) {
+                        for (int32_t i = 0; i < packageMapSpec.MapFileRefs.size(); i++) {
                             if (packageMapSpec.MapFileRefs[i].Map == mapIndex) {
                                 if (extraResource.PlaceFirst) {
                                     insertIndex = i;
@@ -211,16 +211,16 @@ void ReplaceChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
                                     << " not found for extra resource entry " << extraResource.Name << ", using normal placement" << std::endl;
                             }
                             else {
-                                int placeBeforeFileIndex = -1;
+                                int32_t placeBeforeFileIndex = -1;
 
-                                for (int i = 0; i < packageMapSpec.Files.size(); i++) {
+                                for (int32_t i = 0; i < packageMapSpec.Files.size(); i++) {
                                     if (packageMapSpec.Files[i].Name.find(extraResource.PlaceByName) != std::string::npos) {
                                         placeBeforeFileIndex = i;
                                         break;
                                     }
                                 }
 
-                                for (int i = 0; i < packageMapSpec.MapFileRefs.size(); i++) {
+                                for (int32_t i = 0; i < packageMapSpec.MapFileRefs.size(); i++) {
                                     if (packageMapSpec.MapFileRefs[i].Map == mapIndex && packageMapSpec.MapFileRefs[i].File == placeBeforeFileIndex) {
                                         insertIndex = i + (!extraResource.PlaceBefore ? 1 : 0);
                                         break;
@@ -331,10 +331,10 @@ void ReplaceChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
                             }
                         }
 
-                        int newAssetTypeIndex = std::distance(mapResourcesFile->AssetTypes.begin(), x);
+                        int32_t newAssetTypeIndex = std::distance(mapResourcesFile->AssetTypes.begin(), x);
                         bool assetFound = false;
 
-                        for (int i = 0; i < mapResourcesFile->Assets.size(); i++) {
+                        for (int32_t i = 0; i < mapResourcesFile->Assets.size(); i++) {
                             if (mapResourcesFile->Assets[i].Name == newAsset.Name
                                 && mapResourcesFile->Assets[i].AssetTypeIndex == newAssetTypeIndex) {
                                     assetFound = true;
@@ -374,9 +374,9 @@ void ReplaceChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
                         continue;
                     }
 
-                    int assetTypeIndex = -1;
+                    int32_t assetTypeIndex = -1;
 
-                    for (int i = 0; i < mapResourcesFile->AssetTypes.size(); i++) {
+                    for (int32_t i = 0; i < mapResourcesFile->AssetTypes.size(); i++) {
                         if (mapResourcesFile->AssetTypes[i] == newAsset.MapResourceType) {
                             assetTypeIndex = i;
                             break;
@@ -393,14 +393,14 @@ void ReplaceChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
 
                     MapAsset placeByExistingAsset;
                     bool found = false;
-                    int assetPosition = mapResourcesFile->Assets.size();
+                    int32_t assetPosition = mapResourcesFile->Assets.size();
 
                     if (!newAsset.PlaceByName.empty()) {
                         if (!newAsset.PlaceByType.empty()) {
                             std::vector<std::string>::iterator x = std::find(mapResourcesFile->AssetTypes.begin(), mapResourcesFile->AssetTypes.end(), newAsset.PlaceByType);
 
                             if (x != mapResourcesFile->AssetTypes.end()) {
-                                int placeByTypeIndex = std::distance(mapResourcesFile->AssetTypes.begin(), x);
+                                int32_t placeByTypeIndex = std::distance(mapResourcesFile->AssetTypes.begin(), x);
 
                                 for (auto &asset : mapResourcesFile->Assets) {
                                     if (asset.Name == newAsset.PlaceByName && asset.AssetTypeIndex == placeByTypeIndex) {
@@ -466,7 +466,7 @@ void ReplaceChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
             if (chunk == NULL) {
                 resourceContainer.NewModFileList.push_back(modFile);
 
-                std::map<unsigned long, ResourceDataEntry>::iterator x = ResourceDataMap.find(CalculateResourceFileNameHash(modFile.Name));
+                std::map<uint64_t , ResourceDataEntry>::iterator x = ResourceDataMap.find(CalculateResourceFileNameHash(modFile.Name));
 
                 if (x == ResourceDataMap.end())
                     continue;
@@ -506,9 +506,9 @@ void ReplaceChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
                     continue;
                 }
 
-                int assetTypeIndex = -1;
+                int32_t assetTypeIndex = -1;
 
-                for (int i = 0; i < mapResourcesFile->AssetTypes.size(); i++) {
+                for (int32_t i = 0; i < mapResourcesFile->AssetTypes.size(); i++) {
                     if (mapResourcesFile->AssetTypes[i] == resourceData.MapResourceType) {
                         assetTypeIndex = i;
                         break;
@@ -538,10 +538,10 @@ void ReplaceChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
 
         fseek(resourceFile, chunk->FileOffset, SEEK_SET);
 
-        long fileOffset, size;
+        int64_t fileOffset, size;
         fread(&fileOffset, 8, 1, resourceFile);
         fread(&size, 8, 1, resourceFile);
-        long sizeDiff = modFile.FileBytes.size() - size;
+        int64_t sizeDiff = modFile.FileBytes.size() - size;
 
         if (modFile.IsBlangJson) {
             nlohmann::json blangJson;
@@ -619,11 +619,11 @@ void ReplaceChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
             modFile.FileBytes = encryptedBlangFileBytes;
         }
 
-        long resourceFileSize = std::filesystem::file_size(resourceContainer.Path);
-        long dataSectionLength = resourceFileSize - resourceContainer.DataOffset;
-        long placement = (0x10 - (dataSectionLength % 0x10)) + 0x30;
-        long newContainerSize = resourceFileSize + modFile.FileBytes.size() + placement;
-        long dataOffset = newContainerSize - modFile.FileBytes.size();
+        int64_t resourceFileSize = std::filesystem::file_size(resourceContainer.Path);
+        int64_t dataSectionLength = resourceFileSize - resourceContainer.DataOffset;
+        int64_t placement = (0x10 - (dataSectionLength % 0x10)) + 0x30;
+        int64_t newContainerSize = resourceFileSize + modFile.FileBytes.size() + placement;
+        int64_t dataOffset = newContainerSize - modFile.FileBytes.size();
 
         try {
             std::filesystem::resize_file(resourceContainer.Path, newContainerSize);
@@ -641,7 +641,7 @@ void ReplaceChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
 
         fseek(resourceFile, chunk->SizeOffset, SEEK_SET);
 
-        long modFileBytesSize = modFile.FileBytes.size();
+        int64_t modFileBytesSize = modFile.FileBytes.size();
         fwrite(&modFileBytesSize, 8, 1, resourceFile);
         fwrite(&modFileBytesSize, 8, 1, resourceFile);
 
@@ -667,11 +667,11 @@ void ReplaceChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
                 mapResourcesChunk->Size = decompressedMapResourcesData.size();
                 mapResourcesChunk->SizeZ = compressedMapResourcesData.size();
 
-                long resourceFileSize = std::filesystem::file_size(resourceContainer.Path);
-                long dataSectionLength = resourceFileSize - resourceContainer.DataOffset;
-                long placement = 0x10 - (dataSectionLength % 0x10) + 0x30;
-                long newContainerSize = resourceFileSize + compressedMapResourcesData.size() + placement;
-                long dataOffset = newContainerSize - compressedMapResourcesData.size();
+                int64_t resourceFileSize = std::filesystem::file_size(resourceContainer.Path);
+                int64_t dataSectionLength = resourceFileSize - resourceContainer.DataOffset;
+                int64_t placement = 0x10 - (dataSectionLength % 0x10) + 0x30;
+                int64_t newContainerSize = resourceFileSize + compressedMapResourcesData.size() + placement;
+                int64_t dataOffset = newContainerSize - compressedMapResourcesData.size();
 
                 try {
                     std::filesystem::resize_file(resourceContainer.Path, newContainerSize);
@@ -689,8 +689,8 @@ void ReplaceChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
 
                 fseek(resourceFile, mapResourcesChunk->SizeOffset, SEEK_SET);
 
-                long compressedMapResourcesSize = compressedMapResourcesData.size();
-                long decompressedMapResourcesSize = decompressedMapResourcesData.size();
+                int64_t compressedMapResourcesSize = compressedMapResourcesData.size();
+                int64_t decompressedMapResourcesSize = decompressedMapResourcesData.size();
                 fwrite(&compressedMapResourcesSize, 8, 1, resourceFile);
                 fwrite(&decompressedMapResourcesSize, 8, 1, resourceFile);
 

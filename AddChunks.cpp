@@ -33,7 +33,7 @@ void AddChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
     if (resourceContainer.NewModFileList.empty())
         return;
 
-    long fileSize = std::filesystem::file_size(resourceContainer.Path);
+    int64_t fileSize = std::filesystem::file_size(resourceContainer.Path);
 
     fseek(resourceFile, 0, SEEK_SET);
 
@@ -52,7 +52,7 @@ void AddChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
     std::vector<std::byte> unknown(resourceContainer.Dummy7Offset - resourceContainer.UnknownOffset);
     fread(unknown.data(), 1, unknown.size(), resourceFile);
 
-    long nameIdsOffset = resourceContainer.Dummy7Offset + (resourceContainer.TypeCount * 4);
+    int64_t nameIdsOffset = resourceContainer.Dummy7Offset + (resourceContainer.TypeCount * 4);
 
     std::vector<std::byte> typeIds(nameIdsOffset - resourceContainer.Dummy7Offset);
     fread(typeIds.data(), 1, typeIds.size(), resourceFile);
@@ -63,9 +63,9 @@ void AddChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
     std::vector<std::byte> idcl(resourceContainer.DataOffset - resourceContainer.IdclOffset);
     fread(idcl.data(), 1, idcl.size(), resourceFile);
 
-    int infoOldLength = info.size();
-    int nameIdsOldLength = nameIds.size();
-    int newChunksCount = 0;
+    int32_t infoOldLength = info.size();
+    int32_t nameIdsOldLength = nameIds.size();
+    int32_t newChunksCount = 0;
 
     for (auto &modFile : resourceContainer.ModFileList) {
         if (modFile.IsAssetsInfoJson && modFile.AssetsInfo.has_value() && !modFile.AssetsInfo.value().Assets.empty()) {
@@ -79,7 +79,7 @@ void AddChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
 
                     if (newModFile.Name == declPath || newModFile.Name == normalPath) {
                         newModFile.ResourceType = assetsInfoAssets.ResourceType.empty() ? "rs_streamfile" : assetsInfoAssets.ResourceType;
-                        newModFile.Version = (unsigned short)assetsInfoAssets.Version;
+                        newModFile.Version = (uint16_t)assetsInfoAssets.Version;
                         newModFile.StreamDbHash = assetsInfoAssets.StreamDbHash;
                         newModFile.SpecialByte1 = assetsInfoAssets.SpecialByte1;
                         newModFile.SpecialByte2 = assetsInfoAssets.SpecialByte2;
@@ -114,13 +114,13 @@ void AddChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
         }
 
         ResourceDataEntry resourceData;
-        std::map<unsigned long, ResourceDataEntry>::iterator x = ResourceDataMap.find(CalculateResourceFileNameHash(modFile.Name));
+        std::map<uint64_t, ResourceDataEntry>::iterator x = ResourceDataMap.find(CalculateResourceFileNameHash(modFile.Name));
 
         if (x != ResourceDataMap.end()) {
             resourceData = x->second;
 
             modFile.ResourceType = modFile.ResourceType.empty() ? resourceData.ResourceType : modFile.ResourceType;
-            modFile.Version = !modFile.Version.has_value() ? (unsigned short)resourceData.Version : modFile.Version;
+            modFile.Version = !modFile.Version.has_value() ? (uint16_t)resourceData.Version : modFile.Version;
             modFile.StreamDbHash = !modFile.StreamDbHash.has_value() ? resourceData.StreamDbHash : modFile.StreamDbHash;
             modFile.SpecialByte1 = !modFile.SpecialByte1.has_value() ? resourceData.SpecialByte1 : modFile.SpecialByte1;
             modFile.SpecialByte2 = !modFile.SpecialByte2.has_value() ? resourceData.SpecialByte2 : modFile.SpecialByte2;
@@ -151,12 +151,12 @@ void AddChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
             }
 
             if (!found) {
-                long typeLastOffset;
+                int64_t typeLastOffset;
                 std::copy(nameOffsets.end() - 8, nameOffsets.end(), (std::byte*)&typeLastOffset);
 
-                long typeLastNameOffset = 0;
+                int64_t typeLastNameOffset = 0;
 
-                for (int i = typeLastOffset; i < names.size(); i++) {
+                for (int32_t i = typeLastOffset; i < names.size(); i++) {
                     if (names[i] == (std::byte)0) {
                         typeLastNameOffset = i + 1;
                         break;
@@ -166,7 +166,7 @@ void AddChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
                 names.resize(names.size() + modFile.ResourceType.size() + 1);
                 std::copy((std::byte*)modFile.ResourceType.c_str(), (std::byte*)modFile.ResourceType.c_str() + modFile.ResourceType.size() + 1, names.begin() + typeLastNameOffset);
 
-                long typeNewCount;
+                int64_t typeNewCount;
                 std::copy(nameOffsets.begin(), nameOffsets.begin() + 8, (std::byte*)&typeNewCount);
                 typeNewCount += 1;
 
@@ -181,12 +181,12 @@ void AddChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
             }
         }
 
-        long lastOffset;
+        int64_t lastOffset;
         std::copy(nameOffsets.end() - 8, nameOffsets.end(), (std::byte*)&lastOffset);
 
-        long lastNameOffset = 0;
+        int64_t lastNameOffset = 0;
 
-        for (int i = lastOffset; i < names.size(); i++) {
+        for (int32_t i = lastOffset; i < names.size(); i++) {
             if (names[i] == (std::byte)0) {
                 lastNameOffset = i + 1;
                 break;
@@ -197,7 +197,7 @@ void AddChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
         names.resize(names.size() + modFile.Name.size() + 1);
         std::copy(nameChars, nameChars + modFile.Name.size() + 1, names.begin() + lastNameOffset);
 
-        long newCount;
+        int64_t newCount;
         std::copy(nameOffsets.begin(), nameOffsets.begin() + 8, (std::byte*)&newCount);
         newCount += 1;
 
@@ -209,11 +209,11 @@ void AddChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
         ResourceName newResourceName(modFile.Name, modFile.Name);
         resourceContainer.NamesList.push_back(newResourceName);
 
-        long resourceFileSize = std::filesystem::file_size(resourceContainer.Path);
-        long currentDataSectionLength = resourceFileSize - resourceContainer.DataOffset;
-        long placement = 0x10 - (currentDataSectionLength % 0x10) + 0x30;
-        long newContainerSize = resourceFileSize + modFile.FileBytes.size() + placement;
-        long fileOffset = newContainerSize - modFile.FileBytes.size();
+        int64_t resourceFileSize = std::filesystem::file_size(resourceContainer.Path);
+        int64_t currentDataSectionLength = resourceFileSize - resourceContainer.DataOffset;
+        int64_t placement = 0x10 - (currentDataSectionLength % 0x10) + 0x30;
+        int64_t newContainerSize = resourceFileSize + modFile.FileBytes.size() + placement;
+        int64_t fileOffset = newContainerSize - modFile.FileBytes.size();
 
         try {
             std::filesystem::resize_file(resourceContainer.Path, newContainerSize);
@@ -226,12 +226,12 @@ void AddChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
         fseek(resourceFile, fileOffset, SEEK_SET);
         fwrite(modFile.FileBytes.data(), 1, modFile.FileBytes.size(), resourceFile);
 
-        long nameId = resourceContainer.GetResourceNameId(modFile.Name);
+        int64_t nameId = resourceContainer.GetResourceNameId(modFile.Name);
         nameIds.resize(nameIds.size() + 8);
-        long nameIdOffset = (nameIds.size() / 8) - 1;
+        int64_t nameIdOffset = (nameIds.size() / 8) - 1;
         nameIds.resize(nameIds.size() + 8);
 
-        long assetTypeNameId = resourceContainer.GetResourceNameId(modFile.ResourceType);
+        int64_t assetTypeNameId = resourceContainer.GetResourceNameId(modFile.ResourceType);
 
         if (assetTypeNameId == -1)
             assetTypeNameId = 0;
@@ -239,11 +239,11 @@ void AddChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
         std::copy((std::byte*)&assetTypeNameId, (std::byte*)&assetTypeNameId + 8, nameIds.end() - 16);
         std::copy((std::byte*)&nameId, (std::byte*)&nameId + 8, nameIds.end() - 8);
 
-        long newInfoSectionOffset = -1;
+        int64_t newInfoSectionOffset = -1;
 
         /*if (!modFile.PlaceByName.empty()) {
-            long existingNameId = -1;
-            long existingNameOffset = -1;
+            int64_t existingNameId = -1;
+            int64_t existingNameOffset = -1;
 
             if (!modFile.PlaceByType.empty()) {
                 existingNameId = resourceContainer.GetResourceNameId("generated/decls/" + ToLower(modFile.PlaceByType) + "/" + modFile.PlaceByName + ".decl");
@@ -254,8 +254,8 @@ void AddChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
             }
 
             if (existingNameId != -1) {
-                for (int i = 0, j = nameIds.size() / 8; i < j; i++) {
-                    long currentNameId;
+                for (int32_t i = 0, j = nameIds.size() / 8; i < j; i++) {
+                    int64_t currentNameId;
                     std::copy(nameIds.begin() + i * 8, nameIds.begin() + i * 8 + 8, (std::byte*)&currentNameId);
 
                     if (currentNameId == existingNameId) {
@@ -265,11 +265,11 @@ void AddChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
                 }
 
                 if (existingNameOffset != -1) {
-                    int pos = 0;
+                    int32_t pos = 0;
 
-                    for (int i = 0, j = info.size() / 0x90; i < j; i++) {
+                    for (int32_t i = 0, j = info.size() / 0x90; i < j; i++) {
                         pos += 32;
-                        long nameOffset;
+                        int64_t nameOffset;
                         std::copy(info.begin() + pos, info.begin() + pos + 8, (std::byte*)&nameOffset);
                         pos += 0x70;
 
@@ -292,7 +292,7 @@ void AddChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
         std::copy((std::byte*)&nameIdOffset, (std::byte*)&nameIdOffset + 8, newFileInfo + sizeof(newFileInfo) - 0x70);
         std::copy((std::byte*)&fileOffset, (std::byte*)&fileOffset + 8, newFileInfo + sizeof(newFileInfo) - 0x58);
 
-        long fileBytesSize = modFile.FileBytes.size();
+        int64_t fileBytesSize = modFile.FileBytes.size();
 
         std::copy((std::byte*)&fileBytesSize, (std::byte*)&fileBytesSize + 8, newFileInfo + sizeof(newFileInfo) - 0x50);
         std::copy((std::byte*)&fileBytesSize, (std::byte*)&fileBytesSize + 8, newFileInfo + sizeof(newFileInfo) - 0x48);
@@ -300,12 +300,12 @@ void AddChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
         std::copy((std::byte*)&modFile.StreamDbHash.value(), (std::byte*)&modFile.StreamDbHash.value() + 8, newFileInfo + sizeof(newFileInfo) - 0x40);
         std::copy((std::byte*)&modFile.StreamDbHash.value(), (std::byte*)&modFile.StreamDbHash.value() + 8, newFileInfo + sizeof(newFileInfo) - 0x30);
 
-        int version = modFile.Version.value();
+        int32_t version = modFile.Version.value();
         std::copy((std::byte*)&version, (std::byte*)&version + 4, newFileInfo + sizeof(newFileInfo) - 0x28);
 
-        int SpecialByte1Int = (int)modFile.SpecialByte1.value();
-        int SpecialByte2Int = (int)modFile.SpecialByte2.value();
-        int SpecialByte3Int = (int)modFile.SpecialByte3.value();
+        int32_t SpecialByte1Int = (int32_t)modFile.SpecialByte1.value();
+        int32_t SpecialByte2Int = (int32_t)modFile.SpecialByte2.value();
+        int32_t SpecialByte3Int = (int32_t)modFile.SpecialByte3.value();
 
         std::copy((std::byte*)&SpecialByte1Int, (std::byte*)&SpecialByte1Int + 4, newFileInfo + sizeof(newFileInfo) - 0x24);
         std::copy((std::byte*)&SpecialByte2Int, (std::byte*)&SpecialByte2Int + 4, newFileInfo + sizeof(newFileInfo) - 0x1E);
@@ -313,13 +313,13 @@ void AddChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
 
         newFileInfo[sizeof(newFileInfo) - 0x20] = (std::byte)0;
 
-        short metaEntries = 0;
+        int16_t metaEntries = 0;
         std::copy((std::byte*)&metaEntries, (std::byte*)&metaEntries + 2, newFileInfo + sizeof(newFileInfo) - 0x10);
 
         info.resize(info.size() + 0x90);
 
         if (newInfoSectionOffset != -1 /*&& modFile.ResourceType == "rs_streamfile"*/) {
-            long bufferSize = info.size() - newInfoSectionOffset - 0x90;
+            int64_t bufferSize = info.size() - newInfoSectionOffset - 0x90;
             std::byte *buffer = new std::byte[bufferSize];
             std::copy(info.begin() + newInfoSectionOffset, info.begin() + newInfoSectionOffset + bufferSize, buffer);
             std::copy(buffer, buffer + bufferSize, info.begin() + newInfoSectionOffset + 0x90);
@@ -334,63 +334,63 @@ void AddChunks(FILE *&resourceFile, ResourceContainer &resourceContainer)
         newChunksCount++;
     }
 
-    long namesOffsetAdd = info.size() - infoOldLength;
-    long newSize = nameOffsets.size() + names.size();
-    long unknownAdd = namesOffsetAdd + (newSize - resourceContainer.StringsSize);
-    long typeIdsAdd = unknownAdd;
-    long nameIdsAdd = typeIdsAdd;
-    long idclAdd = nameIdsAdd + (nameIds.size() - nameIdsOldLength);
-    long dataAdd = idclAdd;
+    int64_t namesOffsetAdd = info.size() - infoOldLength;
+    int64_t newSize = nameOffsets.size() + names.size();
+    int64_t unknownAdd = namesOffsetAdd + (newSize - resourceContainer.StringsSize);
+    int64_t typeIdsAdd = unknownAdd;
+    int64_t nameIdsAdd = typeIdsAdd;
+    int64_t idclAdd = nameIdsAdd + (nameIds.size() - nameIdsOldLength);
+    int64_t dataAdd = idclAdd;
 
-    int fileCountAdd = resourceContainer.FileCount + newChunksCount;
+    int32_t fileCountAdd = resourceContainer.FileCount + newChunksCount;
     std::copy((std::byte*)&fileCountAdd, (std::byte*)&fileCountAdd + 4, header.begin() + 0x20);
 
-    int fileCount2Add = resourceContainer.FileCount2 + newChunksCount * 2;
+    int32_t fileCount2Add = resourceContainer.FileCount2 + newChunksCount * 2;
     std::copy((std::byte*)&fileCount2Add, (std::byte*)&fileCount2Add + 4, header.begin() + 0x2C);
 
     std::copy((std::byte*)&newSize, (std::byte*)&newSize + 4, header.begin() + 0x38);
 
-    long nameOffsetAdd = resourceContainer.NamesOffset + namesOffsetAdd;
+    int64_t nameOffsetAdd = resourceContainer.NamesOffset + namesOffsetAdd;
     std::copy((std::byte*)&nameOffsetAdd, (std::byte*)&nameOffsetAdd + 8, header.begin() + 0x40);
 
-    long unknownOffsetAdd = resourceContainer.UnknownOffset + unknownAdd;
+    int64_t unknownOffsetAdd = resourceContainer.UnknownOffset + unknownAdd;
     std::copy((std::byte*)&unknownOffsetAdd, (std::byte*)&unknownOffsetAdd + 8, header.begin() + 0x48);
 
-    long unknownOffsetAdd2 = resourceContainer.UnknownOffset2 + unknownAdd;
+    int64_t unknownOffsetAdd2 = resourceContainer.UnknownOffset2 + unknownAdd;
     std::copy((std::byte*)&unknownOffsetAdd2, (std::byte*)&unknownOffsetAdd2 + 8, header.begin() + 0x58);
 
-    long dummy7OffsetAdd = resourceContainer.Dummy7Offset + typeIdsAdd;
+    int64_t dummy7OffsetAdd = resourceContainer.Dummy7Offset + typeIdsAdd;
     std::copy((std::byte*)&dummy7OffsetAdd, (std::byte*)&dummy7OffsetAdd + 8, header.begin() + 0x60);
 
-    long dataOffsetAdd = resourceContainer.DataOffset + dataAdd;
+    int64_t dataOffsetAdd = resourceContainer.DataOffset + dataAdd;
     std::copy((std::byte*)&dataOffsetAdd, (std::byte*)&dataOffsetAdd + 8, header.begin() + 0x68);
 
-    long idclOffsetAdd = resourceContainer.IdclOffset + idclAdd;
+    int64_t idclOffsetAdd = resourceContainer.IdclOffset + idclAdd;
     std::copy((std::byte*)&idclOffsetAdd, (std::byte*)&idclOffsetAdd + 8, header.begin() + 0x74);
 
     info.reserve(2 * (0x38 + info.size() + 8));
 
-    for (int i = 0; i < info.size() / 0x90; i++) {
-        int fileOffset = 0x38 + (i * 0x90);
+    for (int32_t i = 0; i < info.size() / 0x90; i++) {
+        int32_t fileOffset = 0x38 + (i * 0x90);
 
-        long newOffsetPlusDataAdd;
+        int64_t newOffsetPlusDataAdd;
         std::copy(info.begin() + fileOffset, info.begin() + fileOffset + 8, (std::byte*)&newOffsetPlusDataAdd);
         newOffsetPlusDataAdd += dataAdd;
 
         std::copy((std::byte*)&newOffsetPlusDataAdd, (std::byte*)&newOffsetPlusDataAdd + 8, info.begin() + fileOffset);
     }
 
-    long resourceFileSize = std::filesystem::file_size(resourceContainer.Path);
-    long dataSectionLength = resourceFileSize - resourceContainer.DataOffset;
-    long newContainerSize = header.size() + info.size() + nameOffsets.size() + names.size() + unknown.size() + typeIds.size() + nameIds.size() + idcl.size() + dataSectionLength;
+    int64_t resourceFileSize = std::filesystem::file_size(resourceContainer.Path);
+    int64_t dataSectionLength = resourceFileSize - resourceContainer.DataOffset;
+    int64_t newContainerSize = header.size() + info.size() + nameOffsets.size() + names.size() + unknown.size() + typeIds.size() + nameIds.size() + idcl.size() + dataSectionLength;
 
-    const int bufferSize = 4096;
+    const int32_t bufferSize = 4096;
     std::byte buffer[bufferSize];
 
-    long oldContainerSize = resourceFileSize;
-    long extraBytes = newContainerSize - oldContainerSize;
-    long currentPos = oldContainerSize;
-    int bytesToRead;
+    int64_t oldContainerSize = resourceFileSize;
+    int64_t extraBytes = newContainerSize - oldContainerSize;
+    int64_t currentPos = oldContainerSize;
+    int32_t bytesToRead;
 
     try {
         std::filesystem::resize_file(resourceContainer.Path, newContainerSize);

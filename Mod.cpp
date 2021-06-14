@@ -26,8 +26,8 @@ Mod::Mod(std::string name, std::string &json)
     nlohmann::json modJson = nlohmann::json::parse(json, nullptr, true, true);
 
     if (modJson.contains("loadPriority"))
-        LoadPriority = modJson["loadPriority"].get<int>();
+        LoadPriority = modJson["loadPriority"].get<int32_t>();
 
     if (modJson.contains("requiredVersion"))
-        RequiredVersion = modJson["requiredVersion"].get<int>();
+        RequiredVersion = modJson["requiredVersion"].get<int32_t>();
 }
