@@ -109,9 +109,6 @@ int ParseResourceData(std::string &fileName)
         ResourceDataMap[fileNameHash] = resourceDataEntry;
     }
 
-    std::cout << "outside" << std::endl;
-    exit(1);
-
     return 0;
 }
 
