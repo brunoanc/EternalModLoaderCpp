@@ -3,9 +3,6 @@ project(EternalModLoader)
 
 set(CMAKE_CXX_STANDARD 17)
 
-set(JSON_BuildTests OFF CACHE INTERNAL "")
-add_subdirectory(json)
-
 file(GLOB SOURCES
         ./EternalModLoader.cpp
         ./AddChunks.cpp
@@ -40,7 +37,6 @@ find_package(OpenSSL REQUIRED)
 target_link_libraries(
         DEternal_loadMods
         PUBLIC
-        nlohmann_json::nlohmann_json
         OpenSSL::Crypto
         ${CMAKE_DL_LIBS}
 )

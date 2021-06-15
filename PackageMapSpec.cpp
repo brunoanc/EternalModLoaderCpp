@@ -18,7 +18,7 @@
 
 #include <iostream>
 
-#include "json/single_include/nlohmann/json.hpp"
+#include "json/json.hpp"
 #include "EternalModLoader.hpp"
 
 PackageMapSpec::PackageMapSpec(std::string &json)

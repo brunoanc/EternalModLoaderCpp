@@ -20,7 +20,7 @@
 #include <filesystem>
 #include <algorithm>
 
-#include "json/single_include/nlohmann/json.hpp"
+#include "json/json.hpp"
 #include "EternalModLoader.hpp"
 
 #ifdef _WIN32
