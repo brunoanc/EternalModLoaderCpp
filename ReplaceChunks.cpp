@@ -32,39 +32,8 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
     ResourceChunk *mapResourcesChunk = NULL;
     MapResourcesFile *mapResourcesFile = NULL;
     std::vector<std::byte> originalDecompressedMapResources;
+    bool invalidMapResources = false;
     int32_t fileCount = 0;
-    
-    for (auto &file : resourceContainer.ChunkList) {
-        if (EndsWith(file.ResourceName.NormalizedFileName, ".mapresources")) {
-            if (resourceContainer.Name.rfind("gameresources", 0) == 0 && EndsWith(file.ResourceName.NormalizedFileName, "init.mapresources"))
-                continue;
-
-            mapResourcesChunk = &file;
-
-            int64_t mapResourcesFileOffset;
-            std::copy(mem + mapResourcesChunk->FileOffset, mem + mapResourcesChunk->FileOffset + 8, (std::byte*)&mapResourcesFileOffset);
-            std::vector<std::byte> mapResourcesBytes(mem + mapResourcesFileOffset, mem + mapResourcesFileOffset + mapResourcesChunk->SizeZ);
-
-            originalDecompressedMapResources = OodleDecompress(mapResourcesBytes, mapResourcesChunk->Size);
-
-            if (originalDecompressedMapResources.empty()) {
-                std::cerr << RED << "ERROR: " << RESET << "Failed to decompress " << mapResourcesChunk->ResourceName.NormalizedFileName
-                    << " - are you trying to add assets in the wrong .resources archive?" << std::endl;
-                break;
-            }
-
-            try {
-                mapResourcesFile = new MapResourcesFile(originalDecompressedMapResources);
-            }
-            catch (...) {
-                std::cerr << RED << "ERROR: " << RESET << "Failed to parse " << mapResourcesChunk->ResourceName.NormalizedFileName
-                    << " - are you trying to add assets in the wrong .resources archive?" << std::endl;
-                break;
-            }
-
-            break;
-        }
-    }
 
     std::stable_sort(resourceContainer.ModFileList.begin(), resourceContainer.ModFileList.end(),
         [](ResourceModFile resource1, ResourceModFile resource2) { return resource1.Parent.LoadPriority > resource2.Parent.LoadPriority ? true : false; });
@@ -125,10 +94,10 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
 
                         std::string modFileMapName = std::filesystem::path(modFile.Name).stem().string();
 
-                        if (resourceContainer.Name.rfind("dlc_hub", 0) == 0) {
+                        if (StartsWith(resourceContainer.Name, "dlc_hub")) {
                             modFileMapName = "game/dlc/hub/hub";
                         }
-                        else if (resourceContainer.Name.rfind("hub", 0) == 0) {
+                        else if (StartsWith(resourceContainer.Name, "hub")) {
                             modFileMapName = "game/hub/hub";
                         }
 
@@ -273,7 +242,42 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                 }
             }
 
-            if (mapResourcesFile == NULL || (modFile.AssetsInfo->Assets.empty() && modFile.AssetsInfo->Maps.empty() && modFile.AssetsInfo->Layers.empty()))
+            if (modFile.AssetsInfo->Assets.empty() && modFile.AssetsInfo->Maps.empty() && modFile.AssetsInfo->Layers.empty())
+                continue;
+
+            if (mapResourcesFile == NULL && !invalidMapResources) {
+                for (auto &file : resourceContainer.ChunkList) {
+                    if (EndsWith(file.ResourceName.NormalizedFileName, ".mapresources")) {
+                        if (EndsWith(resourceContainer.Name, "gameresources") && EndsWith(file.ResourceName.NormalizedFileName, "init.mapresources"))
+                            continue;
+
+                        mapResourcesChunk = &file;
+
+                        std::vector<std::byte> mapResourcesBytes(mapResourcesChunk->SizeZ);
+                        uint64_t mapResourcesFileOffset;
+
+                        std::copy(mem + mapResourcesChunk->FileOffset, mem + mapResourcesChunk->FileOffset + 8, (std::byte*)&mapResourcesFileOffset);
+                        std::copy(mem + mapResourcesFileOffset, mem + mapResourcesFileOffset + mapResourcesBytes.size(), mapResourcesBytes.begin());
+
+                        try {
+                            originalDecompressedMapResources = OodleDecompress(mapResourcesBytes, mapResourcesChunk->Size);
+
+                            if (originalDecompressedMapResources.empty())
+                                throw std::exception();
+
+                            mapResourcesFile = new MapResourcesFile(originalDecompressedMapResources);
+                        }
+                        catch (...) {
+                            invalidMapResources = true;
+                            std::cerr << RED << "ERROR: " << RESET << "Failed to decompress " << mapResourcesChunk->ResourceName.NormalizedFileName
+                                << " - are you trying to add assets in the wrong .resources archive?" << std::endl;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (mapResourcesFile == NULL || invalidMapResources)
                 continue;
 
             if (!modFile.AssetsInfo->Layers.empty()) {
@@ -483,7 +487,39 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                     }
                 }
 
-                if (mapResourcesFile == NULL)
+                if (mapResourcesFile == NULL && !invalidMapResources) {
+                    for (auto &file : resourceContainer.ChunkList) {
+                        if (EndsWith(file.ResourceName.NormalizedFileName, ".mapresources")) {
+                            if (EndsWith(resourceContainer.Name, "gameresources") && EndsWith(file.ResourceName.NormalizedFileName, "init.mapresources"))
+                                continue;
+
+                            mapResourcesChunk = &file;
+
+                            std::vector<std::byte> mapResourcesBytes(mapResourcesChunk->SizeZ);
+                            uint64_t mapResourcesFileOffset;
+
+                            std::copy(mem + mapResourcesChunk->FileOffset, mem + mapResourcesChunk->FileOffset + 8, (std::byte*)&mapResourcesFileOffset);
+                            std::copy(mem + mapResourcesFileOffset, mem + mapResourcesFileOffset + mapResourcesBytes.size(), mapResourcesBytes.begin());
+
+                            try {
+                                originalDecompressedMapResources = OodleDecompress(mapResourcesBytes, mapResourcesChunk->Size);
+
+                                if (originalDecompressedMapResources.empty())
+                                    throw std::exception();
+
+                                mapResourcesFile = new MapResourcesFile(originalDecompressedMapResources);
+                            }
+                            catch (...) {
+                                invalidMapResources = true;
+                                std::cerr << RED << "ERROR: " << RESET << "Failed to decompress " << mapResourcesChunk->ResourceName.NormalizedFileName
+                                    << " - are you trying to add assets in the wrong .resources archive?" << std::endl;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (mapResourcesFile == NULL || invalidMapResources)
                     continue;
 
                 bool alreadyExists = false;
@@ -614,47 +650,120 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
         }
 
         int64_t resourceFileSize = std::filesystem::file_size(resourceContainer.Path);
-        int64_t dataSectionLength = resourceFileSize - resourceContainer.DataOffset;
-        int64_t placement = (0x10 - (dataSectionLength % 0x10)) + 0x30;
-        int64_t newContainerSize = resourceFileSize + modFile.FileBytes.size() + placement;
-        int64_t dataOffset = newContainerSize - modFile.FileBytes.size();
 
-        try {
+        if (!SlowMode) {
+            int64_t dataSectionLength = resourceFileSize - resourceContainer.DataOffset;
+            int64_t placement = (0x10 - (dataSectionLength % 0x10)) + 0x30;
+            int64_t newContainerSize = resourceFileSize + modFile.FileBytes.size() + placement;
+            int64_t dataOffset = newContainerSize - modFile.FileBytes.size();
+
+            try {
 #ifdef _WIN32
-            UnmapViewOfFile(mem);
-            CloseHandle(fileMapping);
+                UnmapViewOfFile(mem);
+                CloseHandle(fileMapping);
 
-            fileMapping = CreateFileMappingA(hFile, NULL, PAGE_READWRITE, *((DWORD*)&newContainerSize + 1), *(DWORD*)&newContainerSize, NULL);
+                fileMapping = CreateFileMappingA(hFile, NULL, PAGE_READWRITE, *((DWORD*)&newContainerSize + 1), *(DWORD*)&newContainerSize, NULL);
 
-            if (GetLastError() != ERROR_SUCCESS || fileMapping == NULL)
-                throw std::exception();
+                if (GetLastError() != ERROR_SUCCESS || fileMapping == NULL)
+                    throw std::exception();
 
-            mem = (std::byte*)MapViewOfFile(fileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+                mem = (std::byte*)MapViewOfFile(fileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
 
-            if (GetLastError() != ERROR_SUCCESS || mem == NULL)
-                throw std::exception();
+                if (GetLastError() != ERROR_SUCCESS || mem == NULL)
+                    throw std::exception();
 #else
-            munmap(mem, resourceFileSize);
-            std::filesystem::resize_file(resourceContainer.Path, newContainerSize);
-            mem = (std::byte*)mmap(0, newContainerSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+                munmap(mem, resourceFileSize);
+                std::filesystem::resize_file(resourceContainer.Path, newContainerSize);
+                mem = (std::byte*)mmap(0, newContainerSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 #endif
 
-            if (mem == NULL)
-                throw std::exception();
-        }
-        catch (...) {
-            std::cerr << RED << "ERROR: " << RESET << "Failed to resize " << resourceContainer.Path << std::endl;
-            return;
-        }
+                if (mem == NULL)
+                    throw std::exception();
+            }
+            catch (...) {
+                std::cerr << RED << "ERROR: " << RESET << "Failed to resize " << resourceContainer.Path << std::endl;
+                return;
+            }
 
-        std::copy(modFile.FileBytes.begin(), modFile.FileBytes.end(), mem + dataOffset);
-        std::copy((std::byte*)&dataOffset, (std::byte*)&dataOffset + 8, mem + chunk->FileOffset);
+            std::copy(modFile.FileBytes.begin(), modFile.FileBytes.end(), mem + dataOffset);
+            std::copy((std::byte*)&dataOffset, (std::byte*)&dataOffset + 8, mem + chunk->FileOffset);
+        }
+        else {
+            if (sizeDiff > 0) {
+                int32_t bufferSize = 4096;
+                std::byte buffer[bufferSize];
+                int64_t newContainerSize = resourceFileSize + sizeDiff;
+
+                try {
+#ifdef _WIN32
+                    UnmapViewOfFile(mem);
+                    CloseHandle(fileMapping);
+
+                    fileMapping = CreateFileMappingA(hFile, NULL, PAGE_READWRITE, *((DWORD*)&newContainerSize + 1), *(DWORD*)&newContainerSize, NULL);
+
+                    if (GetLastError() != ERROR_SUCCESS || fileMapping == NULL)
+                        throw std::exception();
+
+                    mem = (std::byte*)MapViewOfFile(fileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+
+                    if (GetLastError() != ERROR_SUCCESS || mem == NULL)
+                        throw std::exception();
+#else
+                    munmap(mem, resourceFileSize);
+                    std::filesystem::resize_file(resourceContainer.Path, newContainerSize);
+                    mem = (std::byte*)mmap(0, newContainerSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+#endif
+
+                    if (mem == NULL)
+                        throw std::exception();
+                }
+                catch (...) {
+                    std::cerr << RED << "ERROR: " << RESET << "Failed to resize " << resourceContainer.Path << std::endl;
+                    return;
+                }
+
+                int32_t toRead;
+
+                while (resourceFileSize > fileOffset + size) {
+                    toRead = (resourceFileSize - bufferSize) >= (fileOffset + size) ? bufferSize : (resourceFileSize - fileOffset - size);
+                    resourceFileSize -= toRead;
+
+                    std::copy(mem + resourceFileSize, mem + resourceFileSize + toRead, buffer);
+                    std::copy(buffer, buffer + toRead, mem + resourceFileSize + sizeDiff);
+                }
+
+                std::copy(modFile.FileBytes.begin(), modFile.FileBytes.end(), mem + fileOffset);
+            }
+            else {
+                std::copy(modFile.FileBytes.begin(), modFile.FileBytes.end(), mem + fileOffset);
+
+                if (sizeDiff < 0) {
+                    std::byte *emptyArray = new std::byte[-sizeDiff];
+                    std::memset(emptyArray, 0, -sizeDiff);
+
+                    std::copy(emptyArray, emptyArray - sizeDiff, mem + fileOffset + modFile.FileBytes.size());
+                }
+            }
+        }
 
         int64_t modFileBytesSize = modFile.FileBytes.size();
         std::copy((std::byte*)&modFileBytesSize, (std::byte*)&modFileBytesSize + 8, mem + chunk->SizeOffset);
         std::copy((std::byte*)&modFileBytesSize, (std::byte*)&modFileBytesSize + 8, mem + chunk->SizeOffset + 8);
 
         mem[chunk->SizeOffset + 0x30] = (std::byte)0;
+
+        if (SlowMode && sizeDiff > 0) {
+            std::vector<ResourceChunk>::iterator x = std::find(resourceContainer.ChunkList.begin(), resourceContainer.ChunkList.end(), *chunk);
+            int32_t index = std::distance(resourceContainer.ChunkList.begin(), x);
+
+            for (int i = index + 1; i < resourceContainer.ChunkList.size(); i++) {
+                std::copy(mem + resourceContainer.ChunkList[i].FileOffset, mem + resourceContainer.ChunkList[i].FileOffset + 8, (std::byte*)&fileOffset);
+
+                int64_t fileOffsetSizeDir = fileOffset + sizeDiff;
+                std::copy((std::byte*)&fileOffsetSizeDir, (std::byte*)&fileOffsetSizeDir + 8, mem + resourceContainer.ChunkList[i].FileOffset);
+            }
+
+        }
 
         if (!modFile.IsBlangJson && !modFile.IsAssetsInfoJson) {
             std::cout << "\tReplaced " << modFile.Name << std::endl;

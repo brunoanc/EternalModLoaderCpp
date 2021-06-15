@@ -110,9 +110,9 @@ int32_t EncodeSoundMod(SoundModFile &soundModFile)
 }
 
 #ifdef _WIN32
-void LoadSoundMods(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, SoundContainer &soundContainer)
+void ReplaceSounds(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, SoundContainer &soundContainer)
 #else
-void LoadSoundMods(std::byte *&mem, int32_t &fd, SoundContainer &soundContainer)
+void ReplaceSounds(std::byte *&mem, int32_t &fd, SoundContainer &soundContainer)
 #endif
 {
     int32_t fileCount = 0;

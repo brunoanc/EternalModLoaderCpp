@@ -290,6 +290,7 @@ extern std::string BasePath;
 extern std::vector<ResourceContainer> ResourceContainerList;
 extern std::vector<SoundContainer> SoundContainerList;
 extern bool Verbose;
+extern bool SlowMode;
 extern std::map<uint64_t, ResourceDataEntry> ResourceDataMap;
 
 extern std::string RESET;
@@ -305,11 +306,11 @@ extern std::vector<std::string> SupportedFileFormats;
 #ifdef _WIN32
 void ReplaceChunks(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, ResourceContainer &resourceContainer);
 void AddChunks(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, ResourceContainer &resourceContainer);
-void LoadSoundMods(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, SoundContainer &soundContainer);
+void ReplaceSounds(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, SoundContainer &soundContainer);
 #else
 void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContainer);
 void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContainer);
-void LoadSoundMods(std::byte *&mem, int32_t &fd, SoundContainer &soundContainer);
+void ReplaceSounds(std::byte *&mem, int32_t &fd, SoundContainer &soundContainer);
 #endif
 
 std::string PathToResourceContainer(std::string name);
@@ -326,7 +327,8 @@ std::vector<std::string> SplitString(std::string stringToSplit, char delimiter);
 std::map<uint64_t, ResourceDataEntry> ParseResourceData(std::string &filename);
 uint64_t CalculateResourceFileNameHash(std::string &input);
 std::string NormalizeResourceFilename(std::string filename);
-bool EndsWith(const std::string &fullString, const std::string &ending);
+bool EndsWith(const std::string &fullString, const std::string &suffix);
+bool StartsWith(const std::string &fullString, const std::string &prefix);
 std::string PathToSoundContainer(std::string name);
 int32_t GetSoundContainer(std::string &soundContainerName);
 

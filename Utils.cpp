@@ -88,14 +88,19 @@ std::vector<std::string> SplitString(std::string stringToSplit, char delimiter)
     return resultVector;
 }
 
-bool EndsWith(const std::string &fullString, const std::string &ending)
+bool EndsWith(const std::string &fullString, const std::string &suffix)
 {
-    if (fullString.length() >= ending.length()) {
-        return 0 == fullString.compare(fullString.length() - ending.length(), ending.length(), ending);
+    if (fullString.length() >= suffix.length()) {
+        return 0 == fullString.compare(fullString.length() - suffix.length(), suffix.length(), suffix);
     }
     else {
         return false;
     }
+}
+
+bool StartsWith(const std::string &fullString, const std::string &prefix)
+{
+    return 0 == fullString.rfind(prefix, 0);
 }
 
 std::string NormalizeResourceFilename(std::string filename)

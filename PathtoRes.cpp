@@ -28,11 +28,11 @@ std::string PathToResourceContainer(std::string name)
     std::string resourcePath = name;
     bool recursive = true;
 
-    if (ToLower(name).rfind("dlc_hub", 0) == 0) {
+    if (StartsWith(ToLower(name), "dlc_hub")) {
         resourcePath = resourcePath.substr(4, name.size() - 4);
         return BasePath + "game" + separator + "dlc" + separator + "hub" + separator + resourcePath;
     }
-    else if (ToLower(name).rfind("hub", 0) == 0) {
+    else if (StartsWith(ToLower(name), "hub")) {
         return BasePath + "game" + separator + "hub" + separator + resourcePath;
     }
     else {

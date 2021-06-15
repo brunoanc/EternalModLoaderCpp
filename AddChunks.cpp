@@ -57,6 +57,12 @@ void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContaine
 
     std::vector<std::byte> idcl(mem + resourceContainer.IdclOffset, mem + resourceContainer.DataOffset);
 
+    std::vector<std::byte> data;
+
+    if (SlowMode) {
+        data = std::vector<std::byte>(mem + resourceContainer.DataOffset, mem + std::filesystem::file_size(resourceContainer.Path));
+    }
+
     int32_t infoOldLength = info.size();
     int32_t nameIdsOldLength = nameIds.size();
     int32_t newChunksCount = 0;
@@ -203,41 +209,52 @@ void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContaine
         ResourceName newResourceName(modFile.Name, modFile.Name);
         resourceContainer.NamesList.push_back(newResourceName);
 
-        int64_t resourceFileSize = std::filesystem::file_size(resourceContainer.Path);
-        int64_t currentDataSectionLength = resourceFileSize - resourceContainer.DataOffset;
-        int64_t placement = 0x10 - (currentDataSectionLength % 0x10) + 0x30;
-        int64_t newContainerSize = resourceFileSize + modFile.FileBytes.size() + placement;
-        int64_t fileOffset = newContainerSize - modFile.FileBytes.size();
+        int64_t fileOffset = 0;
 
-        try {
-#ifdef _WIN32
-            UnmapViewOfFile(mem);
-            CloseHandle(fileMapping);
+        if (!SlowMode) {
+            int64_t resourceFileSize = std::filesystem::file_size(resourceContainer.Path);
+            int64_t currentDataSectionLength = resourceFileSize - resourceContainer.DataOffset;
+            int64_t placement = 0x10 - (currentDataSectionLength % 0x10) + 0x30;
+            int64_t newContainerSize = resourceFileSize + modFile.FileBytes.size() + placement;
+            fileOffset = newContainerSize - modFile.FileBytes.size();
 
-            fileMapping = CreateFileMappingA(hFile, NULL, PAGE_READWRITE, *((DWORD*)&newContainerSize + 1), *(DWORD*)&newContainerSize, NULL);
+            try {
+    #ifdef _WIN32
+                UnmapViewOfFile(mem);
+                CloseHandle(fileMapping);
 
-            if (GetLastError() != ERROR_SUCCESS || fileMapping == NULL)
-                throw std::exception();
+                fileMapping = CreateFileMappingA(hFile, NULL, PAGE_READWRITE, *((DWORD*)&newContainerSize + 1), *(DWORD*)&newContainerSize, NULL);
 
-            mem = (std::byte*)MapViewOfFile(fileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+                if (GetLastError() != ERROR_SUCCESS || fileMapping == NULL)
+                    throw std::exception();
 
-            if (GetLastError() != ERROR_SUCCESS || mem == NULL)
-                throw std::exception();
-#else
-            munmap(mem, resourceFileSize);
-            std::filesystem::resize_file(resourceContainer.Path, newContainerSize);
-            mem = (std::byte*)mmap(0, newContainerSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+                mem = (std::byte*)MapViewOfFile(fileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
 
-            if (mem == NULL)
-                throw std::exception();
-#endif
+                if (GetLastError() != ERROR_SUCCESS || mem == NULL)
+                    throw std::exception();
+    #else
+                munmap(mem, resourceFileSize);
+                std::filesystem::resize_file(resourceContainer.Path, newContainerSize);
+                mem = (std::byte*)mmap(0, newContainerSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+                if (mem == NULL)
+                    throw std::exception();
+    #endif
+            }
+            catch (...) {
+                std::cerr << RED << "ERROR: " << RESET << "Failed to resize " << resourceContainer.Path << std::endl;
+                return;
+            }
+
+            std::copy(modFile.FileBytes.begin(), modFile.FileBytes.end(), mem + fileOffset);
         }
-        catch (...) {
-            std::cerr << RED << "ERROR: " << RESET << "Failed to resize " << resourceContainer.Path << std::endl;
-            return;
+        else {
+            int64_t placement = 0x10 - (data.size() % 0x10) + 0x30;
+            data.resize(data.size() + placement);
+            fileOffset = data.size() + resourceContainer.DataOffset;
+            data.resize(data.size() + modFile.FileBytes.size());
+            std::copy(modFile.FileBytes.begin(), modFile.FileBytes.end(), data.end() - modFile.FileBytes.size());
         }
-
-        std::copy(modFile.FileBytes.begin(), modFile.FileBytes.end(), mem + fileOffset);
 
         int64_t nameId = resourceContainer.GetResourceNameId(modFile.Name);
         nameIds.resize(nameIds.size() + 8);
@@ -383,51 +400,86 @@ void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContaine
     }
 
     int64_t resourceFileSize = std::filesystem::file_size(resourceContainer.Path);
-    int64_t dataSectionLength = resourceFileSize - resourceContainer.DataOffset;
-    int64_t newContainerSize = header.size() + info.size() + nameOffsets.size() + names.size() + unknown.size() + typeIds.size() + nameIds.size() + idcl.size() + dataSectionLength;
+    int64_t newContainerSize = 0;
 
-    const int32_t bufferSize = 4096;
-    std::byte buffer[bufferSize];
+    if (!SlowMode) {
+        int64_t dataSectionLength = resourceFileSize - resourceContainer.DataOffset;
+        newContainerSize = header.size() + info.size() + nameOffsets.size() + names.size() + unknown.size() + typeIds.size() + nameIds.size() + idcl.size() + dataSectionLength;
 
-    int64_t oldContainerSize = resourceFileSize;
-    int64_t extraBytes = newContainerSize - oldContainerSize;
-    int64_t currentPos = oldContainerSize;
-    int32_t bytesToRead;
+        const int32_t bufferSize = 4096;
+        std::byte buffer[bufferSize];
 
-    try {
+        int64_t oldContainerSize = resourceFileSize;
+        int64_t extraBytes = newContainerSize - oldContainerSize;
+        int64_t currentPos = oldContainerSize;
+        int32_t bytesToRead;
+
+        try {
 #ifdef _WIN32
-        UnmapViewOfFile(mem);
-        CloseHandle(fileMapping);
+            UnmapViewOfFile(mem);
+            CloseHandle(fileMapping);
 
-        fileMapping = CreateFileMappingA(hFile, NULL, PAGE_READWRITE, *((DWORD*)&newContainerSize + 1), *(DWORD*)&newContainerSize, NULL);
+            fileMapping = CreateFileMappingA(hFile, NULL, PAGE_READWRITE, *((DWORD*)&newContainerSize + 1), *(DWORD*)&newContainerSize, NULL);
 
-        if (GetLastError() != ERROR_SUCCESS || fileMapping == NULL)
-            throw std::exception();
+            if (GetLastError() != ERROR_SUCCESS || fileMapping == NULL)
+                throw std::exception();
 
-        mem = (std::byte*)MapViewOfFile(fileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+            mem = (std::byte*)MapViewOfFile(fileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
 
-        if (GetLastError() != ERROR_SUCCESS || mem == NULL)
-            throw std::exception();
+            if (GetLastError() != ERROR_SUCCESS || mem == NULL)
+                throw std::exception();
 #else
-        munmap(mem, resourceFileSize);
-        std::filesystem::resize_file(resourceContainer.Path, newContainerSize);
-        mem = (std::byte*)mmap(0, newContainerSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+            munmap(mem, resourceFileSize);
+            std::filesystem::resize_file(resourceContainer.Path, newContainerSize);
+            mem = (std::byte*)mmap(0, newContainerSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 
-        if (mem == NULL)
-            throw std::exception();
+            if (mem == NULL)
+                throw std::exception();
 #endif
-    }
-    catch (...) {
-        std::cerr << RED << "ERROR: " << RESET << "Failed to resize " << resourceContainer.Path << std::endl;
-        return;
-    }
+        }
+        catch (...) {
+            std::cerr << RED << "ERROR: " << RESET << "Failed to resize " << resourceContainer.Path << std::endl;
+            return;
+        }
 
-    while (currentPos > resourceContainer.DataOffset) {
-        bytesToRead = currentPos - bufferSize >= resourceContainer.DataOffset ? bufferSize : currentPos - resourceContainer.DataOffset;
-        currentPos -= bytesToRead;
+        while (currentPos > resourceContainer.DataOffset) {
+            bytesToRead = currentPos - bufferSize >= resourceContainer.DataOffset ? bufferSize : currentPos - resourceContainer.DataOffset;
+            currentPos -= bytesToRead;
 
-        std::copy(mem + currentPos, mem + currentPos + bytesToRead, buffer);
-        std::copy(buffer, buffer + bytesToRead, mem + currentPos + extraBytes);
+            std::copy(mem + currentPos, mem + currentPos + bytesToRead, buffer);
+            std::copy(buffer, buffer + bytesToRead, mem + currentPos + extraBytes);
+        }
+    }
+    else {
+        newContainerSize = header.size() + info.size() + nameOffsets.size() + names.size() + unknown.size() + typeIds.size() + nameIds.size() + idcl.size() + data.size();
+
+        try {
+#ifdef _WIN32
+            UnmapViewOfFile(mem);
+            CloseHandle(fileMapping);
+
+            fileMapping = CreateFileMappingA(hFile, NULL, PAGE_READWRITE, *((DWORD*)&newContainerSize + 1), *(DWORD*)&newContainerSize, NULL);
+
+            if (GetLastError() != ERROR_SUCCESS || fileMapping == NULL)
+                throw std::exception();
+
+            mem = (std::byte*)MapViewOfFile(fileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+
+            if (GetLastError() != ERROR_SUCCESS || mem == NULL)
+                throw std::exception();
+#else
+            munmap(mem, resourceFileSize);
+            std::filesystem::resize_file(resourceContainer.Path, newContainerSize);
+            mem = (std::byte*)mmap(0, newContainerSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+            if (mem == NULL)
+                throw std::exception();
+#endif
+        }
+        catch (...) {
+            std::cerr << RED << "ERROR: " << RESET << "Failed to resize " << resourceContainer.Path << std::endl;
+            return;
+        }
     }
 
     uint64_t pos = 0;
@@ -454,6 +506,9 @@ void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContaine
 
     std::copy(idcl.begin(), idcl.end(), mem + pos);
     pos += idcl.size();
+
+    if (SlowMode)
+        std::copy(data.begin(), data.end(), mem + pos);
 
     if (newChunksCount != 0)
         std::cout << "Number of files added: " << GREEN << newChunksCount << " file(s) " << RESET << "in " << YELLOW << resourceContainer.Path << RESET << "." << std::endl;

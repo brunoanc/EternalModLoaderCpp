@@ -26,6 +26,8 @@
 #include <climits>
 #include <chrono>
 
+#define _LARGEFILE64_SOURCE 1
+
 #include "miniz/miniz.h"
 #include "EternalModLoader.hpp"
 
@@ -34,6 +36,7 @@ const std::string ResourceDataFileName = "rs_data";
 const std::string PackageMapSpecJsonFileName = "packagemapspec.json";
 std::string BasePath;
 bool Verbose;
+bool SlowMode;
 std::vector<ResourceContainer> ResourceContainerList;
 std::vector<SoundContainer> SoundContainerList;
 std::map<uint64_t, ResourceDataEntry> ResourceDataMap;
@@ -67,7 +70,8 @@ int32_t main(int32_t argc, char **argv)
         std::cout << "\t--version - Prints the version number of the mod loader and exits with exit code same as the version number.\n\n";
         std::cout << "OPTIONS:\n";
         std::cout << "\t--list-res - List the .resources files that will be modified and exit.\n";
-        std::cout << "\t--verbose - Print more information during the mod loading process.\n" << std::endl;
+        std::cout << "\t--verbose - Print more information during the mod loading process.\n";
+        std::cout << "\t--slow - Slow mod loading mode that produces lighter files and uses less disk.\n" << std::endl;
         return 1;
     }
 
@@ -92,6 +96,9 @@ int32_t main(int32_t argc, char **argv)
             }
             else if (!strcmp(argv[i], "--verbose")) {
                 Verbose = true;
+            }
+            else if (!strcmp(argv[i], "--slow")) {
+                SlowMode = true;
             }
             else {
                 std::cerr << RED << "ERROR: " << RESET << "Unknown argument: " << argv[i] << std::endl;
@@ -582,7 +589,7 @@ int32_t main(int32_t argc, char **argv)
             continue;
         }
 
-        LoadSoundMods(mem, hFile, fileMapping, soundContainer);
+        ReplaceSounds(mem, hFile, fileMapping, soundContainer);
 
         UnmapViewOfFile(mem);
         CloseHandle(fileMapping);
@@ -605,7 +612,7 @@ int32_t main(int32_t argc, char **argv)
 
         madvise(mem, fileSize, MADV_WILLNEED);
 
-        LoadSoundMods(mem, fd, soundContainer);
+        ReplaceSounds(mem, fd, soundContainer);
 
         munmap(mem, std::filesystem::file_size(soundContainer.Path));
         close(fd);
