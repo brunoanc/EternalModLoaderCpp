@@ -19,6 +19,7 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <filesystem>
 #include <cstring>
 
 #include "EternalModLoader.hpp"
@@ -115,4 +116,40 @@ std::string NormalizeResourceFilename(std::string filename)
         filename = filename.substr(0, filename.find_first_of('#'));
 
     return filename;
+}
+
+#ifdef _WIN32
+int32_t ResizeMmap(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, int64_t newSize)
+#else
+int32_t ResizeMmap(std::byte *&mem, int32_t &fd, std::string filePath, int64_t oldSize, int64_t newSize)
+#endif
+{
+    try {
+#ifdef _WIN32
+        UnmapViewOfFile(mem);
+        CloseHandle(fileMapping);
+
+        fileMapping = CreateFileMappingA(hFile, NULL, PAGE_READWRITE, *((DWORD*)&newSize + 1), *(DWORD*)&newSize, NULL);
+
+        if (GetLastError() != ERROR_SUCCESS || fileMapping == NULL)
+            throw std::exception();
+
+        mem = (std::byte*)MapViewOfFile(fileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+
+        if (GetLastError() != ERROR_SUCCESS || mem == NULL)
+            throw std::exception();
+#else
+        munmap(mem, oldSize);
+        std::filesystem::resize_file(filePath, newSize);
+        mem = (std::byte*)mmap(0, newSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+        if (mem == NULL)
+            throw std::exception();
+#endif
+    }
+    catch (...) {
+        return -1;
+    }
+
+    return 0;
 }

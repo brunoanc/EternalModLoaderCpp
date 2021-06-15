@@ -337,13 +337,36 @@ extern char separator;
 extern std::vector<std::string> SupportedFileFormats;
 
 #ifdef _WIN32
+int32_t ResizeMmap(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, int64_t newSize);
 void ReplaceChunks(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, ResourceContainer &resourceContainer);
 void AddChunks(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, ResourceContainer &resourceContainer);
 void ReplaceSounds(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, SoundContainer &soundContainer);
+int32_t SetModDataForChunk(
+    std::byte *&mem,
+    HANDLE &hFile,
+    HANDLE &fileMapping,
+    ResourceContainer &resourceContainer,
+    ResourceChunk &chunk,
+    ResourceModFile &modFile,
+    int64_t compressedSize,
+    int64_t uncompressedSize,
+    bool clearCompressionFlag
+);
 #else
+int32_t ResizeMmap(std::byte *&mem, int32_t &fd, std::string filePath, int64_t oldSize, int64_t newSize);
 void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContainer);
 void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContainer);
 void ReplaceSounds(std::byte *&mem, int32_t &fd, SoundContainer &soundContainer);
+int32_t SetModDataForChunk(
+    std::byte *&mem,
+    int32_t &fd,
+    ResourceContainer &resourceContainer,
+    ResourceChunk &chunk,
+    ResourceModFile &modFile,
+    int64_t compressedSize,
+    int64_t uncompressedSize,
+    bool clearCompressionFlag
+);
 #endif
 
 std::string PathToResourceContainer(std::string name);

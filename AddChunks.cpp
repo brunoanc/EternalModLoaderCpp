@@ -387,30 +387,11 @@ void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContaine
     if (pos + data.size() > resourceFileSize) {
         int64_t newContainerSize = pos + data.size();
 
-        try {
-    #ifdef _WIN32
-            UnmapViewOfFile(mem);
-            CloseHandle(fileMapping);
-
-            fileMapping = CreateFileMappingA(hFile, NULL, PAGE_READWRITE, *((DWORD*)&newContainerSize + 1), *(DWORD*)&newContainerSize, NULL);
-
-            if (GetLastError() != ERROR_SUCCESS || fileMapping == NULL)
-                throw std::exception();
-
-            mem = (std::byte*)MapViewOfFile(fileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
-
-            if (GetLastError() != ERROR_SUCCESS || mem == NULL)
-                throw std::exception();
-    #else
-            munmap(mem, resourceFileSize);
-            std::filesystem::resize_file(resourceContainer.Path, newContainerSize);
-            mem = (std::byte*)mmap(0, newContainerSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-
-            if (mem == NULL)
-                throw std::exception();
-    #endif
-        }
-        catch (...) {
+#ifdef _WIN32
+        if (ResizeMmap(mem, hFile, fileMapping, newContainerSize) == -1) {
+#else
+        if (ResizeMmap(mem, fd, resourceContainer.Path, resourceFileSize, newContainerSize) == -1) {
+#endif
             std::cerr << RED << "ERROR: " << RESET << "Failed to resize " << resourceContainer.Path << std::endl;
             return;
         }

@@ -564,12 +564,6 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
             }
         }
 
-        int64_t fileOffset, size;
-        std::copy(mem + chunk->FileOffset, mem + chunk->FileOffset + 8, (std::byte*)&fileOffset);
-        std::copy(mem + chunk->FileOffset + 8, mem + chunk->FileOffset + 16, (std::byte*)&size);
-
-        int64_t sizeDiff = modFile.FileBytes.size() - size;
-
         if (modFile.IsBlangJson) {
             std::string blangFilePath = "strings/" + std::filesystem::path(modFile.Name).filename().string();
             BlangFileEntry blangFileEntry;
@@ -577,6 +571,10 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
             bool exists = x != blangFileEntries.end();
 
             if (!exists) {
+                int64_t fileOffset, size;
+                std::copy(mem + chunk->FileOffset, mem + chunk->FileOffset + 8, (std::byte*)&fileOffset);
+                std::copy(mem + chunk->FileOffset + 8, mem + chunk->FileOffset + 16, (std::byte*)&size);
+
                 std::vector<std::byte> blangFileBytes(mem + fileOffset, mem + fileOffset + size);
                 std::vector<std::byte> decryptedBlangFileBytes = IdCrypt(blangFileBytes, modFile.Name, true);
 
@@ -642,118 +640,13 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
             continue;
         }
 
-        int64_t resourceFileSize = std::filesystem::file_size(resourceContainer.Path);
-
-        if (!SlowMode) {
-            int64_t dataSectionLength = resourceFileSize - resourceContainer.DataOffset;
-            int64_t placement = (0x10 - (dataSectionLength % 0x10)) + 0x30;
-            int64_t newContainerSize = resourceFileSize + modFile.FileBytes.size() + placement;
-            int64_t dataOffset = newContainerSize - modFile.FileBytes.size();
-
-            try {
 #ifdef _WIN32
-                UnmapViewOfFile(mem);
-                CloseHandle(fileMapping);
-
-                fileMapping = CreateFileMappingA(hFile, NULL, PAGE_READWRITE, *((DWORD*)&newContainerSize + 1), *(DWORD*)&newContainerSize, NULL);
-
-                if (GetLastError() != ERROR_SUCCESS || fileMapping == NULL)
-                    throw std::exception();
-
-                mem = (std::byte*)MapViewOfFile(fileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
-
-                if (GetLastError() != ERROR_SUCCESS || mem == NULL)
-                    throw std::exception();
+        if (SetModDataForChunk(mem, hFile, fileMapping, resourceContainer, *chunk, modFile, modFile.FileBytes.size(), modFile.FileBytes.size(), true) == -1) {
 #else
-                munmap(mem, resourceFileSize);
-                std::filesystem::resize_file(resourceContainer.Path, newContainerSize);
-                mem = (std::byte*)mmap(0, newContainerSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+        if (SetModDataForChunk(mem, fd, resourceContainer, *chunk, modFile, modFile.FileBytes.size(), modFile.FileBytes.size(), true) == -1) {
 #endif
-
-                if (mem == NULL)
-                    throw std::exception();
-            }
-            catch (...) {
-                std::cerr << RED << "ERROR: " << RESET << "Failed to resize " << resourceContainer.Path << std::endl;
-                return;
-            }
-
-            std::copy(modFile.FileBytes.begin(), modFile.FileBytes.end(), mem + dataOffset);
-            std::copy((std::byte*)&dataOffset, (std::byte*)&dataOffset + 8, mem + chunk->FileOffset);
-        }
-        else {
-            if (sizeDiff > 0) {
-                int64_t newContainerSize = resourceFileSize + sizeDiff;
-
-                try {
-#ifdef _WIN32
-                    UnmapViewOfFile(mem);
-                    CloseHandle(fileMapping);
-
-                    fileMapping = CreateFileMappingA(hFile, NULL, PAGE_READWRITE, *((DWORD*)&newContainerSize + 1), *(DWORD*)&newContainerSize, NULL);
-
-                    if (GetLastError() != ERROR_SUCCESS || fileMapping == NULL)
-                        throw std::exception();
-
-                    mem = (std::byte*)MapViewOfFile(fileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
-
-                    if (GetLastError() != ERROR_SUCCESS || mem == NULL)
-                        throw std::exception();
-#else
-                    munmap(mem, resourceFileSize);
-                    std::filesystem::resize_file(resourceContainer.Path, newContainerSize);
-                    mem = (std::byte*)mmap(0, newContainerSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-#endif
-
-                    if (mem == NULL)
-                        throw std::exception();
-                }
-                catch (...) {
-                    std::cerr << RED << "ERROR: " << RESET << "Failed to resize " << resourceContainer.Path << std::endl;
-                    return;
-                }
-
-                int32_t toRead;
-
-                while (resourceFileSize > fileOffset + size) {
-                    toRead = (resourceFileSize - BufferSize) >= (fileOffset + size) ? BufferSize : (resourceFileSize - fileOffset - size);
-                    resourceFileSize -= toRead;
-
-                    std::copy(mem + resourceFileSize, mem + resourceFileSize + toRead, Buffer);
-                    std::copy(Buffer, Buffer + toRead, mem + resourceFileSize + sizeDiff);
-                }
-
-                std::copy(modFile.FileBytes.begin(), modFile.FileBytes.end(), mem + fileOffset);
-            }
-            else {
-                std::copy(modFile.FileBytes.begin(), modFile.FileBytes.end(), mem + fileOffset);
-
-                if (sizeDiff < 0) {
-                    std::byte *emptyArray = new std::byte[-sizeDiff];
-                    std::memset(emptyArray, 0, -sizeDiff);
-
-                    std::copy(emptyArray, emptyArray - sizeDiff, mem + fileOffset + modFile.FileBytes.size());
-                    delete[] emptyArray;
-                }
-            }
-        }
-
-        int64_t modFileBytesSize = modFile.FileBytes.size();
-        std::copy((std::byte*)&modFileBytesSize, (std::byte*)&modFileBytesSize + 8, mem + chunk->SizeOffset);
-        std::copy((std::byte*)&modFileBytesSize, (std::byte*)&modFileBytesSize + 8, mem + chunk->SizeOffset + 8);
-
-        mem[chunk->SizeOffset + 0x30] = (std::byte)0;
-
-        if (SlowMode && sizeDiff > 0) {
-            std::vector<ResourceChunk>::iterator x = std::find(resourceContainer.ChunkList.begin(), resourceContainer.ChunkList.end(), *chunk);
-            int32_t index = std::distance(resourceContainer.ChunkList.begin(), x);
-
-            for (int32_t i = index + 1; i < resourceContainer.ChunkList.size(); i++) {
-                std::copy(mem + resourceContainer.ChunkList[i].FileOffset, mem + resourceContainer.ChunkList[i].FileOffset + 8, (std::byte*)&fileOffset);
-
-                int64_t fileOffsetSizeDir = fileOffset + sizeDiff;
-                std::copy((std::byte*)&fileOffsetSizeDir, (std::byte*)&fileOffsetSizeDir + 8, mem + resourceContainer.ChunkList[i].FileOffset);
-            }
+            std::cerr << RED << "ERROR: " << RESET << "Failed to set new mod data for " << modFile.Name << " in resource chunk." << std::endl;
+            continue;
         }
 
         std::cout << "\tReplaced " << modFile.Name << std::endl;
@@ -803,49 +696,17 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
             continue;
         }
 
-        blangFileEntry.second.Chunk.Size = cryptData.size();
-        blangFileEntry.second.Chunk.SizeZ = cryptData.size();
+        ResourceModFile blangModFile(Mod(), blangFileEntry.first);
+        blangModFile.FileBytes = cryptData;
 
-        int64_t resourceFileSize = std::filesystem::file_size(resourceContainer.Path);
-        int64_t dataSectionLength = resourceFileSize - resourceContainer.DataOffset;
-        int64_t placement = 0x10 - (dataSectionLength % 0x10) + 0x30;
-        int64_t newContainerSize = resourceFileSize + cryptData.size() + placement;
-        int64_t dataOffset = newContainerSize - cryptData.size();
-
-        try {
 #ifdef _WIN32
-            UnmapViewOfFile(mem);
-            CloseHandle(fileMapping);
-
-            fileMapping = CreateFileMappingA(hFile, NULL, PAGE_READWRITE, *((DWORD*)&newContainerSize + 1), *(DWORD*)&newContainerSize, NULL);
-
-            if (GetLastError() != ERROR_SUCCESS || fileMapping == NULL)
-                throw std::exception();
-
-            mem = (std::byte*)MapViewOfFile(fileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
-
-            if (GetLastError() != ERROR_SUCCESS || mem == NULL)
-                throw std::exception();
+        if (SetModDataForChunk(mem, hFile, fileMapping, resourceContainer, blangFileEntry.second.Chunk, blangModFile, blangModFile.FileBytes.size(), blangModFile.FileBytes.size(), true) == -1) {
 #else
-            munmap(mem, resourceFileSize);
-            std::filesystem::resize_file(resourceContainer.Path, newContainerSize);
-            mem = (std::byte*)mmap(0, newContainerSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-
-            if (mem == NULL)
-                throw std::exception();
+        if (SetModDataForChunk(mem, fd, resourceContainer, blangFileEntry.second.Chunk, blangModFile, blangModFile.FileBytes.size(), blangModFile.FileBytes.size(), true) == -1) {
 #endif
-        }
-        catch (...) {
-            std::cerr << RED << "ERROR: " << RESET << "Failed to resize " << resourceContainer.Path << std::endl;
+            std::cerr << RED << "ERROR: " << RESET << "Failed to set new mod data for " << blangFileEntry.first << "in resource chunk." << std::endl;
             continue;
         }
-
-        std::copy(cryptData.begin(), cryptData.end(), mem + dataOffset);
-        std::copy((std::byte*)&dataOffset, (std::byte*)&dataOffset + 8, mem + blangFileEntry.second.Chunk.FileOffset);
-
-        int64_t cryptDataSize = cryptData.size();
-        std::copy((std::byte*)&cryptDataSize, (std::byte*)&cryptDataSize + 8, mem + blangFileEntry.second.Chunk.SizeOffset);
-        std::copy((std::byte*)&cryptDataSize, (std::byte*)&cryptDataSize + 8, mem + blangFileEntry.second.Chunk.SizeOffset + 8);
 
         std::cout << "\tModified " << blangFileEntry.first << std::endl;
     }
@@ -860,50 +721,18 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                 std::cerr << "ERROR: " << RESET << "Failed to compress " << mapResourcesChunk->ResourceName.NormalizedFileName << std::endl;
             }
             else {
-                mapResourcesChunk->Size = decompressedMapResourcesData.size();
-                mapResourcesChunk->SizeZ = compressedMapResourcesData.size();
+                ResourceModFile mapResourcesModFile(Mod(), mapResourcesChunk->ResourceName.NormalizedFileName);
+                mapResourcesModFile.FileBytes = compressedMapResourcesData;
 
-                int64_t resourceFileSize = std::filesystem::file_size(resourceContainer.Path);
-                int64_t dataSectionLength = resourceFileSize - resourceContainer.DataOffset;
-                int64_t placement = 0x10 - (dataSectionLength % 0x10) + 0x30;
-                int64_t newContainerSize = resourceFileSize + compressedMapResourcesData.size() + placement;
-                int64_t dataOffset = newContainerSize - compressedMapResourcesData.size();
-
-                try {
 #ifdef _WIN32
-                    UnmapViewOfFile(mem);
-                    CloseHandle(fileMapping);
-
-                    fileMapping = CreateFileMappingA(hFile, NULL, PAGE_READWRITE, *((DWORD*)&newContainerSize + 1), *(DWORD*)&newContainerSize, NULL);
-
-                    if (GetLastError() != ERROR_SUCCESS || fileMapping == NULL)
-                        throw std::exception();
-
-                    mem = (std::byte*)MapViewOfFile(fileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
-
-                    if (GetLastError() != ERROR_SUCCESS || mem == NULL)
-                        throw std::exception();
+                if (SetModDataForChunk(mem, hFile, fileMapping, resourceContainer, *mapResourcesChunk,  mapResourcesModFile, compressedMapResourcesData.size(), decompressedMapResourcesData.size(), false) == -1) {
 #else
-                    munmap(mem, resourceFileSize);
-                    std::filesystem::resize_file(resourceContainer.Path, newContainerSize);
-                    mem = (std::byte*)mmap(0, newContainerSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-
-                    if (mem == NULL)
-                        throw std::exception();
+                if (SetModDataForChunk(mem, fd, resourceContainer, *mapResourcesChunk,  mapResourcesModFile, compressedMapResourcesData.size(), decompressedMapResourcesData.size(), false) == -1) {
 #endif
-                }
-                catch (...) {
-                    std::cerr << RED << "ERROR: " << RESET << "Failed to resize " << resourceContainer.Path << std::endl;
+                    std::cerr << RED << "ERROR: " << RESET << "Failed to set new mod data for " << mapResourcesChunk->ResourceName.NormalizedFileName << "in resource chunk." << std::endl;
+                    delete mapResourcesFile;
                     return;
                 }
-
-                std::copy(compressedMapResourcesData.begin(), compressedMapResourcesData.end(), mem + dataOffset);
-                std::copy((std::byte*)&dataOffset, (std::byte*)&dataOffset + 8, mem + mapResourcesChunk->FileOffset);
-
-                int64_t compressedMapResourcesSize = compressedMapResourcesData.size();
-                int64_t decompressedMapResourcesSize = decompressedMapResourcesData.size();
-                std::copy((std::byte*)&compressedMapResourcesSize, (std::byte*)&compressedMapResourcesSize + 8, mem + mapResourcesChunk->SizeOffset);
-                std::copy((std::byte*)&decompressedMapResourcesSize, (std::byte*)&decompressedMapResourcesSize + 8, mem + mapResourcesChunk->SizeOffset + 8);
 
                 std::cout << "\tModified " << mapResourcesChunk->ResourceName.NormalizedFileName << std::endl;
                 delete mapResourcesFile;

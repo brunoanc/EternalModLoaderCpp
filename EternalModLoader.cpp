@@ -100,6 +100,7 @@ int32_t main(int32_t argc, char **argv)
             }
             else if (!strcmp(argv[i], "--slow")) {
                 SlowMode = true;
+                std::cout << YELLOW << "INFO: Slow mod loading mode is enabled." << RESET << std::endl;
             }
             else {
                 std::cerr << RED << "ERROR: " << RESET << "Unknown argument: " << argv[i] << std::endl;

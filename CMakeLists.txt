@@ -21,6 +21,7 @@ file(GLOB SOURCES
         ./ResourceData.cpp
         ./ReplaceSounds.cpp
         ./SetBufferSize.cpp
+        ./SetModDataForChunk.cpp
         ./Utils.cpp
         ./miniz/miniz.c
         )
