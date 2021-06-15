@@ -26,12 +26,10 @@
 #include <climits>
 #include <chrono>
 
-#define _LARGEFILE64_SOURCE 1
-
 #include "miniz/miniz.h"
 #include "EternalModLoader.hpp"
 
-const int32_t Version = 8;
+const int32_t Version = 9;
 const std::string ResourceDataFileName = "rs_data";
 const std::string PackageMapSpecJsonFileName = "packagemapspec.json";
 std::string BasePath;
@@ -40,6 +38,9 @@ bool SlowMode;
 std::vector<ResourceContainer> ResourceContainerList;
 std::vector<SoundContainer> SoundContainerList;
 std::map<uint64_t, ResourceDataEntry> ResourceDataMap;
+
+std::byte *Buffer = NULL;
+int64_t BufferSize = -1;
 
 std::string RESET = "";
 std::string RED = "";
@@ -498,6 +499,20 @@ int32_t main(int32_t argc, char **argv)
             continue;
         }
 
+        if (BufferSize == -1 || Buffer == NULL) {
+            try {
+                SetOptimalBufferSize(std::filesystem::absolute(resourceContainer.Path).root_path().string());
+            }
+            catch (...) {
+                std::cerr << RED << "ERROR: " << RESET << "Error while determining the optimal buffer size, using 4096 as the default." << std::endl;
+
+                if (Buffer != NULL)
+                    delete[] Buffer;
+
+                Buffer = new std::byte[4096];
+            }
+        }
+
 #ifdef _WIN32
         HANDLE hFile = CreateFileA(resourceContainer.Path.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
@@ -554,6 +569,9 @@ int32_t main(int32_t argc, char **argv)
 #endif
     }
 
+    if (Buffer != NULL)
+        delete[] Buffer;
+
     for (auto &soundContainer : SoundContainerList) {
         if (soundContainer.Path.empty()) {
             std::cerr << RED << "WARNING: " << YELLOW << soundContainer.Name << ".resources" << RESET << " was not found! Skipping " << RED << soundContainer.ModFileList.size() << " file(s)" << RESET << "..." << std::endl;
@@ -589,6 +607,7 @@ int32_t main(int32_t argc, char **argv)
             continue;
         }
 
+        ReadSoundEntries(mem, soundContainer);
         ReplaceSounds(mem, hFile, fileMapping, soundContainer);
 
         UnmapViewOfFile(mem);
@@ -612,6 +631,7 @@ int32_t main(int32_t argc, char **argv)
 
         madvise(mem, fileSize, MADV_WILLNEED);
 
+        ReadSoundEntries(mem, soundContainer);
         ReplaceSounds(mem, fd, soundContainer);
 
         munmap(mem, std::filesystem::file_size(soundContainer.Path));

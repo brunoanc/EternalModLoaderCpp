@@ -238,34 +238,21 @@ void ReplaceSounds(std::byte *&mem, int32_t &fd, SoundContainer &soundContainer)
         
         std::copy(soundModFile.FileBytes.begin(), soundModFile.FileBytes.end(), mem + soundModOffset);
 
-        uint32_t infoSize, headerSize;
-        std::copy(mem + 4, mem + 8, (std::byte*)&infoSize);
-        std::copy(mem + 8, mem + 12, (std::byte*)&headerSize);
+        std::vector<SoundEntry> soundEntriesToModify = GetSoundEntriesToModify(soundContainer, soundModId);
 
-        int64_t pos = headerSize + 12;
+        if (soundEntriesToModify.empty()) {
+            std::cerr << RED << "WARNING: " << RESET << "Couldn't find sound with id " << soundModId << " in "
+                << soundContainer.Name << ", sound will not be replaced" << std::endl;
+            continue;
+        }
 
-        for (uint32_t i = 0, j = (infoSize - headerSize) / 32; i < j; i++) {
-            pos += 8;
-
-            uint32_t soundId;
-            std::copy(mem + pos, mem + pos + 4, (std::byte*)&soundId);
-            pos += 4;
-
-            if (soundId != soundModId) {
-                pos += 20;
-                continue;
-            }
-
-            soundFound = true;
-
-            std::copy((std::byte*)&encodedSize, (std::byte*)&encodedSize + 4, mem + pos);
-            std::copy((std::byte*)&soundModOffset, (std::byte*)&soundModOffset + 4, mem + pos + 4);
-            std::copy((std::byte*)&decodedSize, (std::byte*)&decodedSize + 4, mem + pos + 8);
-            pos += 12;
+        for (auto &soundEntry : soundEntriesToModify) {
+            std::copy((std::byte*)&encodedSize, (std::byte*)&encodedSize + 4, mem + soundEntry.InfoOffset);
+            std::copy((std::byte*)&soundModOffset, (std::byte*)&soundModOffset + 4, mem + soundEntry.InfoOffset + 4);
+            std::copy((std::byte*)&decodedSize, (std::byte*)&decodedSize + 4, mem + soundEntry.InfoOffset + 8);
 
             uint16_t currentFormat;
-            std::copy(mem + pos, mem + pos + 2, (std::byte*)&currentFormat);
-            pos += 8;
+            std::copy(mem + soundEntry.InfoOffset + 12, mem + soundEntry.InfoOffset + 14, (std::byte*)&currentFormat);
 
             if (currentFormat != format) {
                 std::cerr << RED << "WARNING: " << RESET << "Format mismatch: sound file " << soundModFile.Name << " needs to be " << (currentFormat == 3 ? "WEM" : "OPUS") << " format." << std::endl;
@@ -273,11 +260,6 @@ void ReplaceSounds(std::byte *&mem, int32_t &fd, SoundContainer &soundContainer)
 
                 format = (int16_t)currentFormat;
             }
-        }
-
-        if (!soundFound) {
-            std::cerr << RED << "WARNING: " << RESET << "Couldn't find sound with id " << soundModId << " in " << soundContainer.Name << std::endl;
-            continue;
         }
 
         std::cout << "\tReplaced sound with id " << soundModId << " with " << soundModFile.Name << std::endl;

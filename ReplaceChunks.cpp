@@ -34,6 +34,11 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
     std::vector<std::byte> originalDecompressedMapResources;
     bool invalidMapResources = false;
     int32_t fileCount = 0;
+    std::map<std::string, BlangFileEntry> blangFileEntries;
+    std::string packageMapSpecPath;
+    PackageMapSpec *packageMapSpec = NULL;
+    bool invalidPackageMapSpec = false;
+    bool wasPackageMapSpecModified = false;
 
     std::stable_sort(resourceContainer.ModFileList.begin(), resourceContainer.ModFileList.end(),
         [](ResourceModFile resource1, ResourceModFile resource2) { return resource1.Parent.LoadPriority > resource2.Parent.LoadPriority ? true : false; });
@@ -43,36 +48,39 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
 
         if (modFile.IsAssetsInfoJson && modFile.AssetsInfo.has_value()) {
             if (!modFile.AssetsInfo->Resources.empty()) {
-                std::string packageMapSpecPath = BasePath + PackageMapSpecJsonFileName;
-                FILE *packageMapSpecFile = fopen(packageMapSpecPath.c_str(), "rb");
+                if (packageMapSpec == NULL && !invalidPackageMapSpec) {
+                    packageMapSpecPath = BasePath + PackageMapSpecJsonFileName;
+                    FILE *packageMapSpecFile = fopen(packageMapSpecPath.c_str(), "rb");
 
-                if (!packageMapSpecFile) {
-                    std::cerr << RED << "ERROR: " << RESET << packageMapSpecPath << " not found while trying to add extra resources for level "
-                        << resourceContainer.Name << std::endl;
+                    if (!packageMapSpecFile) {
+                        std::cerr << RED << "ERROR: " << RESET << packageMapSpecPath << " not found while trying to add extra resources for level "
+                            << resourceContainer.Name << std::endl;
+                        invalidPackageMapSpec = true;
+                    }
+                    else {
+                        int64_t filesize = std::filesystem::file_size(packageMapSpecPath);
+                        std::vector<std::byte> packageMapSpecBytes(filesize);
+
+                        if (fread(packageMapSpecBytes.data(), 1, filesize, packageMapSpecFile) != filesize) {
+                            std::cerr << RED << "ERROR: " << RESET << "Failed to read data from " << packageMapSpecPath
+                                << " while trying to add extra resources for level " << resourceContainer.Name << std::endl;
+                            invalidPackageMapSpec = true;
+                        }
+
+                        fclose(packageMapSpecFile);
+
+                        try {
+                            std::string packageMapSpecJson((char*)packageMapSpecBytes.data(), packageMapSpecBytes.size());
+                            packageMapSpec = new PackageMapSpec(packageMapSpecJson);
+                        }
+                        catch (...) {
+                            std::cerr << RED << "ERROR: " << RESET << "Failed to parse " << packageMapSpecPath << std::endl;
+                            invalidPackageMapSpec = true;
+                        }
+                    }
                 }
-                else {
-                    int64_t filesize = std::filesystem::file_size(packageMapSpecPath);
-                    std::vector<std::byte> packageMapSpecBytes(filesize);
 
-                    if (fread(packageMapSpecBytes.data(), 1, filesize, packageMapSpecFile) != filesize) {
-                        std::cerr << RED << "ERROR: " << RESET << "Failed to read data from " << packageMapSpecPath
-                            << " while trying to add extra resources for level " << resourceContainer.Name << std::endl;
-                        continue;
-                    }
-
-                    fclose(packageMapSpecFile);
-
-                    PackageMapSpec packageMapSpec;
-
-                    try {
-                        std::string packageMapSpecJson((char*)packageMapSpecBytes.data(), packageMapSpecBytes.size());
-                        packageMapSpec = PackageMapSpec(packageMapSpecJson);
-                    }
-                    catch (...) {
-                        std::cerr << RED << "ERROR: " << RESET << "Failed to parse " << packageMapSpecPath << std::endl;
-                        continue;
-                    }
-
+                if (packageMapSpec != NULL && !invalidPackageMapSpec) {
                     for (auto &extraResource : modFile.AssetsInfo->Resources) {
                         std::string extraResourcePath = PathToResourceContainer(extraResource.Name);
 
@@ -85,8 +93,8 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                         int32_t fileIndex = -1;
                         int32_t mapIndex = -1;
 
-                        for (int32_t i = 0; i < packageMapSpec.Files.size(); i++) {
-                            if (packageMapSpec.Files[i].Name.find(extraResource.Name) != std::string::npos) {
+                        for (int32_t i = 0; i < packageMapSpec->Files.size(); i++) {
+                            if (packageMapSpec->Files[i].Name.find(extraResource.Name) != std::string::npos) {
                                 fileIndex = i;
                                 break;
                             }
@@ -101,8 +109,8 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                             modFileMapName = "game/hub/hub";
                         }
 
-                        for (int32_t i = 0; i < packageMapSpec.Maps.size(); i++) {
-                            if (EndsWith(packageMapSpec.Maps[i].Name, modFileMapName)) {
+                        for (int32_t i = 0; i < packageMapSpec->Maps.size(); i++) {
+                            if (EndsWith(packageMapSpec->Maps[i].Name, modFileMapName)) {
                                 mapIndex = i;
                                 break;
                             }
@@ -121,36 +129,36 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                         if (extraResource.Remove) {
                             bool mapFileRefRemoved = false;
 
-                            for (int32_t i = packageMapSpec.MapFileRefs.size() - 1; i >= 0; i--) {
-                                if (packageMapSpec.MapFileRefs[i].File == fileIndex && packageMapSpec.MapFileRefs[i].Map == mapIndex) {
-                                    packageMapSpec.MapFileRefs.erase(packageMapSpec.MapFileRefs.begin() + i);
+                            for (int32_t i = packageMapSpec->MapFileRefs.size() - 1; i >= 0; i--) {
+                                if (packageMapSpec->MapFileRefs[i].File == fileIndex && packageMapSpec->MapFileRefs[i].Map == mapIndex) {
+                                    packageMapSpec->MapFileRefs.erase(packageMapSpec->MapFileRefs.begin() + i);
                                     mapFileRefRemoved = true;
                                     break;
                                 }
                             }
 
                             if (mapFileRefRemoved) {
-                                std::cout << "\tRemoved resource " << packageMapSpec.Files[fileIndex].Name << " to be loaded in map "
-                                    << packageMapSpec.Maps[mapIndex].Name << std::endl;
+                                std::cout << "\tRemoved resource " << packageMapSpec->Files[fileIndex].Name << " to be loaded in map "
+                                    << packageMapSpec->Maps[mapIndex].Name << std::endl;
                             }
                             else {
                                 if (Verbose) {
                                     std::cerr << RED << "WARNING: " << "Resource " << extraResource.Name << " for map "
-                                        << packageMapSpec.Maps[mapIndex].Name << " set to be removed was not found" << std::endl;
+                                        << packageMapSpec->Maps[mapIndex].Name << " set to be removed was not found" << std::endl;
                                 }
                             }
 
                             continue;
                         }
 
-                        for (int32_t i = packageMapSpec.MapFileRefs.size() - 1; i >= 0; i--) {
-                            if (packageMapSpec.MapFileRefs[i].File == fileIndex
-                                && packageMapSpec.MapFileRefs[i].Map == mapIndex) {
-                                    packageMapSpec.MapFileRefs.erase(packageMapSpec.MapFileRefs.begin() + i);
+                        for (int32_t i = packageMapSpec->MapFileRefs.size() - 1; i >= 0; i--) {
+                            if (packageMapSpec->MapFileRefs[i].File == fileIndex
+                                && packageMapSpec->MapFileRefs[i].Map == mapIndex) {
+                                    packageMapSpec->MapFileRefs.erase(packageMapSpec->MapFileRefs.begin() + i);
 
                                     if (Verbose) {
-                                        std::cout << "\tResource " << packageMapSpec.Files[fileIndex].Name << " being added to map "
-                                            << packageMapSpec.Maps[mapIndex].Name << " already exists. The load order will be modified as specified." << std::endl;
+                                        std::cout << "\tResource " << packageMapSpec->Files[fileIndex].Name << " being added to map "
+                                            << packageMapSpec->Maps[mapIndex].Name << " already exists. The load order will be modified as specified." << std::endl;
                                     }
 
                                     break;
@@ -159,8 +167,8 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
 
                         int32_t insertIndex = -1;
 
-                        for (int32_t i = 0; i < packageMapSpec.MapFileRefs.size(); i++) {
-                            if (packageMapSpec.MapFileRefs[i].Map == mapIndex) {
+                        for (int32_t i = 0; i < packageMapSpec->MapFileRefs.size(); i++) {
+                            if (packageMapSpec->MapFileRefs[i].Map == mapIndex) {
                                 if (extraResource.PlaceFirst) {
                                     insertIndex = i;
                                     break;
@@ -180,15 +188,15 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                             else {
                                 int32_t placeBeforeFileIndex = -1;
 
-                                for (int32_t i = 0; i < packageMapSpec.Files.size(); i++) {
-                                    if (packageMapSpec.Files[i].Name.find(extraResource.PlaceByName) != std::string::npos) {
+                                for (int32_t i = 0; i < packageMapSpec->Files.size(); i++) {
+                                    if (packageMapSpec->Files[i].Name.find(extraResource.PlaceByName) != std::string::npos) {
                                         placeBeforeFileIndex = i;
                                         break;
                                     }
                                 }
 
-                                for (int32_t i = 0; i < packageMapSpec.MapFileRefs.size(); i++) {
-                                    if (packageMapSpec.MapFileRefs[i].Map == mapIndex && packageMapSpec.MapFileRefs[i].File == placeBeforeFileIndex) {
+                                for (int32_t i = 0; i < packageMapSpec->MapFileRefs.size(); i++) {
+                                    if (packageMapSpec->MapFileRefs[i].Map == mapIndex && packageMapSpec->MapFileRefs[i].File == placeBeforeFileIndex) {
                                         insertIndex = i + (!extraResource.PlaceBefore ? 1 : 0);
                                         break;
                                     }
@@ -198,36 +206,15 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
 
                         PackageMapSpecMapFileRef mapFileRef(fileIndex, mapIndex);
 
-                        if (insertIndex == -1 || insertIndex >= packageMapSpec.MapFileRefs.size()) {
-                            packageMapSpec.MapFileRefs.push_back(mapFileRef);
+                        if (insertIndex == -1 || insertIndex >= packageMapSpec->MapFileRefs.size()) {
+                            packageMapSpec->MapFileRefs.push_back(mapFileRef);
                         }
                         else {
-                            packageMapSpec.MapFileRefs.insert(packageMapSpec.MapFileRefs.begin() + insertIndex, mapFileRef);
+                            packageMapSpec->MapFileRefs.insert(packageMapSpec->MapFileRefs.begin() + insertIndex, mapFileRef);
                         }
 
-                        packageMapSpecFile = fopen(packageMapSpecPath.c_str(), "wb");
-
-                        if (!packageMapSpecFile) {
-                            std::cerr << RED << "ERROR: " << RESET << "Failed to write to " << packageMapSpecPath
-                                << "while trying to add extra resources for level " << resourceContainer.Name << std::endl;
-                        }
-
-                        try {
-                            std::string newPackageMapSpecJson = packageMapSpec.Dump();
-
-                            if (fwrite(newPackageMapSpecJson.c_str(), 1, newPackageMapSpecJson.size(), packageMapSpecFile) != newPackageMapSpecJson.size())
-                                throw std::exception();
-                        }
-                        catch (...) {
-                            std::cerr << RED << "ERROR: " << RESET << "Failed to write to " << packageMapSpecPath
-                                << "while trying to add extra resources for level " << resourceContainer.Name << std::endl;
-                            continue;
-                        }
-
-                        fclose(packageMapSpecFile);
-
-                        std::cout << "\tAdded extra resource " << packageMapSpec.Files[fileIndex].Name << " to be loaded in map "
-                            << packageMapSpec.Maps[mapIndex].Name;
+                        std::cout << "\tAdded extra resource " << packageMapSpec->Files[fileIndex].Name << " to be loaded in map "
+                            << packageMapSpec->Maps[mapIndex].Name;
 
                         if (extraResource.PlaceFirst) {
                             std::cout << " with the highest priority" << std::endl;
@@ -238,6 +225,8 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                         else {
                             std::cout << " with the lowest priority" << std::endl;
                         }
+
+                        wasPackageMapSpecModified = true;
                     }
                 }
             }
@@ -248,7 +237,7 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
             if (mapResourcesFile == NULL && !invalidMapResources) {
                 for (auto &file : resourceContainer.ChunkList) {
                     if (EndsWith(file.ResourceName.NormalizedFileName, ".mapresources")) {
-                        if (EndsWith(resourceContainer.Name, "gameresources") && EndsWith(file.ResourceName.NormalizedFileName, "init.mapresources"))
+                        if (StartsWith(resourceContainer.Name, "gameresources") && EndsWith(file.ResourceName.NormalizedFileName, "init.mapresources"))
                             continue;
 
                         mapResourcesChunk = &file;
@@ -277,8 +266,10 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                 }
             }
 
-            if (mapResourcesFile == NULL || invalidMapResources)
+            if (mapResourcesFile == NULL || invalidMapResources) {
+                modFile.FileBytes.resize(0);
                 continue;
+            }
 
             if (!modFile.AssetsInfo->Layers.empty()) {
                 for (auto &newLayers : modFile.AssetsInfo->Layers) {
@@ -451,6 +442,7 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                 }
             }
 
+            modFile.FileBytes.resize(0);
             continue;
         }
         else if (modFile.IsBlangJson) {
@@ -459,8 +451,10 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
 
             chunk = GetChunk(modFile.Name, resourceContainer);
 
-            if (chunk == NULL)
+            if (chunk == NULL) {
+                modFile.FileBytes.resize(0);
                 continue;
+            }
         }
         else {
             chunk = GetChunk(modFile.Name, resourceContainer);
@@ -577,6 +571,30 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
         int64_t sizeDiff = modFile.FileBytes.size() - size;
 
         if (modFile.IsBlangJson) {
+            std::string blangFilePath = "strings/" + std::filesystem::path(modFile.Name).filename().string();
+            BlangFileEntry blangFileEntry;
+            std::map<std::string, BlangFileEntry>::iterator x = blangFileEntries.find(blangFilePath);
+            bool exists = x != blangFileEntries.end();
+
+            if (!exists) {
+                std::vector<std::byte> blangFileBytes(mem + fileOffset, mem + fileOffset + size);
+                std::vector<std::byte> decryptedBlangFileBytes = IdCrypt(blangFileBytes, modFile.Name, true);
+
+                if (decryptedBlangFileBytes.empty()) {
+                    std::cerr << RED << "ERROR: " << RESET << "Failed to decrypt " << resourceContainer.Name << "/" << modFile.Name << std::endl;
+                    continue;
+                }
+
+                try {
+                    blangFileEntry = BlangFileEntry(BlangFile(decryptedBlangFileBytes), *chunk);
+                    blangFileEntries[blangFilePath] = blangFileEntry;
+                }
+                catch (...) {
+                    std::cerr << RED << "ERROR: " << RESET << "Failed to parse " << resourceContainer.Name << "/" << modFile.Name << std::endl;
+                    continue;
+                }
+            }
+
             nlohmann::json blangJson;
 
             try {
@@ -595,34 +613,16 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                 continue;
             }
 
-            std::vector<std::byte> blangFileBytes(mem + fileOffset, mem + fileOffset + size);
-
-            std::vector<std::byte> decryptedBlangFileBytes = IdCrypt(blangFileBytes, modFile.Name, true);
-
-            if (decryptedBlangFileBytes.empty()) {
-                std::cerr << RED << "ERROR: " << RESET << "Failed to decrypt " << resourceContainer.Name << "/" << modFile.Name << std::endl;
-                continue;
-            }
-
-            BlangFile blangFile;
-
-            try {
-                blangFile = ParseBlang(decryptedBlangFileBytes, resourceContainer.Name);
-            }
-            catch (...) {
-                std::cerr << RED << "ERROR: " << RESET << "Failed to parse " << resourceContainer.Name << "/" << modFile.Name << std::endl;
-                continue;
-            }
-
             for (auto &blangJsonString : blangJson["strings"]) {
                 bool stringFound = false;
 
-                for (auto &blangString : blangFile.Strings) {
+                for (auto &blangString : blangFileEntries[blangFilePath].BlangFile.Strings) {
                     if (blangJsonString["name"] == blangString.Identifier) {
                         stringFound = true;
                         blangString.Text = blangJsonString["text"];
 
                         std::cout << "\tReplaced " << blangString.Identifier << " in " << modFile.Name << std::endl;
+                        blangFileEntries[blangFilePath].WasModified = true;
                         break;
                     }
                 }
@@ -633,20 +633,13 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                 BlangString newBlangString;
                 newBlangString.Identifier = blangJsonString["name"];
                 newBlangString.Text = blangJsonString["text"];
-                blangFile.Strings.push_back(newBlangString);
+                blangFileEntries[blangFilePath].BlangFile.Strings.push_back(newBlangString);
 
                 std::cout << "\tAdded " << blangJsonString["name"].get<std::string>() << " in " << modFile.Name << std::endl;
+                blangFileEntries[blangFilePath].WasModified = true;
             }
 
-            std::vector<std::byte> cryptDataBuffer = WriteBlangToVector(blangFile, resourceContainer.Name);
-            std::vector<std::byte> encryptedBlangFileBytes = IdCrypt(cryptDataBuffer, modFile.Name, false);
-
-            if (encryptedBlangFileBytes.empty()) {
-                std::cerr << RED << "ERROR: " << RESET << "Failed to re-encrypt " << resourceContainer.Name << "/" << modFile.Name << std::endl;
-                continue;
-            }
-
-            modFile.FileBytes = encryptedBlangFileBytes;
+            continue;
         }
 
         int64_t resourceFileSize = std::filesystem::file_size(resourceContainer.Path);
@@ -690,8 +683,6 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
         }
         else {
             if (sizeDiff > 0) {
-                int32_t bufferSize = 4096;
-                std::byte buffer[bufferSize];
                 int64_t newContainerSize = resourceFileSize + sizeDiff;
 
                 try {
@@ -725,11 +716,11 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                 int32_t toRead;
 
                 while (resourceFileSize > fileOffset + size) {
-                    toRead = (resourceFileSize - bufferSize) >= (fileOffset + size) ? bufferSize : (resourceFileSize - fileOffset - size);
+                    toRead = (resourceFileSize - BufferSize) >= (fileOffset + size) ? BufferSize : (resourceFileSize - fileOffset - size);
                     resourceFileSize -= toRead;
 
-                    std::copy(mem + resourceFileSize, mem + resourceFileSize + toRead, buffer);
-                    std::copy(buffer, buffer + toRead, mem + resourceFileSize + sizeDiff);
+                    std::copy(mem + resourceFileSize, mem + resourceFileSize + toRead, Buffer);
+                    std::copy(Buffer, Buffer + toRead, mem + resourceFileSize + sizeDiff);
                 }
 
                 std::copy(modFile.FileBytes.begin(), modFile.FileBytes.end(), mem + fileOffset);
@@ -742,6 +733,7 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                     std::memset(emptyArray, 0, -sizeDiff);
 
                     std::copy(emptyArray, emptyArray - sizeDiff, mem + fileOffset + modFile.FileBytes.size());
+                    delete[] emptyArray;
                 }
             }
         }
@@ -756,19 +748,106 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
             std::vector<ResourceChunk>::iterator x = std::find(resourceContainer.ChunkList.begin(), resourceContainer.ChunkList.end(), *chunk);
             int32_t index = std::distance(resourceContainer.ChunkList.begin(), x);
 
-            for (int i = index + 1; i < resourceContainer.ChunkList.size(); i++) {
+            for (int32_t i = index + 1; i < resourceContainer.ChunkList.size(); i++) {
                 std::copy(mem + resourceContainer.ChunkList[i].FileOffset, mem + resourceContainer.ChunkList[i].FileOffset + 8, (std::byte*)&fileOffset);
 
                 int64_t fileOffsetSizeDir = fileOffset + sizeDiff;
                 std::copy((std::byte*)&fileOffsetSizeDir, (std::byte*)&fileOffsetSizeDir + 8, mem + resourceContainer.ChunkList[i].FileOffset);
             }
-
         }
 
-        if (!modFile.IsBlangJson && !modFile.IsAssetsInfoJson) {
-            std::cout << "\tReplaced " << modFile.Name << std::endl;
-            fileCount++;
+        std::cout << "\tReplaced " << modFile.Name << std::endl;
+        fileCount++;
+    }
+
+    if (packageMapSpec != NULL && wasPackageMapSpecModified) {
+        FILE *packageMapSpecFile = fopen(packageMapSpecPath.c_str(), "wb");
+
+        if (!packageMapSpecFile) {
+            std::cerr << RED << "ERROR: " << RESET << "Failed to write to " << packageMapSpecPath
+                << "while trying to add extra resources for level " << resourceContainer.Name << std::endl;
         }
+        else {
+            try {
+                std::string newPackageMapSpecJson = packageMapSpec->Dump();
+
+                if (fwrite(newPackageMapSpecJson.c_str(), 1, newPackageMapSpecJson.size(), packageMapSpecFile) != newPackageMapSpecJson.size())
+                    throw std::exception();
+            }
+            catch (...) {
+                std::cerr << RED << "ERROR: " << RESET << "Failed to write to " << packageMapSpecPath
+                    << "while trying to add extra resources for level " << resourceContainer.Name << std::endl;
+            }
+
+            fclose(packageMapSpecFile);
+        }
+
+        delete packageMapSpec;
+    }
+
+    for (auto &blangFileEntry : blangFileEntries) {
+        if (!blangFileEntry.second.WasModified)
+            continue;
+
+        std::vector<std::byte> cryptData;
+
+        try {
+            std::vector<std::byte> blangFileBytes = blangFileEntry.second.BlangFile.ToByteVector();
+            cryptData = IdCrypt(blangFileBytes, blangFileEntry.first, false);
+
+            if (cryptData.empty())
+                throw std::exception();
+        }
+        catch (...) {
+            std::cerr << RED << "ERROR: " << RESET << "Failed to encrypt " << blangFileEntry.first << std::endl;
+            continue;
+        }
+
+        blangFileEntry.second.Chunk.Size = cryptData.size();
+        blangFileEntry.second.Chunk.SizeZ = cryptData.size();
+
+        int64_t resourceFileSize = std::filesystem::file_size(resourceContainer.Path);
+        int64_t dataSectionLength = resourceFileSize - resourceContainer.DataOffset;
+        int64_t placement = 0x10 - (dataSectionLength % 0x10) + 0x30;
+        int64_t newContainerSize = resourceFileSize + cryptData.size() + placement;
+        int64_t dataOffset = newContainerSize - cryptData.size();
+
+        try {
+#ifdef _WIN32
+            UnmapViewOfFile(mem);
+            CloseHandle(fileMapping);
+
+            fileMapping = CreateFileMappingA(hFile, NULL, PAGE_READWRITE, *((DWORD*)&newContainerSize + 1), *(DWORD*)&newContainerSize, NULL);
+
+            if (GetLastError() != ERROR_SUCCESS || fileMapping == NULL)
+                throw std::exception();
+
+            mem = (std::byte*)MapViewOfFile(fileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+
+            if (GetLastError() != ERROR_SUCCESS || mem == NULL)
+                throw std::exception();
+#else
+            munmap(mem, resourceFileSize);
+            std::filesystem::resize_file(resourceContainer.Path, newContainerSize);
+            mem = (std::byte*)mmap(0, newContainerSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+            if (mem == NULL)
+                throw std::exception();
+#endif
+        }
+        catch (...) {
+            std::cerr << RED << "ERROR: " << RESET << "Failed to resize " << resourceContainer.Path << std::endl;
+            continue;
+        }
+
+        std::copy(cryptData.begin(), cryptData.end(), mem + dataOffset);
+        std::copy((std::byte*)&dataOffset, (std::byte*)&dataOffset + 8, mem + blangFileEntry.second.Chunk.FileOffset);
+
+        int64_t cryptDataSize = cryptData.size();
+        std::copy((std::byte*)&cryptDataSize, (std::byte*)&cryptDataSize + 8, mem + blangFileEntry.second.Chunk.SizeOffset);
+        std::copy((std::byte*)&cryptDataSize, (std::byte*)&cryptDataSize + 8, mem + blangFileEntry.second.Chunk.SizeOffset + 8);
+
+        std::cout << "\tModified " << blangFileEntry.first << std::endl;
     }
 
     if (mapResourcesFile != NULL && mapResourcesChunk != NULL && !originalDecompressedMapResources.empty()) {

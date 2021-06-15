@@ -16,9 +16,11 @@ file(GLOB SOURCES
         ./PathtoRes.cpp
         ./ReadChunkInfo.cpp
         ./ReadResourceFile.cpp
+        ./ReadSoundEntries.cpp
         ./ReplaceChunks.cpp
         ./ResourceData.cpp
-        ./SoundMods.cpp
+        ./ReplaceSounds.cpp
+        ./SetBufferSize.cpp
         ./Utils.cpp
         ./miniz/miniz.c
         )

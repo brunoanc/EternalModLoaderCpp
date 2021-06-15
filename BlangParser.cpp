@@ -23,19 +23,15 @@
 
 #include "EternalModLoader.hpp"
 
-BlangFile ParseBlang(std::vector<std::byte> &blangBytes, std::string& resourceName)
+BlangFile::BlangFile(std::vector<std::byte> &blangBytes)
 {
-    BlangFile blangFile;
-    std::vector<BlangString> blangStrings;
     int32_t pos = 0;
 
-    if (resourceName == "gameresources_patch1") {
-        std::vector<std::byte> unknownDataBytes(blangBytes.begin(), blangBytes.begin() + 8);
-        std::reverse(unknownDataBytes.begin(), unknownDataBytes.end());
-        std::copy(unknownDataBytes.begin(), unknownDataBytes.end(), (std::byte*)&blangFile.UnknownData);
+    std::vector<std::byte> unknownDataBytes(blangBytes.begin(), blangBytes.begin() + 8);
+    std::reverse(unknownDataBytes.begin(), unknownDataBytes.end());
+    std::copy(unknownDataBytes.begin(), unknownDataBytes.end(), (std::byte*)&UnknownData);
 
-        pos += 8;
-    }
+    pos += 8;
 
     std::vector<std::byte> stringAmountBytes(blangBytes.begin() + 8, blangBytes.begin() + 12);
     std::reverse(stringAmountBytes.begin(), stringAmountBytes.end());
@@ -48,6 +44,8 @@ BlangFile ParseBlang(std::vector<std::byte> &blangBytes, std::string& resourceNa
     std::vector<std::byte> identifierBytes;
     std::vector<std::byte> textBytes;
     std::vector<std::byte> unknown;
+
+    Strings.reserve(stringAmount);
     
     for (int32_t i = 0; i < stringAmount; i++) {
         uint32_t hash;
@@ -77,32 +75,26 @@ BlangFile ParseBlang(std::vector<std::byte> &blangBytes, std::string& resourceNa
         pos += unknownLength;
 
         BlangString blangString(hash, identifier, text, unknown);
-        blangStrings.push_back(blangString);
+        Strings.push_back(blangString);
     }
-
-    blangFile.Strings = blangStrings;
-
-    return blangFile;
 }
 
-std::vector<std::byte> WriteBlangToVector(BlangFile blangFile, std::string& resourceName)
+std::vector<std::byte> BlangFile::ToByteVector()
 {
     std::vector<std::byte> blangBytes;
 
-    for (int32_t i = 0; i < blangFile.Strings.size(); i++) {
-        if (RemoveWhitespace(blangFile.Strings[i].Identifier).empty()) {
-            blangFile.Strings.erase(blangFile.Strings.begin() + i);
+    for (int32_t i = 0; i < Strings.size(); i++) {
+        if (RemoveWhitespace(Strings[i].Identifier).empty()) {
+            Strings.erase(Strings.begin() + i);
             i--;
         }
     }
 
-    if (resourceName == "gameresources_patch1") {
-        std::vector<std::byte> unknownDataBytes((std::byte*)&blangFile.UnknownData, (std::byte*)&blangFile.UnknownData + 8);
-        std::reverse(unknownDataBytes.begin(), unknownDataBytes.end());
-        blangBytes.insert(blangBytes.end(), unknownDataBytes.begin(), unknownDataBytes.end());
-    }
+    std::vector<std::byte> unknownDataBytes((std::byte*)&UnknownData, (std::byte*)&UnknownData + 8);
+    std::reverse(unknownDataBytes.begin(), unknownDataBytes.end());
+    blangBytes.insert(blangBytes.end(), unknownDataBytes.begin(), unknownDataBytes.end());
 
-    int32_t stringsAmount = blangFile.Strings.size();
+    int32_t stringsAmount = Strings.size();
     std::vector<std::byte> stringsAmountBytes((std::byte*)&stringsAmount, (std::byte*)&stringsAmount + 4);
     std::reverse(stringsAmountBytes.begin(), stringsAmountBytes.end());
     blangBytes.insert(blangBytes.end(), stringsAmountBytes.begin(), stringsAmountBytes.end());
@@ -112,7 +104,7 @@ std::vector<std::byte> WriteBlangToVector(BlangFile blangFile, std::string& reso
     std::vector<std::byte> identifierBytesNew;
     std::vector<std::byte> textBytes;
 
-    for (auto &blangString : blangFile.Strings) {
+    for (auto &blangString : Strings) {
         std::string identifierToLower = ToLower(blangString.Identifier);
         identifierBytes.resize(identifierToLower.size());
         std::copy((std::byte*)identifierToLower.c_str(), (std::byte*)identifierToLower.c_str() + identifierToLower.size(), identifierBytes.begin());

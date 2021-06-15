@@ -130,6 +130,8 @@ public:
         Size = 0;
         CompressionMode = (std::byte)(0);
     }
+
+    ResourceChunk() {}
 };
 
 class ResourceContainer {
@@ -181,11 +183,24 @@ public:
     }
 };
 
+class SoundEntry {
+public:
+    uint32_t SoundId = 0;
+    int64_t InfoOffset = 0;
+
+    SoundEntry(uint32_t soundId, int64_t infoOffset)
+    {
+        SoundId = soundId;
+        InfoOffset = infoOffset;
+    }
+};
+
 class SoundContainer {
 public:
     std::string Name;
     std::string Path;
     std::vector<SoundModFile> ModFileList;
+    std::vector<SoundEntry> SoundEntries;
 
     SoundContainer(std::string name, std::string path)
     {
@@ -222,9 +237,24 @@ public:
     std::vector<BlangString> Strings;
 
     BlangFile() {}
-    BlangFile(std::vector<std::byte> &blangBytes, std::string &resourceName);
+    BlangFile(std::vector<std::byte> &blangBytes);
 
-    std::vector<std::byte> ToByteVector(std::string &resourceName);
+    std::vector<std::byte> ToByteVector();
+};
+
+class BlangFileEntry {
+public:
+    class BlangFile BlangFile;
+    ResourceChunk Chunk;
+    bool WasModified = false;
+
+    BlangFileEntry(class BlangFile blangFile, ResourceChunk chunk)
+    {
+        BlangFile = blangFile;
+        Chunk = chunk;
+    }
+
+    BlangFileEntry() {}
 };
 
 class MapAsset {
@@ -293,6 +323,9 @@ extern bool Verbose;
 extern bool SlowMode;
 extern std::map<uint64_t, ResourceDataEntry> ResourceDataMap;
 
+extern std::byte *Buffer;
+extern int64_t BufferSize;
+
 extern std::string RESET;
 extern std::string RED;
 extern std::string GREEN;
@@ -319,8 +352,6 @@ ResourceChunk *GetChunk(std::string name, ResourceContainer &resourceContainer);
 void ReadResource(std::byte *&mem, ResourceContainer &resourceContainer);
 int32_t GetResourceContainer(std::string &resourceContainerName);
 std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string internalPath, bool decrypt);
-BlangFile ParseBlang(std::vector<std::byte> &blangBytes, std::string &resourceName);
-std::vector<std::byte> WriteBlangToVector(BlangFile blangFile, std::string &resourceName);
 std::string RemoveWhitespace(std::string &stringWithWhitespace);
 std::string ToLower(std::string &str);
 std::vector<std::string> SplitString(std::string stringToSplit, char delimiter);
@@ -331,5 +362,8 @@ bool EndsWith(const std::string &fullString, const std::string &suffix);
 bool StartsWith(const std::string &fullString, const std::string &prefix);
 std::string PathToSoundContainer(std::string name);
 int32_t GetSoundContainer(std::string &soundContainerName);
+void ReadSoundEntries(std::byte *mem, SoundContainer &soundContainer);
+std::vector<SoundEntry> GetSoundEntriesToModify(SoundContainer &soundContainer, uint32_t soundModId);
+void SetOptimalBufferSize(std::string driveRootPath);
 
 #endif
