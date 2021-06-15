@@ -29,7 +29,7 @@
 #include "miniz/miniz.h"
 #include "EternalModLoader.hpp"
 
-const int32_t Version = 9;
+const int32_t Version = 8;
 const std::string ResourceDataFileName = "rs_data";
 const std::string PackageMapSpecJsonFileName = "packagemapspec.json";
 std::string BasePath;
