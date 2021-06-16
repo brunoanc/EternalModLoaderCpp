@@ -640,10 +640,48 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
             continue;
         }
 
+        uint64_t compressedSize = modFile.FileBytes.size();
+        uint64_t uncompressedSize = compressedSize;
+        bool clearCompressionFlag = true;
+
+        if (EndsWith(chunk->ResourceName.NormalizedFileName, ".tga")) {
+            if (!memcmp(modFile.FileBytes.data(), DivinityMagic, 8)) {
+                std::copy(modFile.FileBytes.begin() + 8, modFile.FileBytes.begin() + 16, (std::byte*)&uncompressedSize);
+
+                modFile.FileBytes = std::vector<std::byte>(modFile.FileBytes.begin() + 16, modFile.FileBytes.end());
+                compressedSize = modFile.FileBytes.size();
+                clearCompressionFlag = false;
+
+                if (Verbose)
+                    std::cout << "\tSuccessfully set compressed texture data for file " << modFile.Name << std::endl;
+            }
+            else if (CompressTextures) {
+                std::vector<std::byte> compressedData;
+
+                try {
+                    compressedData = OodleCompress(modFile.FileBytes, OodleFormat::Kraken, OodleCompressionLevel::Normal);
+
+                    if (compressedData.empty())
+                        throw std::exception();
+                }
+                catch (...) {
+                    std::cerr << RED << "ERROR: " << RESET << "Failed to compress " << modFile.Name << std::endl;
+                    continue;
+                }
+
+                modFile.FileBytes = compressedData;
+                compressedSize = compressedData.size();
+                clearCompressionFlag = false;
+
+                if (Verbose)
+                    std::cout << "\tSuccessfully compressed texture file " << modFile.Name << std::endl;
+            }
+        }
+
 #ifdef _WIN32
-        if (SetModDataForChunk(mem, hFile, fileMapping, resourceContainer, *chunk, modFile, modFile.FileBytes.size(), modFile.FileBytes.size(), true) == -1) {
+        if (SetModDataForChunk(mem, hFile, fileMapping, resourceContainer, *chunk, modFile, compressedSize, uncompressedSize, clearCompressionFlag) == -1) {
 #else
-        if (SetModDataForChunk(mem, fd, resourceContainer, *chunk, modFile, modFile.FileBytes.size(), modFile.FileBytes.size(), true) == -1) {
+        if (SetModDataForChunk(mem, fd, resourceContainer, *chunk, modFile, compressedSize, uncompressedSize, clearCompressionFlag) == -1) {
 #endif
             std::cerr << RED << "ERROR: " << RESET << "Failed to set new mod data for " << modFile.Name << " in resource chunk." << std::endl;
             continue;
@@ -715,7 +753,7 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
         std::vector<std::byte> decompressedMapResourcesData = mapResourcesFile->ToByteVector();
 
         if (decompressedMapResourcesData != originalDecompressedMapResources) {
-            std::vector<std::byte> compressedMapResourcesData = OodleCompress(decompressedMapResourcesData, Kraken, Normal);
+            std::vector<std::byte> compressedMapResourcesData = OodleCompress(decompressedMapResourcesData, OodleFormat::Kraken, OodleCompressionLevel::Normal);
 
             if (compressedMapResourcesData.empty()) {
                 std::cerr << "ERROR: " << RESET << "Failed to compress " << mapResourcesChunk->ResourceName.NormalizedFileName << std::endl;

@@ -32,9 +32,14 @@
 const int32_t Version = 8;
 const std::string ResourceDataFileName = "rs_data";
 const std::string PackageMapSpecJsonFileName = "packagemapspec.json";
+const std::byte *DivinityMagic = (std::byte*)"DIVINITY";
+
+char separator;
 std::string BasePath;
-bool Verbose;
-bool SlowMode;
+bool Verbose = false;
+bool SlowMode = false;
+bool CompressTextures = false;
+
 std::vector<ResourceContainer> ResourceContainerList;
 std::vector<SoundContainer> SoundContainerList;
 std::map<uint64_t, ResourceDataEntry> ResourceDataMap;
@@ -47,8 +52,6 @@ std::string RED = "";
 std::string GREEN = "";
 std::string YELLOW = "";
 std::string BLUE = "";
-
-char separator;
 
 int32_t main(int32_t argc, char **argv)
 {
@@ -72,7 +75,8 @@ int32_t main(int32_t argc, char **argv)
         std::cout << "OPTIONS:\n";
         std::cout << "\t--list-res - List the .resources files that will be modified and exit.\n";
         std::cout << "\t--verbose - Print more information during the mod loading process.\n";
-        std::cout << "\t--slow - Slow mod loading mode that produces lighter files and uses less disk.\n" << std::endl;
+        std::cout << "\t--slow - Slow mod loading mode that produces lighter files.\n";
+        std::cout << "\t--compress-textures - Compress texture files during the mod loading process.\n" << std::endl;
         return 1;
     }
 
@@ -97,10 +101,15 @@ int32_t main(int32_t argc, char **argv)
             }
             else if (!strcmp(argv[i], "--verbose")) {
                 Verbose = true;
+                std::cout << YELLOW << "INFO: Verbose logging is enabled." << RESET << std::endl;
             }
             else if (!strcmp(argv[i], "--slow")) {
                 SlowMode = true;
                 std::cout << YELLOW << "INFO: Slow mod loading mode is enabled." << RESET << std::endl;
+            }
+            else if (!strcmp(argv[i], "--compress-textures")) {
+                CompressTextures = true;
+                std::cout << YELLOW << "INFO: Texture compression is enabled." << RESET << std::endl;
             }
             else {
                 std::cerr << RED << "ERROR: " << RESET << "Unknown argument: " << argv[i] << std::endl;

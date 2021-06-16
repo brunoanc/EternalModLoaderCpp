@@ -84,7 +84,8 @@ std::vector<std::byte> OodleCompress(std::vector<std::byte> &decompressedData, O
     uint32_t compressedBufferSize = decompressedData.size() + 274 * ((decompressedData.size() + 0x3FFFF) / 0x40000);
     std::vector<std::byte> compressedData(compressedBufferSize);
 
-    int32_t compressedSize = OodLZ_Compress(format, (uint8_t*)decompressedData.data(), decompressedData.size(), (uint8_t*)compressedData.data(), compressionLevel, NULL, 0, 0, NULL, 0);
+    int32_t compressedSize = OodLZ_Compress(std::underlying_type<OodleFormat>::type(format), (uint8_t*)decompressedData.data(), decompressedData.size(),
+        (uint8_t*)compressedData.data(), std::underlying_type<OodleCompressionLevel>::type(compressionLevel), NULL, 0, 0, NULL, 0);
 
     if (compressedSize <= 0) {
         compressedData.resize(0);

@@ -23,7 +23,7 @@
 
 #include "EternalModLoader.hpp"
 
-std::vector<std::string> SupportedFileFormats = { ".ogg", ".opus", ".wav", ".wem", ".flac", ".aiff", ".pcm" };
+const std::vector<std::string> SupportedFileFormats = { ".ogg", ".opus", ".wav", ".wem", ".flac", ".aiff", ".pcm" };
 
 int32_t GetDecodedOpusFileSize(SoundModFile &soundModFile)
 {

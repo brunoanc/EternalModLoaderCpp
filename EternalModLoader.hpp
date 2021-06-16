@@ -316,12 +316,18 @@ inline bool operator==(MapAsset& mapAsset1, const MapAsset& mapAsset2)
 extern const int32_t Version;
 extern const std::string ResourceDataFileName;
 extern const std::string PackageMapSpecJsonFileName;
+extern const std::byte *DivinityMagic;
+
+extern char separator;
 extern std::string BasePath;
-extern std::vector<ResourceContainer> ResourceContainerList;
-extern std::vector<SoundContainer> SoundContainerList;
 extern bool Verbose;
 extern bool SlowMode;
+extern bool CompressTextures;
+
+extern std::vector<ResourceContainer> ResourceContainerList;
+extern std::vector<SoundContainer> SoundContainerList;
 extern std::map<uint64_t, ResourceDataEntry> ResourceDataMap;
+extern const std::vector<std::string> SupportedFileFormats;
 
 extern std::byte *Buffer;
 extern int64_t BufferSize;
@@ -331,10 +337,6 @@ extern std::string RED;
 extern std::string GREEN;
 extern std::string YELLOW;
 extern std::string BLUE;
-
-extern char separator;
-
-extern std::vector<std::string> SupportedFileFormats;
 
 #ifdef _WIN32
 int32_t ResizeMmap(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, int64_t newSize);
@@ -348,8 +350,8 @@ int32_t SetModDataForChunk(
     ResourceContainer &resourceContainer,
     ResourceChunk &chunk,
     ResourceModFile &modFile,
-    int64_t compressedSize,
-    int64_t uncompressedSize,
+    uint64_t compressedSize,
+    uint64_t uncompressedSize,
     bool clearCompressionFlag
 );
 #else
@@ -363,8 +365,8 @@ int32_t SetModDataForChunk(
     ResourceContainer &resourceContainer,
     ResourceChunk &chunk,
     ResourceModFile &modFile,
-    int64_t compressedSize,
-    int64_t uncompressedSize,
+    uint64_t compressedSize,
+    uint64_t uncompressedSize,
     bool clearCompressionFlag
 );
 #endif

@@ -13,8 +13,8 @@ int32_t SetModDataForChunk(
     ResourceContainer &resourceContainer,
     ResourceChunk &chunk,
     ResourceModFile &modFile,
-    int64_t compressedSize,
-    int64_t uncompressedSize,
+    uint64_t compressedSize,
+    uint64_t uncompressedSize,
     bool clearCompressionFlag
 )
 #else
@@ -24,8 +24,8 @@ int32_t SetModDataForChunk(
     ResourceContainer &resourceContainer,
     ResourceChunk &chunk,
     ResourceModFile &modFile,
-    int64_t compressedSize,
-    int64_t uncompressedSize,
+    uint64_t compressedSize,
+    uint64_t uncompressedSize,
     bool clearCompressionFlag
 )
 #endif

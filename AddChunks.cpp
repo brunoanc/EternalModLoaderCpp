@@ -22,6 +22,7 @@
 #include <iterator>
 #include <filesystem>
 #include <algorithm>
+#include <cstring>
 
 #include "EternalModLoader.hpp"
 
@@ -207,6 +208,44 @@ void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContaine
         ResourceName newResourceName(modFile.Name, modFile.Name);
         resourceContainer.NamesList.push_back(newResourceName);
 
+        uint64_t compressedSize = modFile.FileBytes.size();
+        uint64_t uncompressedSize = compressedSize;
+        std::byte compressionMode = (std::byte)0;
+
+        if (modFile.Name.find(".tga") != std::string::npos) {
+            if (!memcmp(modFile.FileBytes.data(), DivinityMagic, 8)) {
+                std::copy(modFile.FileBytes.begin() + 8, modFile.FileBytes.begin() + 16, (std::byte*)&uncompressedSize);
+
+                modFile.FileBytes = std::vector<std::byte>(modFile.FileBytes.begin() + 16, modFile.FileBytes.end());
+                compressedSize = modFile.FileBytes.size();
+                compressionMode = (std::byte)2;
+
+                if (Verbose)
+                    std::cout << "\tSuccessfully set compressed texture data for file " << modFile.Name << std::endl;
+            }
+            else if (CompressTextures) {
+                std::vector<std::byte> compressedData;
+
+                try {
+                    compressedData = OodleCompress(modFile.FileBytes, OodleFormat::Kraken, OodleCompressionLevel::Normal);
+
+                    if (compressedData.empty())
+                        throw std::exception();
+                }
+                catch (...) {
+                    std::cerr << RED << "ERROR: " << RESET << "Failed to compress " << modFile.Name << std::endl;
+                    continue;
+                }
+
+                modFile.FileBytes = compressedData;
+                compressedSize = compressedData.size();
+                compressionMode = (std::byte)2;
+
+                if (Verbose)
+                    std::cout << "\tSuccessfully compressed texture file " << modFile.Name << std::endl;
+            }
+        }
+
         int64_t resourceFileSize = std::filesystem::file_size(resourceContainer.Path);
         int64_t placement = 0x10 - (data.size() % 0x10) + 0x30;
         int64_t fileOffset = resourceFileSize + (data.size() - originalDataSize) + placement;
@@ -269,10 +308,8 @@ void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContaine
         std::copy((std::byte*)&nameIdOffset, (std::byte*)&nameIdOffset + 8, newFileInfo + sizeof(newFileInfo) - 0x70);
         std::copy((std::byte*)&fileOffset, (std::byte*)&fileOffset + 8, newFileInfo + sizeof(newFileInfo) - 0x58);
 
-        int64_t fileBytesSize = modFile.FileBytes.size();
-
-        std::copy((std::byte*)&fileBytesSize, (std::byte*)&fileBytesSize + 8, newFileInfo + sizeof(newFileInfo) - 0x50);
-        std::copy((std::byte*)&fileBytesSize, (std::byte*)&fileBytesSize + 8, newFileInfo + sizeof(newFileInfo) - 0x48);
+        std::copy((std::byte*)&compressedSize, (std::byte*)&compressedSize + 8, newFileInfo + sizeof(newFileInfo) - 0x50);
+        std::copy((std::byte*)&uncompressedSize, (std::byte*)&uncompressedSize + 8, newFileInfo + sizeof(newFileInfo) - 0x48);
 
         std::copy((std::byte*)&modFile.StreamDbHash.value(), (std::byte*)&modFile.StreamDbHash.value() + 8, newFileInfo + sizeof(newFileInfo) - 0x40);
         std::copy((std::byte*)&modFile.StreamDbHash.value(), (std::byte*)&modFile.StreamDbHash.value() + 8, newFileInfo + sizeof(newFileInfo) - 0x30);
@@ -288,7 +325,7 @@ void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContaine
         std::copy((std::byte*)&SpecialByte2Int, (std::byte*)&SpecialByte2Int + 4, newFileInfo + sizeof(newFileInfo) - 0x1E);
         std::copy((std::byte*)&SpecialByte3Int, (std::byte*)&SpecialByte3Int + 4, newFileInfo + sizeof(newFileInfo) - 0x1D);
 
-        newFileInfo[sizeof(newFileInfo) - 0x20] = (std::byte)0;
+        newFileInfo[sizeof(newFileInfo) - 0x20] = compressionMode;
 
         int16_t metaEntries = 0;
         std::copy((std::byte*)&metaEntries, (std::byte*)&metaEntries + 2, newFileInfo + sizeof(newFileInfo) - 0x10);
