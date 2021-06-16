@@ -352,7 +352,7 @@ int32_t SetModDataForChunk(
     ResourceModFile &modFile,
     uint64_t compressedSize,
     uint64_t uncompressedSize,
-    bool clearCompressionFlag
+    std::byte *compressionMode
 );
 #else
 int32_t ResizeMmap(std::byte *&mem, int32_t &fd, std::string filePath, int64_t oldSize, int64_t newSize);
@@ -367,7 +367,7 @@ int32_t SetModDataForChunk(
     ResourceModFile &modFile,
     uint64_t compressedSize,
     uint64_t uncompressedSize,
-    bool clearCompressionFlag
+    std::byte *compressionMode
 );
 #endif
 

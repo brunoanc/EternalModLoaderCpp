@@ -15,7 +15,7 @@ int32_t SetModDataForChunk(
     ResourceModFile &modFile,
     uint64_t compressedSize,
     uint64_t uncompressedSize,
-    bool clearCompressionFlag
+    std::byte *compressionMode
 )
 #else
 int32_t SetModDataForChunk(
@@ -26,7 +26,7 @@ int32_t SetModDataForChunk(
     ResourceModFile &modFile,
     uint64_t compressedSize,
     uint64_t uncompressedSize,
-    bool clearCompressionFlag
+    std::byte *compressionMode
 )
 #endif
 {
@@ -108,8 +108,8 @@ int32_t SetModDataForChunk(
     std::copy((std::byte*)&compressedSize, (std::byte*)&compressedSize + 8, mem + chunk.SizeOffset);
     std::copy((std::byte*)&uncompressedSize, (std::byte*)&uncompressedSize + 8, mem + chunk.SizeOffset + 8);
 
-    if (clearCompressionFlag)
-        mem[chunk.SizeOffset + 0x30] = (std::byte)0;
+    if (compressionMode != NULL)
+        mem[chunk.SizeOffset + 0x30] = *compressionMode;
 
     return 0;
 }

@@ -642,7 +642,7 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
 
         uint64_t compressedSize = modFile.FileBytes.size();
         uint64_t uncompressedSize = compressedSize;
-        bool clearCompressionFlag = true;
+        std::byte compressionMode = (std::byte)0;
 
         if (EndsWith(chunk->ResourceName.NormalizedFileName, ".tga")) {
             if (!memcmp(modFile.FileBytes.data(), DivinityMagic, 8)) {
@@ -650,7 +650,7 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
 
                 modFile.FileBytes = std::vector<std::byte>(modFile.FileBytes.begin() + 16, modFile.FileBytes.end());
                 compressedSize = modFile.FileBytes.size();
-                clearCompressionFlag = false;
+                compressionMode = (std::byte)2;
 
                 if (Verbose)
                     std::cout << "\tSuccessfully set compressed texture data for file " << modFile.Name << std::endl;
@@ -671,7 +671,7 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
 
                 modFile.FileBytes = compressedData;
                 compressedSize = compressedData.size();
-                clearCompressionFlag = false;
+                compressionMode = (std::byte)2;
 
                 if (Verbose)
                     std::cout << "\tSuccessfully compressed texture file " << modFile.Name << std::endl;
@@ -679,9 +679,9 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
         }
 
 #ifdef _WIN32
-        if (SetModDataForChunk(mem, hFile, fileMapping, resourceContainer, *chunk, modFile, compressedSize, uncompressedSize, clearCompressionFlag) == -1) {
+        if (SetModDataForChunk(mem, hFile, fileMapping, resourceContainer, *chunk, modFile, compressedSize, uncompressedSize, &compressionMode) == -1) {
 #else
-        if (SetModDataForChunk(mem, fd, resourceContainer, *chunk, modFile, compressedSize, uncompressedSize, clearCompressionFlag) == -1) {
+        if (SetModDataForChunk(mem, fd, resourceContainer, *chunk, modFile, compressedSize, uncompressedSize, &compressionMode) == -1) {
 #endif
             std::cerr << RED << "ERROR: " << RESET << "Failed to set new mod data for " << modFile.Name << " in resource chunk." << std::endl;
             continue;
@@ -736,11 +736,12 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
 
         ResourceModFile blangModFile(Mod(), blangFileEntry.first);
         blangModFile.FileBytes = cryptData;
+        std::byte compressionMode = (std::byte)0;
 
 #ifdef _WIN32
-        if (SetModDataForChunk(mem, hFile, fileMapping, resourceContainer, blangFileEntry.second.Chunk, blangModFile, blangModFile.FileBytes.size(), blangModFile.FileBytes.size(), true) == -1) {
+        if (SetModDataForChunk(mem, hFile, fileMapping, resourceContainer, blangFileEntry.second.Chunk, blangModFile, blangModFile.FileBytes.size(), blangModFile.FileBytes.size(), &compressionMode) == -1) {
 #else
-        if (SetModDataForChunk(mem, fd, resourceContainer, blangFileEntry.second.Chunk, blangModFile, blangModFile.FileBytes.size(), blangModFile.FileBytes.size(), true) == -1) {
+        if (SetModDataForChunk(mem, fd, resourceContainer, blangFileEntry.second.Chunk, blangModFile, blangModFile.FileBytes.size(), blangModFile.FileBytes.size(), &compressionMode) == -1) {
 #endif
             std::cerr << RED << "ERROR: " << RESET << "Failed to set new mod data for " << blangFileEntry.first << "in resource chunk." << std::endl;
             continue;
@@ -763,9 +764,9 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                 mapResourcesModFile.FileBytes = compressedMapResourcesData;
 
 #ifdef _WIN32
-                if (SetModDataForChunk(mem, hFile, fileMapping, resourceContainer, *mapResourcesChunk,  mapResourcesModFile, compressedMapResourcesData.size(), decompressedMapResourcesData.size(), false) == -1) {
+                if (SetModDataForChunk(mem, hFile, fileMapping, resourceContainer, *mapResourcesChunk,  mapResourcesModFile, compressedMapResourcesData.size(), decompressedMapResourcesData.size(), NULL) == -1) {
 #else
-                if (SetModDataForChunk(mem, fd, resourceContainer, *mapResourcesChunk,  mapResourcesModFile, compressedMapResourcesData.size(), decompressedMapResourcesData.size(), false) == -1) {
+                if (SetModDataForChunk(mem, fd, resourceContainer, *mapResourcesChunk,  mapResourcesModFile, compressedMapResourcesData.size(), decompressedMapResourcesData.size(), NULL) == -1) {
 #endif
                     std::cerr << RED << "ERROR: " << RESET << "Failed to set new mod data for " << mapResourcesChunk->ResourceName.NormalizedFileName << "in resource chunk." << std::endl;
                     delete mapResourcesFile;
