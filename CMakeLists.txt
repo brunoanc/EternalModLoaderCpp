@@ -26,12 +26,21 @@ file(GLOB SOURCES
         ./miniz/miniz.c
         )
 
-if(DEFINED ENV{ETERNALMODLOADERCPP_STATIC})
-        set(OPENSSL_USE_STATIC_LIBS TRUE)
-        set (CMAKE_CXX_FLAGS "-Ofast -DNDEBUG -ftree-vectorize -msse2 -static")
+if(MSVC)
+        if(DEFINED ENV{ETERNALMODLOADERCPP_STATIC})
+                set(OPENSSL_USE_STATIC_LIBS TRUE)
+                set (CMAKE_CXX_FLAGS "/O2 /Oi /Ot /GL /EHsc")
+        else()
+                set (CMAKE_CXX_FLAGS "/O2 /Oi /Ot /GL /EHsc")
+        endif()
 else()
-        set (CMAKE_CXX_FLAGS "-Ofast -DNDEBUG -ftree-vectorize -msse2")
-endif()
+        if(DEFINED ENV{ETERNALMODLOADERCPP_STATIC})
+                set(OPENSSL_USE_STATIC_LIBS TRUE)
+                set (CMAKE_CXX_FLAGS "-Ofast -DNDEBUG -ftree-vectorize -msse2 -static")
+        else()
+                set (CMAKE_CXX_FLAGS "-Ofast -DNDEBUG -ftree-vectorize -msse2")
+        endif()
+endif(MSVC)
 
 add_executable(DEternal_loadMods ${SOURCES})
 
