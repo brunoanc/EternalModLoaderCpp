@@ -29,7 +29,7 @@ cmake .. # Append "-G 'MSYS Makefiles'" on MSYS
 
 Finally, build with:
 ```
-make
+cmake --build .
 ```
 
 The DEternal_loadMods executable will be in the "build" folder.
