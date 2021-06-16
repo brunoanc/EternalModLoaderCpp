@@ -30,16 +30,16 @@ void ReadResource(std::byte *&mem, ResourceContainer &resourceContainer)
     std::copy(mem + 0x24, mem + 0x28, (std::byte*)&unknownCount);
 
     int32_t dummy2Num;
-    std::copy(mem + 0x28, mem + 0x32, (std::byte*)&dummy2Num);
+    std::copy(mem + 0x28, mem + 0x2C, (std::byte*)&dummy2Num);
 
     int32_t stringsSize;
-    std::copy(mem + 0x38, mem + 0x42, (std::byte*)&stringsSize);
+    std::copy(mem + 0x38, mem + 0x3C, (std::byte*)&stringsSize);
 
     int64_t namesOffset;
     std::copy(mem + 0x40, mem + 0x48, (std::byte*)&namesOffset);
 
     int64_t namesEnd;
-    std::copy(mem + 0x48, mem + 0x56, (std::byte*)&namesEnd);
+    std::copy(mem + 0x48, mem + 0x50, (std::byte*)&namesEnd);
 
     int64_t infoOffset;
     std::copy(mem + 0x50, mem + 0x58, (std::byte*)&infoOffset);
@@ -48,10 +48,10 @@ void ReadResource(std::byte *&mem, ResourceContainer &resourceContainer)
     std::copy(mem + 0x60, mem + 0x68, (std::byte*)&dummy7OffOrg);
 
     int64_t dataOff;
-    std::copy(mem + 0x68, mem + 0x76, (std::byte*)&dataOff);
+    std::copy(mem + 0x68, mem + 0x70, (std::byte*)&dataOff);
 
     int64_t idclOff;
-    std::copy(mem + 0x74, mem + 0x82, (std::byte*)&idclOff);
+    std::copy(mem + 0x74, mem + 0x7C, (std::byte*)&idclOff);
 
     int64_t namesNum;
     std::copy(mem + namesOffset, mem + namesOffset + 8, (std::byte*)&namesNum);
