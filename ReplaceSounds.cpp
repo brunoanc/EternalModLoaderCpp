@@ -236,14 +236,14 @@ void ReplaceSounds(std::byte *&mem, int32_t &fd, SoundContainer &soundContainer)
             std::copy(mem + soundEntry.InfoOffset + 12, mem + soundEntry.InfoOffset + 14, (std::byte*)&currentFormat);
 
             if (currentFormat != format) {
-                std::cerr << RED << "WARNING: " << RESET << "Format mismatch: sound file " << soundModFile.Name << " needs to be " << (currentFormat == 3 ? "WEM" : "OPUS") << " format." << std::endl;
+                std::cerr << RED << "WARNING: " << RESET << "Format mismatch: sound file " << soundModFile.Name << " needs to be " << (currentFormat == 3 ? "WEM" : "OPUS") << " format." << '\n';
                 std::cerr << "The sound will be replaced but it might not work in-game." << std::endl;
 
                 format = (int16_t)currentFormat;
             }
         }
 
-        std::cout << "\tReplaced sound with id " << soundModId << " with " << soundModFile.Name << std::endl;
+        std::cout << "\tReplaced sound with id " << soundModId << " with " << soundModFile.Name << '\n';
         fileCount++;
     }
 

@@ -88,7 +88,7 @@ void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContaine
 
                         if (Verbose) {
                             std::cout << "\tSet resources type " << newModFile.ResourceType << " (version: " << newModFile.Version.value()
-                                << ", streamdb hash: " << newModFile.StreamDbHash.value() << ") for new file: " << newModFile.Name << std::endl;
+                                << ", streamdb hash: " << newModFile.StreamDbHash.value() << ") for new file: " << newModFile.Name << '\n';
                         }
 
                         break;
@@ -176,7 +176,7 @@ void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContaine
                 ResourceName newResourceName(modFile.ResourceType, modFile.ResourceType);
                 resourceContainer.NamesList.push_back(newResourceName);
 
-                std::cout << "\tAdded resource type name " << modFile.ResourceType << " to " << resourceContainer.Name << std::endl;
+                std::cout << "\tAdded resource type name " << modFile.ResourceType << " to " << resourceContainer.Name << '\n';
             }
         }
 
@@ -221,7 +221,7 @@ void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContaine
                 compressionMode = (std::byte)2;
 
                 if (Verbose)
-                    std::cout << "\tSuccessfully set compressed texture data for file " << modFile.Name << std::endl;
+                    std::cout << "\tSuccessfully set compressed texture data for file " << modFile.Name << '\n';
             }
             else if (CompressTextures) {
                 std::vector<std::byte> compressedData;
@@ -242,7 +242,7 @@ void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContaine
                 compressionMode = (std::byte)2;
 
                 if (Verbose)
-                    std::cout << "\tSuccessfully compressed texture file " << modFile.Name << std::endl;
+                    std::cout << "\tSuccessfully compressed texture file " << modFile.Name << '\n';
             }
         }
 
@@ -343,7 +343,7 @@ void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContaine
             std::copy(newFileInfo, newFileInfo + sizeof(newFileInfo), info.end() - 0x90);
         }
 
-        std::cout << "\tAdded " << modFile.Name << std::endl;
+        std::cout << "\tAdded " << modFile.Name << '\n';
         modFile.FileBytes.resize(0);
         newChunksCount++;
     }

@@ -139,7 +139,7 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
 
                             if (mapFileRefRemoved) {
                                 std::cout << "\tRemoved resource " << packageMapSpec->Files[fileIndex].Name << " to be loaded in map "
-                                    << packageMapSpec->Maps[mapIndex].Name << std::endl;
+                                    << packageMapSpec->Maps[mapIndex].Name << '\n';
                             }
                             else {
                                 if (Verbose) {
@@ -158,7 +158,7 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
 
                                     if (Verbose) {
                                         std::cout << "\tResource " << packageMapSpec->Files[fileIndex].Name << " being added to map "
-                                            << packageMapSpec->Maps[mapIndex].Name << " already exists. The load order will be modified as specified." << std::endl;
+                                            << packageMapSpec->Maps[mapIndex].Name << " already exists. The load order will be modified as specified." << '\n';
                                     }
 
                                     break;
@@ -217,13 +217,13 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                             << packageMapSpec->Maps[mapIndex].Name;
 
                         if (extraResource.PlaceFirst) {
-                            std::cout << " with the highest priority" << std::endl;
+                            std::cout << " with the highest priority" << '\n';
                         }
                         else if (!extraResource.PlaceByName.empty() && insertIndex != -1) {
-                            std::cout << " " << (extraResource.PlaceBefore ? "before" : "after") << " " << extraResource.PlaceByName << std::endl;
+                            std::cout << " " << (extraResource.PlaceBefore ? "before" : "after") << " " << extraResource.PlaceByName << '\n';
                         }
                         else {
-                            std::cout << " with the lowest priority" << std::endl;
+                            std::cout << " with the lowest priority" << '\n';
                         }
 
                         wasPackageMapSpecModified = true;
@@ -284,7 +284,7 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
 
                     mapResourcesFile->Layers.push_back(newLayers.Name);
                     std::cout << "\tAdded layer " << newLayers.Name << " to " << mapResourcesChunk->ResourceName.NormalizedFileName
-                        << " in " << resourceContainer.Name << "" << std::endl;
+                        << " in " << resourceContainer.Name << "" << '\n';
                 }
             }
 
@@ -300,7 +300,7 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                     }
 
                     mapResourcesFile->Maps.push_back(newMaps.Name);
-                    std::cout << "Added map " << newMaps.Name << " to " << mapResourcesChunk->ResourceName.NormalizedFileName << " in " << resourceContainer.Name << std::endl;
+                    std::cout << "Added map " << newMaps.Name << " to " << mapResourcesChunk->ResourceName.NormalizedFileName << " in " << resourceContainer.Name << '\n';
                 }
             }
 
@@ -338,7 +338,7 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
 
                         if (assetFound) {
                             std::cout << "\tRemoved asset " << newAsset.Name << " with type " << newAsset.MapResourceType <<
-                                " from " << mapResourcesChunk->ResourceName.NormalizedFileName << " in " << resourceContainer.Name << std::endl;
+                                " from " << mapResourcesChunk->ResourceName.NormalizedFileName << " in " << resourceContainer.Name << '\n';
                         }
                         else {
                             std::cerr << RED << "WARNING: " << RESET << "Can't remove asset " << newAsset.Name << " with type " << newAsset.MapResourceType <<
@@ -381,7 +381,7 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                         assetTypeIndex = mapResourcesFile->AssetTypes.size() - 1;
 
                         std::cout << "Added asset type " << newAsset.MapResourceType << " to " <<
-                            mapResourcesChunk->ResourceName.NormalizedFileName << " in " << resourceContainer.Name << std::endl;
+                            mapResourcesChunk->ResourceName.NormalizedFileName << " in " << resourceContainer.Name << '\n';
                     }
 
                     MapAsset placeByExistingAsset;
@@ -428,7 +428,7 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
 
                     if (Verbose && found) {
                         std::cout << "\tAsset " << newAsset.Name << " with type " << newAsset.MapResourceType << " will be added before asset " << placeByExistingAsset.Name << " with type "
-                            << mapResourcesFile->AssetTypes[placeByExistingAsset.AssetTypeIndex] << " to " << mapResourcesChunk->ResourceName.NormalizedFileName << " in "<< resourceContainer.Name << std::endl;
+                            << mapResourcesFile->AssetTypes[placeByExistingAsset.AssetTypeIndex] << " to " << mapResourcesChunk->ResourceName.NormalizedFileName << " in "<< resourceContainer.Name << '\n';
                     }
 
                     MapAsset newMapAsset;
@@ -438,7 +438,7 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
 
                     mapResourcesFile->Assets.insert(mapResourcesFile->Assets.begin() + assetPosition, newMapAsset);
 
-                    std::cout << "\tAdded asset " << newAsset.Name << " with type " << newAsset.MapResourceType << " to " << mapResourcesChunk->ResourceName.NormalizedFileName << " in " << resourceContainer.Name << std::endl;
+                    std::cout << "\tAdded asset " << newAsset.Name << " with type " << newAsset.MapResourceType << " to " << mapResourcesChunk->ResourceName.NormalizedFileName << " in " << resourceContainer.Name << '\n';
                 }
             }
 
@@ -544,12 +544,11 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                 }
 
                 if (assetTypeIndex == -1) {
-                    std::cout << resourceData.MapResourceType << std::endl;
                     mapResourcesFile->AssetTypes.push_back(resourceData.MapResourceType);
                     assetTypeIndex = mapResourcesFile->AssetTypes.size() - 1;
 
                     std::cout << "\tAdded asset type " << resourceData.MapResourceType << " to "
-                        << mapResourcesChunk->ResourceName.NormalizedFileName << " in " << resourceContainer.Name << std::endl;
+                        << mapResourcesChunk->ResourceName.NormalizedFileName << " in " << resourceContainer.Name << '\n';
                 }
 
                 MapAsset newMapAsset;
@@ -559,7 +558,7 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                 mapResourcesFile->Assets.push_back(newMapAsset);
 
                 std::cout << "\tAdded asset " << resourceData.MapResourceName << " with type " << resourceData.MapResourceType
-                    << " to " << mapResourcesChunk->ResourceName.NormalizedFileName << " in " << resourceContainer.Name << std::endl;
+                    << " to " << mapResourcesChunk->ResourceName.NormalizedFileName << " in " << resourceContainer.Name << '\n';
                 continue;
             }
         }
@@ -619,7 +618,7 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                         stringFound = true;
                         blangString.Text = blangJsonString["text"];
 
-                        std::cout << "\tReplaced " << blangString.Identifier << " in " << modFile.Name << std::endl;
+                        std::cout << "\tReplaced " << blangString.Identifier << " in " << modFile.Name << '\n';
                         blangFileEntries[blangFilePath].WasModified = true;
                         break;
                     }
@@ -633,7 +632,7 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                 newBlangString.Text = blangJsonString["text"];
                 blangFileEntries[blangFilePath].BlangFile.Strings.push_back(newBlangString);
 
-                std::cout << "\tAdded " << blangJsonString["name"].get<std::string>() << " in " << modFile.Name << std::endl;
+                std::cout << "\tAdded " << blangJsonString["name"].get<std::string>() << " in " << modFile.Name << '\n';
                 blangFileEntries[blangFilePath].WasModified = true;
             }
 
@@ -653,7 +652,7 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                 compressionMode = (std::byte)2;
 
                 if (Verbose)
-                    std::cout << "\tSuccessfully set compressed texture data for file " << modFile.Name << std::endl;
+                    std::cout << "\tSuccessfully set compressed texture data for file " << modFile.Name << '\n';
             }
             else if (CompressTextures) {
                 std::vector<std::byte> compressedData;
@@ -674,7 +673,7 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                 compressionMode = (std::byte)2;
 
                 if (Verbose)
-                    std::cout << "\tSuccessfully compressed texture file " << modFile.Name << std::endl;
+                    std::cout << "\tSuccessfully compressed texture file " << modFile.Name << '\n';
             }
         }
 
@@ -687,7 +686,7 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
             continue;
         }
 
-        std::cout << "\tReplaced " << modFile.Name << std::endl;
+        std::cout << "\tReplaced " << modFile.Name << '\n';
         fileCount++;
     }
 
@@ -747,7 +746,7 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
             continue;
         }
 
-        std::cout << "\tModified " << blangFileEntry.first << std::endl;
+        std::cout << "\tModified " << blangFileEntry.first << '\n';
     }
 
     if (mapResourcesFile != NULL && mapResourcesChunk != NULL && !originalDecompressedMapResources.empty()) {
@@ -773,7 +772,7 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                     return;
                 }
 
-                std::cout << "\tModified " << mapResourcesChunk->ResourceName.NormalizedFileName << std::endl;
+                std::cout << "\tModified " << mapResourcesChunk->ResourceName.NormalizedFileName << '\n';
                 delete mapResourcesFile;
             }
         }
