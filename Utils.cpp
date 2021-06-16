@@ -145,6 +145,8 @@ int32_t ResizeMmap(std::byte *&mem, int32_t &fd, std::string filePath, int64_t o
 
         if (mem == NULL)
             throw std::exception();
+
+        madvise(mem, newSize, MADV_WILLNEED);
 #endif
     }
     catch (...) {
