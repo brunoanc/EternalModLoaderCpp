@@ -119,7 +119,7 @@ public:
     int64_t SizeOffset = 0;
     int64_t SizeZ = 0;
     int64_t Size = 0;
-    std::byte CompressionMode;
+    std::byte CompressionMode = (std::byte)0;
 
     ResourceChunk(class ResourceName name, int64_t fileOffset)
     {
@@ -128,7 +128,6 @@ public:
         SizeOffset = 0;
         SizeZ = 0;
         Size = 0;
-        CompressionMode = (std::byte)(0);
     }
 
     ResourceChunk() {}
