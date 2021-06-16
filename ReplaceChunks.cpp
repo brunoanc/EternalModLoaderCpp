@@ -709,6 +709,7 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                     << "while trying to add extra resources for level " << resourceContainer.Name << std::endl;
             }
 
+            std::cout << "Modified " << packageMapSpecPath << '\n';
             fclose(packageMapSpecFile);
         }
 
