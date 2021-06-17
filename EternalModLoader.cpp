@@ -60,6 +60,14 @@ int32_t main(int32_t argc, char **argv)
     separator = std::filesystem::path::preferred_separator;
 
     if (std::getenv("ETERNALMODLOADER_NO_COLORS") == NULL) {
+#ifdef _WIN32
+        HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+        DWORD dwMode = 0;
+        GetConsoleMode(hOut, &dwMode);
+        dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+        SetConsoleMode(hOut, dwMode);
+#endif
+
         RESET = "\033[0m";
         RED = "\033[31m";
         GREEN = "\033[32m";
