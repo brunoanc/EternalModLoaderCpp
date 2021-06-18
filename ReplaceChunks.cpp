@@ -606,7 +606,7 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
 
             jsonxx::Array blangJsonStrings = blangJson.get<jsonxx::Array>("strings");
 
-            for (int i = 0; i < blangJsonStrings.size(); i++) {
+            for (int32_t i = 0; i < blangJsonStrings.size(); i++) {
                 jsonxx::Object blangJsonString = blangJsonStrings.get<jsonxx::Object>(i);
                 bool stringFound = false;
 

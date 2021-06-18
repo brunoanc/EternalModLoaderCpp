@@ -30,7 +30,7 @@ PackageMapSpec::PackageMapSpec(std::string &json)
     jsonxx::Array files = packageMapSpecJson.get<jsonxx::Array>("files");
     Files.reserve(files.size());
 
-    for (int i = 0; i < files.size(); i++) {
+    for (int32_t i = 0; i < files.size(); i++) {
         jsonxx::Object file = files.get<jsonxx::Object>(i);
         packageMapSpecFile.Name = file.get<jsonxx::String>("name");
         Files.push_back(packageMapSpecFile);
@@ -40,7 +40,7 @@ PackageMapSpec::PackageMapSpec(std::string &json)
     jsonxx::Array mapFileRefs = packageMapSpecJson.get<jsonxx::Array>("mapFileRefs");
     MapFileRefs.reserve(mapFileRefs.size());
 
-    for (int i = 0; i < mapFileRefs.size(); i++) {
+    for (int32_t i = 0; i < mapFileRefs.size(); i++) {
         jsonxx::Object mapFileRef = mapFileRefs.get<jsonxx::Object>(i);
         packageMapSpecMapFileRef.File = mapFileRef.get<jsonxx::Number>("file");
         packageMapSpecMapFileRef.Map = mapFileRef.get<jsonxx::Number>("map");
@@ -51,7 +51,7 @@ PackageMapSpec::PackageMapSpec(std::string &json)
     jsonxx::Array maps = packageMapSpecJson.get<jsonxx::Array>("maps");
     Maps.reserve(maps.size());
 
-    for (int i = 0; i < maps.size(); i++) {
+    for (int32_t i = 0; i < maps.size(); i++) {
         jsonxx::Object map = maps.get<jsonxx::Object>(i);
         packageMapSpecMap.Name = map.get<jsonxx::String>("name");
         Maps.push_back(packageMapSpecMap);

@@ -31,7 +31,7 @@ AssetsInfo::AssetsInfo(std::string &json)
         jsonxx::Array layers = assetsInfoJson.get<jsonxx::Array>("layers");
         Layers.reserve(layers.size());
 
-        for (int i = 0; i < layers.size(); i++) {
+        for (int32_t i = 0; i < layers.size(); i++) {
             jsonxx::Object layer = layers.get<jsonxx::Object>(i);
 
             if (layer.has<jsonxx::String>("name"))
@@ -46,7 +46,7 @@ AssetsInfo::AssetsInfo(std::string &json)
         jsonxx::Array maps = assetsInfoJson.get<jsonxx::Array>("maps");
         Maps.reserve(maps.size());
 
-        for (int i = 0; i < maps.size(); i++) {
+        for (int32_t i = 0; i < maps.size(); i++) {
             jsonxx::Object map = maps.get<jsonxx::Object>(i);
 
             if (map.has<jsonxx::String>("name"))
@@ -61,7 +61,7 @@ AssetsInfo::AssetsInfo(std::string &json)
         jsonxx::Array resources = assetsInfoJson.get<jsonxx::Array>("resources");
         Resources.reserve(resources.size());
 
-        for (int i = 0; i < resources.size(); i++) {
+        for (int32_t i = 0; i < resources.size(); i++) {
             jsonxx::Object resource = resources.get<jsonxx::Object>(i);
 
             if (resource.has<jsonxx::String>("name"))
@@ -85,7 +85,7 @@ AssetsInfo::AssetsInfo(std::string &json)
         jsonxx::Array assets = assetsInfoJson.get<jsonxx::Array>("assets");
         Assets.reserve(assets.size());
 
-        for (int i = 0; i < assets.size(); i++) {
+        for (int32_t i = 0; i < assets.size(); i++) {
             jsonxx::Object asset = assets.get<jsonxx::Object>(i);
 
             if (asset.has<jsonxx::Number>("streamDbHash"))
