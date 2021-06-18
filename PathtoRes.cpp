@@ -22,18 +22,37 @@
 
 #include "EternalModLoader.hpp"
 
+std::vector<std::string> ResourceContainerPathList;
+
+void GetResourceContainerPathList()
+{
+    for (auto &file : std::filesystem::recursive_directory_iterator(BasePath + "game" + separator)) {
+        if (file.path().extension().string() == ".resources")
+            ResourceContainerPathList.push_back(file.path().string());
+    }
+}
+
 std::string PathToResourceContainer(std::string name)
 {
     std::string searchPath = BasePath;
     std::string resourcePath = name;
     bool recursive = true;
 
+    if (ResourceContainerPathList.empty())
+        GetResourceContainerPathList();
+
     if (StartsWith(ToLower(name), "dlc_hub")) {
         resourcePath = resourcePath.substr(4, name.size() - 4);
-        return BasePath + "game" + separator + "dlc" + separator + "hub" + separator + resourcePath;
+        resourcePath = BasePath + "game" + separator + "dlc" + separator + "hub" + separator + resourcePath;
+
+        if (std::filesystem::is_regular_file(searchPath + resourcePath))
+            return resourcePath;
     }
     else if (StartsWith(ToLower(name), "hub")) {
-        return BasePath + "game" + separator + "hub" + separator + resourcePath;
+        resourcePath = BasePath + "game" + separator + "hub" + separator + resourcePath;
+
+        if (std::filesystem::is_regular_file(searchPath + resourcePath))
+            return resourcePath;
     }
     else {
         resourcePath = name;
@@ -54,9 +73,9 @@ std::string PathToResourceContainer(std::string name)
     }
 
     if (recursive) {
-        for (auto &file : std::filesystem::recursive_directory_iterator(searchPath)) {
-            if (file.path().filename() == resourcePath)
-                return file.path().string();
+        for (auto &file : ResourceContainerPathList) {
+            if (EndsWith(file, resourcePath))
+                return file;
         }
     }
 
