@@ -286,6 +286,8 @@ int32_t main(int32_t argc, char **argv)
                     resourceContainerIndex = ResourceContainerList.size() - 1;
                 }
 
+                ResourceModFile resourceModFile(mod, modFileName);
+
                 if (!listResources) {
                     std::byte *unzippedEntry;
                     size_t unzippedEntrySize;
@@ -295,39 +297,51 @@ int32_t main(int32_t argc, char **argv)
                         continue;
                     }
 
-                    ResourceModFile resourceModFile(mod, modFileName);
                     resourceModFile.FileBytes = std::vector<std::byte>(unzippedEntry, unzippedEntry + unzippedEntrySize);
                     free(unzippedEntry);
+                }
 
-                    if (ToLower(modFilePathParts[1]) == "eternalmod") {
-                        if (modFilePathParts.size() == 4
-                        && ToLower(modFilePathParts[2]) == "assetsinfo"
-                        && std::filesystem::path(modFilePathParts[3]).extension() == ".json") {
-                            try {
-                                std::string assetsInfoJson((char*)resourceModFile.FileBytes.data(), resourceModFile.FileBytes.size());
-                                resourceModFile.AssetsInfo = AssetsInfo(assetsInfoJson);
-                                resourceModFile.IsAssetsInfoJson = true;
-                                resourceModFile.FileBytes.resize(0);
+                if (ToLower(modFilePathParts[1]) == "eternalmod") {
+                    if (modFilePathParts.size() == 4
+                    && ToLower(modFilePathParts[2]) == "assetsinfo"
+                    && std::filesystem::path(modFilePathParts[3]).extension() == ".json") {
+                        try {
+                            if (listResources) {
+                                std::byte *unzippedEntry;
+                                size_t unzippedEntrySize;
+
+                                if ((unzippedEntry = (std::byte*)mz_zip_reader_extract_to_heap(&modZip, i, &unzippedEntrySize, 0)) == NULL) {
+                                    std::cerr << RED << "ERROR: " << "Failed to extract zip entry from " << zippedMod << std::endl;
+                                    continue;
+                                }
+
+                                resourceModFile.FileBytes = std::vector<std::byte>(unzippedEntry, unzippedEntry + unzippedEntrySize);
+                                free(unzippedEntry);
                             }
-                            catch (...) {
-                                std::cerr << RED << "ERROR: " << RESET << "Failed to parse EternalMod/assetsinfo/"
-                                    << std::filesystem::path(resourceModFile.Name).stem().string() << ".json" << std::endl;
-                                continue;
-                            }
+
+                            std::string assetsInfoJson((char*)resourceModFile.FileBytes.data(), resourceModFile.FileBytes.size());
+                            resourceModFile.AssetsInfo = AssetsInfo(assetsInfoJson);
+                            resourceModFile.IsAssetsInfoJson = true;
+                            resourceModFile.FileBytes.resize(0);
                         }
-                        else if (modFilePathParts.size() == 4
-                        && ToLower(modFilePathParts[2]) == "strings"
-                        && std::filesystem::path(modFilePathParts[3]).extension() == ".json") {
-                            resourceModFile.IsBlangJson = true;
-                        }
-                        else {
+                        catch (...) {
+                            std::cerr << RED << "ERROR: " << RESET << "Failed to parse EternalMod/assetsinfo/"
+                                << std::filesystem::path(resourceModFile.Name).stem().string() << ".json" << std::endl;
                             continue;
                         }
                     }
-
-                    ResourceContainerList[resourceContainerIndex].ModFileList.push_back(resourceModFile);
-                    zippedModCount++;
+                    else if (modFilePathParts.size() == 4
+                    && ToLower(modFilePathParts[2]) == "strings"
+                    && std::filesystem::path(modFilePathParts[3]).extension() == ".json") {
+                        resourceModFile.IsBlangJson = true;
+                    }
+                    else {
+                        continue;
+                    }
                 }
+
+                ResourceContainerList[resourceContainerIndex].ModFileList.push_back(resourceModFile);
+                zippedModCount++;
             }
         }
             
@@ -425,13 +439,13 @@ int32_t main(int32_t argc, char **argv)
                 resourceContainerIndex = ResourceContainerList.size() - 1;
             }
 
+            ResourceModFile resourceModFile(globalLooseMod, fileName);
+
             if (!listResources) {
                 int64_t unzippedModSize = std::filesystem::file_size(unzippedModPath);
 
                 if (unzippedModSize > ResourceContainerList.max_size())
                     std::cerr << RED << "WARNING: " << RESET << "Skipped " << fileName << " - too large." << std::endl;
-
-                ResourceModFile resourceModFile(globalLooseMod, fileName);
 
                 FILE *unzippedModFile = fopen(unzippedModPath.c_str(), "rb");
 
@@ -448,36 +462,59 @@ int32_t main(int32_t argc, char **argv)
                 }
 
                 fclose(unzippedModFile);
+            }
 
-                if (ToLower(modFilePathParts[3]) == "eternalmod") {
-                    if (modFilePathParts.size() == 6
-                    && ToLower(modFilePathParts[4]) == "assetsinfo"
-                    && std::filesystem::path(modFilePathParts[5]).extension() == ".json") {
-                        try {
-                            std::string assetsInfoJson((char*)resourceModFile.FileBytes.data(), resourceModFile.FileBytes.size());
-                            resourceModFile.AssetsInfo = AssetsInfo(assetsInfoJson);
-                            resourceModFile.IsAssetsInfoJson = true;
-                            resourceModFile.FileBytes.resize(0);
+            if (ToLower(modFilePathParts[3]) == "eternalmod") {
+                if (modFilePathParts.size() == 6
+                && ToLower(modFilePathParts[4]) == "assetsinfo"
+                && std::filesystem::path(modFilePathParts[5]).extension() == ".json") {
+                    try {
+                        if (listResources) {
+                            int64_t unzippedModSize = std::filesystem::file_size(unzippedModPath);
+
+                            if (unzippedModSize > ResourceContainerList.max_size())
+                                std::cerr << RED << "WARNING: " << RESET << "Skipped " << fileName << " - too large." << std::endl;
+
+                            FILE *unzippedModFile = fopen(unzippedModPath.c_str(), "rb");
+
+                            if (!unzippedModFile) {
+                                std::cerr << RED << "ERROR: " << RESET << "Failed to open " << unzippedModPath << " for reading." << std::endl;
+                                continue;
+                            }
+
+                            resourceModFile.FileBytes.resize(unzippedModSize);
+
+                            if (fread(resourceModFile.FileBytes.data(), 1, unzippedModSize, unzippedModFile) != unzippedModSize) {
+                                std::cerr << RESET << "ERROR: " << RESET << "Failed to read from " << unzippedModPath << "." << std::endl;
+                                continue;
+                            }
+
+                            fclose(unzippedModFile);
                         }
-                        catch (...) {
-                            std::cerr << RED << "ERROR: " << RESET << "Failed to parse EternalMod/assetsinfo/"
-                                << std::filesystem::path(resourceModFile.Name).stem().string() << ".json" << std::endl;
-                            continue;
-                        }
+
+                        std::string assetsInfoJson((char*)resourceModFile.FileBytes.data(), resourceModFile.FileBytes.size());
+                        resourceModFile.AssetsInfo = AssetsInfo(assetsInfoJson);
+                        resourceModFile.IsAssetsInfoJson = true;
+                        resourceModFile.FileBytes.resize(0);
                     }
-                    else if (modFilePathParts.size() == 6
-                    && ToLower(modFilePathParts[4]) == "strings"
-                    && std::filesystem::path(modFilePathParts[5]).extension() == ".json") {
-                        resourceModFile.IsBlangJson = true;
-                    }
-                    else {
+                    catch (...) {
+                        std::cerr << RED << "ERROR: " << RESET << "Failed to parse EternalMod/assetsinfo/"
+                            << std::filesystem::path(resourceModFile.Name).stem().string() << ".json" << std::endl;
                         continue;
                     }
                 }
-
-                ResourceContainerList[resourceContainerIndex].ModFileList.push_back(resourceModFile);
-                unzippedModCount++;
+                else if (modFilePathParts.size() == 6
+                && ToLower(modFilePathParts[4]) == "strings"
+                && std::filesystem::path(modFilePathParts[5]).extension() == ".json") {
+                    resourceModFile.IsBlangJson = true;
+                }
+                else {
+                    continue;
+                }
             }
+
+            ResourceContainerList[resourceContainerIndex].ModFileList.push_back(resourceModFile);
+            unzippedModCount++;
         }
     }
 
@@ -489,7 +526,28 @@ int32_t main(int32_t argc, char **argv)
             if (resourceContainer.Path.empty())
                 continue;
 
-            std::cout << resourceContainer.Path << std::endl;
+            bool shouldListResource = false;
+
+            for (auto &modFile : resourceContainer.ModFileList) {
+                if (!modFile.IsAssetsInfoJson) {
+                    shouldListResource = true;
+                    break;
+                }
+
+                if (!modFile.AssetsInfo.has_value())
+                    continue;
+
+                if (modFile.AssetsInfo.value().Assets.empty()
+                    && modFile.AssetsInfo.value().Layers.empty()
+                    && modFile.AssetsInfo.value().Maps.empty())
+                        continue;
+
+                shouldListResource = true;
+                break;
+            }
+
+            if (shouldListResource)
+                std::cout << resourceContainer.Path << std::endl;
         }
 
         for (auto &soundContainer : SoundContainerList) {
