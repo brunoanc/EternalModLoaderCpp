@@ -19,8 +19,9 @@
 #include <iostream>
 #include <filesystem>
 #include <algorithm>
+#include <cstring>
 
-#include "json/json.hpp"
+#include "jsonxx/jsonxx.h"
 #include "EternalModLoader.hpp"
 
 #ifdef _WIN32
@@ -592,31 +593,27 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                 }
             }
 
-            nlohmann::json blangJson;
+            jsonxx::Object blangJson;
 
             try {
-                blangJson = nlohmann::json::parse(std::string((char*)modFile.FileBytes.data(), modFile.FileBytes.size()));
-
-                if (blangJson == NULL || blangJson["strings"].empty())
-                    throw std::exception();
-
-                for (auto &blangJsonString : blangJson["strings"]) {
-                    if (blangJsonString == NULL || blangJsonString["name"].empty())
-                        throw std::exception();
-                }
+                std::string blangJsonString((char*)modFile.FileBytes.data(), modFile.FileBytes.size());
+                blangJson.parse(blangJsonString);
             }
             catch (...) {
                 std::cerr << RED << "ERROR: " << RESET << "Failed to parse EternalMod/strings/" << std::filesystem::path(modFile.Name).replace_extension(".json").string() << std::endl;
                 continue;
             }
 
-            for (auto &blangJsonString : blangJson["strings"]) {
+            jsonxx::Array blangJsonStrings = blangJson.get<jsonxx::Array>("strings");
+
+            for (int i = 0; i < blangJsonStrings.size(); i++) {
+                jsonxx::Object blangJsonString = blangJsonStrings.get<jsonxx::Object>(i);
                 bool stringFound = false;
 
                 for (auto &blangString : blangFileEntries[blangFilePath].BlangFile.Strings) {
-                    if (blangJsonString["name"] == blangString.Identifier) {
+                    if (blangJsonString.get<jsonxx::String>("name") == blangString.Identifier) {
                         stringFound = true;
-                        blangString.Text = blangJsonString["text"];
+                        blangString.Text = blangJsonString.get<jsonxx::String>("text");
 
                         std::cout << "\tReplaced " << blangString.Identifier << " in " << modFile.Name << '\n';
                         blangFileEntries[blangFilePath].WasModified = true;
@@ -628,11 +625,11 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                     continue;
 
                 BlangString newBlangString;
-                newBlangString.Identifier = blangJsonString["name"];
-                newBlangString.Text = blangJsonString["text"];
+                newBlangString.Identifier = blangJsonString.get<jsonxx::String>("name");
+                newBlangString.Text = blangJsonString.get<jsonxx::String>("text");
                 blangFileEntries[blangFilePath].BlangFile.Strings.push_back(newBlangString);
 
-                std::cout << "\tAdded " << blangJsonString["name"].get<std::string>() << " in " << modFile.Name << '\n';
+                std::cout << "\tAdded " << blangJsonString.get<jsonxx::String>("name") << " in " << modFile.Name << '\n';
                 blangFileEntries[blangFilePath].WasModified = true;
             }
 

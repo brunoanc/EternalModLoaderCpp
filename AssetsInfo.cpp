@@ -18,100 +18,113 @@
 
 #include <iostream>
 
-#include "json/json.hpp"
+#include "jsonxx/jsonxx.h"
 #include "EternalModLoader.hpp"
 
 AssetsInfo::AssetsInfo(std::string &json)
 {
-    nlohmann::json assetsInfoJson = nlohmann::json::parse(json, nullptr, true, true);
+    jsonxx::Object assetsInfoJson;
+    assetsInfoJson.parse(json);
 
-    if (assetsInfoJson.contains("layers"))
-        Layers.reserve(assetsInfoJson["layers"].size());
-
-    for (auto &layer : assetsInfoJson["layers"]) {
+    if (assetsInfoJson.has<jsonxx::Array>("layers")) {
         AssetsInfoLayer assetsInfoLayer;
+        jsonxx::Array layers = assetsInfoJson.get<jsonxx::Array>("layers");
+        Layers.reserve(layers.size());
 
-        if (layer.contains("name"))
-            assetsInfoLayer.Name = layer["name"].get<std::string>();
+        for (int i = 0; i < layers.size(); i++) {
+            jsonxx::Object layer = layers.get<jsonxx::Object>(i);
 
-        Layers.push_back(assetsInfoLayer);
+            if (layer.has<jsonxx::String>("name"))
+                assetsInfoLayer.Name = layer.get<jsonxx::String>("name");
+
+            Layers.push_back(assetsInfoLayer);
+        }
     }
 
-    if (assetsInfoJson.contains("maps"))
-        Maps.reserve(assetsInfoJson["maps"].size());
-
-    for (auto &map : assetsInfoJson["maps"]) {
+    if (assetsInfoJson.has<jsonxx::Array>("maps")) {
         AssetsInfoMap assetsInfoMap;
+        jsonxx::Array maps = assetsInfoJson.get<jsonxx::Array>("maps");
+        Maps.reserve(maps.size());
 
-        if (map.contains("name"))
-            assetsInfoMap.Name = map["name"].get<std::string>();
+        for (int i = 0; i < maps.size(); i++) {
+            jsonxx::Object map = maps.get<jsonxx::Object>(i);
 
-        Maps.push_back(assetsInfoMap);
+            if (map.has<jsonxx::String>("name"))
+                assetsInfoMap.Name = map.get<jsonxx::String>("name");
+
+            Maps.push_back(assetsInfoMap);
+        }
     }
 
-    if (assetsInfoJson.contains("resources"))
-        Resources.reserve(assetsInfoJson["resources"].size());
-
-    for (auto &resource : assetsInfoJson["resources"]) {
+    if (assetsInfoJson.has<jsonxx::Array>("resources")) {
         AssetsInfoResource assetsInfoResource;
+        jsonxx::Array resources = assetsInfoJson.get<jsonxx::Array>("resources");
+        Resources.reserve(resources.size());
 
-        if (resource.contains("name"))
-            assetsInfoResource.Name = resource["name"].get<std::string>();
+        for (int i = 0; i < resources.size(); i++) {
+            jsonxx::Object resource = resources.get<jsonxx::Object>(i);
 
-        if (resource.contains("remove"))
-            assetsInfoResource.Remove = resource["remove"].get<bool>();
+            if (resource.has<jsonxx::String>("name"))
+                assetsInfoResource.Name = resource.get<jsonxx::String>("name");
 
-        if (resource.contains("placeBefore"))
-            assetsInfoResource.PlaceBefore = resource["placeBefore"].get<bool>();
+            if (resource.has<jsonxx::Boolean>("remove"))
+                assetsInfoResource.Remove = resource.get<jsonxx::Boolean>("remove");
 
-        if (resource.contains("placeByName"))
-            assetsInfoResource.PlaceByName = resource["placeByName"].get<std::string>();
+            if (resource.has<jsonxx::Boolean>("placeBefore"))
+                assetsInfoResource.PlaceBefore = resource.get<jsonxx::Boolean>("placeBefore");
 
-        Resources.push_back(assetsInfoResource);
+            if (resource.has<jsonxx::String>("placeByName"))
+                assetsInfoResource.PlaceByName = resource.get<jsonxx::String>("placeByName");
+
+            Resources.push_back(assetsInfoResource);
+        }
     }
 
-    if (assetsInfoJson.contains("assets"))
-        Assets.reserve(assetsInfoJson["assets"].size());
-
-    for (auto &asset : assetsInfoJson["assets"]) {
+    if (assetsInfoJson.has<jsonxx::Array>("assets")) {
         AssetsInfoAsset assetsInfoAsset;
+        jsonxx::Array assets = assetsInfoJson.get<jsonxx::Array>("assets");
+        Assets.reserve(assets.size());
 
-        if (asset.contains("streamDbHash"))
-            assetsInfoAsset.StreamDbHash = asset["streamDbHash"].get<uint64_t>();
+        for (int i = 0; i < assets.size(); i++) {
+            jsonxx::Object asset = assets.get<jsonxx::Object>(i);
 
-        if (asset.contains("resourceType"))
-            assetsInfoAsset.ResourceType = asset["resourceType"].get<std::string>();
+            if (asset.has<jsonxx::Number>("streamDbHash"))
+                assetsInfoAsset.StreamDbHash = asset.get<jsonxx::Number>("streamDbHash");
 
-        if (asset.contains("version"))
-            assetsInfoAsset.Version = asset["version"].get<std::byte>();
+            if (asset.has<jsonxx::String>("resourceType"))
+                assetsInfoAsset.ResourceType = asset.get<jsonxx::String>("resourceType");
 
-        if (asset.contains("name"))
-            assetsInfoAsset.Name = asset["name"].get<std::string>();
+            if (asset.has<jsonxx::Number>("version"))
+                assetsInfoAsset.Version = (std::byte)asset.get<jsonxx::Number>("version");
 
-        if (asset.contains("mapResourceType"))
-            assetsInfoAsset.MapResourceType = asset["mapResourceType"].get<std::string>();
+            if (asset.has<jsonxx::String>("name"))
+                assetsInfoAsset.Name = asset.get<jsonxx::String>("name");
 
-        if (asset.contains("remove"))
-            assetsInfoAsset.Remove = asset["remove"].get<bool>();
+            if (asset.has<jsonxx::String>("mapResourceType"))
+                assetsInfoAsset.MapResourceType = asset.get<jsonxx::String>("mapResourceType");
 
-        if (asset.contains("placeBefore"))
-            assetsInfoAsset.PlaceBefore = asset["placeBefore"].get<bool>();
+            if (asset.has<jsonxx::Boolean>("remove"))
+                assetsInfoAsset.Remove = asset.get<jsonxx::Boolean>("remove");
 
-        if (asset.contains("placeByName"))
-            assetsInfoAsset.PlaceByName = asset["placeByName"].get<std::string>();
+            if (asset.has<jsonxx::Boolean>("placeBefore"))
+                assetsInfoAsset.PlaceBefore = asset.get<jsonxx::Boolean>("placeBefore");
 
-        if (asset.contains("placeByType"))
-            assetsInfoAsset.PlaceByType = asset["placeByType"].get<std::string>();
+            if (asset.has<jsonxx::String>("placeByName"))
+                assetsInfoAsset.PlaceByName = asset.get<jsonxx::String>("placeByName");
 
-        if (asset.contains("specialByte1"))
-            assetsInfoAsset.SpecialByte1 = asset["specialByte1"].get<std::byte>();
+            if (asset.has<jsonxx::String>("placeByType"))
+                assetsInfoAsset.PlaceByType = asset.get<jsonxx::String>("placeByType");
 
-        if (asset.contains("specialByte2"))
-            assetsInfoAsset.SpecialByte2 = asset["specialByte2"].get<std::byte>();
+            if (asset.has<jsonxx::Number>("specialByte1"))
+                assetsInfoAsset.SpecialByte1 = (std::byte)asset.get<jsonxx::Number>("specialByte1");
 
-        if (asset.contains("specialByte3"))
-            assetsInfoAsset.SpecialByte3 = asset["specialByte3"].get<std::byte>();
+            if (asset.has<jsonxx::Number>("specialByte2"))
+                assetsInfoAsset.SpecialByte2 = (std::byte)asset.get<jsonxx::Number>("specialByte2");
 
-        Assets.push_back(assetsInfoAsset);
+            if (asset.has<jsonxx::Number>("specialByte3"))
+                assetsInfoAsset.SpecialByte3 = (std::byte)asset.get<jsonxx::Number>("specialByte3");
+
+            Assets.push_back(assetsInfoAsset);
+        }
     }
 }

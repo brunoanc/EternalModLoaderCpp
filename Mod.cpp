@@ -18,16 +18,17 @@
 
 #include <iostream>
 
-#include "json/json.hpp"
+#include "jsonxx/jsonxx.h"
 #include "EternalModLoader.hpp"
 
 Mod::Mod(std::string name, std::string &json)
 {
-    nlohmann::json modJson = nlohmann::json::parse(json, nullptr, true, true);
+    jsonxx::Object modJson;
+    modJson.parse(json);
 
-    if (modJson.contains("loadPriority"))
-        LoadPriority = modJson["loadPriority"].get<int32_t>();
+    if (modJson.has<jsonxx::Number>("loadPriority"))
+        LoadPriority = modJson.get<jsonxx::Number>("loadPriority");
 
-    if (modJson.contains("requiredVersion"))
-        RequiredVersion = modJson["requiredVersion"].get<int32_t>();
+    if (modJson.has<jsonxx::Number>("requiredVersion"))
+        RequiredVersion = modJson.get<jsonxx::Number>("requiredVersion");
 }

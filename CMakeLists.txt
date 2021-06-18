@@ -23,6 +23,7 @@ file(GLOB SOURCES
         ./SetBufferSize.cpp
         ./SetModDataForChunk.cpp
         ./Utils.cpp
+        ./jsonxx/jsonxx.cc
         ./miniz/miniz.c
         )
 

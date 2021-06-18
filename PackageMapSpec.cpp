@@ -18,48 +18,75 @@
 
 #include <iostream>
 
-#include "json/json.hpp"
+#include "jsonxx/jsonxx.h"
 #include "EternalModLoader.hpp"
 
 PackageMapSpec::PackageMapSpec(std::string &json)
 {
-    nlohmann::ordered_json packageMapSpecJson = nlohmann::ordered_json::parse(json, nullptr, true, true);
+    jsonxx::Object packageMapSpecJson;
+    packageMapSpecJson.parse(json);
 
-    for (auto &file : packageMapSpecJson["files"]) {
-        PackageMapSpecFile packageMapSpecFile;
-        packageMapSpecFile.Name = file["name"].get<std::string>();
+    PackageMapSpecFile packageMapSpecFile;
+    jsonxx::Array files = packageMapSpecJson.get<jsonxx::Array>("files");
+    Files.reserve(files.size());
+
+    for (int i = 0; i < files.size(); i++) {
+        jsonxx::Object file = files.get<jsonxx::Object>(i);
+        packageMapSpecFile.Name = file.get<jsonxx::String>("name");
         Files.push_back(packageMapSpecFile);
     }
 
-    for (auto &mapFileRef : packageMapSpecJson["mapFileRefs"]) {
-        PackageMapSpecMapFileRef packageMapSpecMapFileRef;
-        packageMapSpecMapFileRef.File = mapFileRef["file"].get<int32_t>();
-        packageMapSpecMapFileRef.Map = mapFileRef["map"].get<int32_t>();
+    PackageMapSpecMapFileRef packageMapSpecMapFileRef;
+    jsonxx::Array mapFileRefs = packageMapSpecJson.get<jsonxx::Array>("mapFileRefs");
+    MapFileRefs.reserve(mapFileRefs.size());
+
+    for (int i = 0; i < mapFileRefs.size(); i++) {
+        jsonxx::Object mapFileRef = mapFileRefs.get<jsonxx::Object>(i);
+        packageMapSpecMapFileRef.File = mapFileRef.get<jsonxx::Number>("file");
+        packageMapSpecMapFileRef.Map = mapFileRef.get<jsonxx::Number>("map");
         MapFileRefs.push_back(packageMapSpecMapFileRef);
     }
 
-    for (auto &map : packageMapSpecJson["maps"]) {
-        PackageMapSpecMap packageMapSpecMap;
-        packageMapSpecMap.Name = map["name"].get<std::string>();
+    PackageMapSpecMap packageMapSpecMap;
+    jsonxx::Array maps = packageMapSpecJson.get<jsonxx::Array>("maps");
+    Maps.reserve(maps.size());
+
+    for (int i = 0; i < maps.size(); i++) {
+        jsonxx::Object map = maps.get<jsonxx::Object>(i);
+        packageMapSpecMap.Name = map.get<jsonxx::String>("name");
         Maps.push_back(packageMapSpecMap);
     }
 }
 
 std::string PackageMapSpec::Dump()
 {
-    nlohmann::ordered_json json;
+    jsonxx::Object packageMapSpecJson;
+    jsonxx::Array files;
+    jsonxx::Array mapFileRefs;
+    jsonxx::Array maps;
 
-    json["files"] = nlohmann::ordered_json::array();
-    json["mapFileRefs"] = nlohmann::ordered_json::array();
+    for (auto &file : Files) {
+        jsonxx::Object jsonFile;
+        jsonFile << "name" << file.Name;
+        files << jsonFile;
+    }
 
-    for (auto &file : Files)
-        json["files"].push_back(nlohmann::ordered_json::object({{"name", file.Name}}));
+    for (auto &mapFileRef : MapFileRefs) {
+        jsonxx::Object jsonMapFileRef;
+        jsonMapFileRef << "file" << mapFileRef.File;
+        jsonMapFileRef << "map" << mapFileRef.Map;
+        mapFileRefs << jsonMapFileRef;
+    }
 
-    for (auto &mapFileRef : MapFileRefs)
-        json["mapFileRefs"].push_back(nlohmann::ordered_json::object({{"file", mapFileRef.File}, {"map", mapFileRef.Map}}));
+    for (auto &map : Maps) {
+        jsonxx::Object jsonMap;
+        jsonMap << "name" << map.Name;
+        maps << jsonMap;
+    }
 
-    for (auto &map : Maps)
-        json["maps"].push_back(nlohmann::ordered_json::object({{"name", map.Name}}));
+    packageMapSpecJson << "files" << files;
+    packageMapSpecJson << "mapFileRefs" << mapFileRefs;
+    packageMapSpecJson << "maps" << maps;
 
-    return json.dump(4);
+    return packageMapSpecJson.json();
 }
