@@ -113,7 +113,7 @@ std::string NormalizeResourceFilename(std::string filename)
         filename = filename.substr(0, filename.find_last_of('#'));
 
     if (filename.find_first_of('#') != std::string::npos)
-        filename = filename.substr(0, filename.find_first_of('#'));
+        filename = filename.substr(filename.find_first_of('#'));
 
     return filename;
 }
