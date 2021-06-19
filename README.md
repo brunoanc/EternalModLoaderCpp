@@ -4,7 +4,7 @@
 C++ port of EternalModLoader by proteh, coded specifically for Linux users, but also Windows compatible.
 
 ## Features
-* Smaller file size (only around ~750 KB).
+* Smaller file size.
 
 * Faster mod loading times.
 
@@ -29,7 +29,7 @@ cmake .. # Append "-G 'MSYS Makefiles'" on MSYS
 
 Finally, build with:
 ```
-cmake --build .
+cmake --build . --config Release
 ```
 
 The DEternal_loadMods executable will be in the "build" folder.
