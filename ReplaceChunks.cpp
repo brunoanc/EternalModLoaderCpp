@@ -745,6 +745,7 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
         }
 
         std::cout << "\tModified " << blangFileEntry.first << '\n';
+        fileCount++;
     }
 
     if (mapResourcesFile != NULL && mapResourcesChunk != NULL && !originalDecompressedMapResources.empty()) {
@@ -772,6 +773,7 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
 
                 std::cout << "\tModified " << mapResourcesChunk->ResourceName.NormalizedFileName << '\n';
                 delete mapResourcesFile;
+                fileCount++;
             }
         }
     }
