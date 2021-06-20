@@ -32,7 +32,7 @@ Finally, build with:
 cmake --build . --config Release
 ```
 
-The DEternal_loadMods executable will be in the "build" folder.
+The DEternal_loadMods executable will be in the "build" folder in Linux/MinGW and in the "build/Release" folder in MSVC.
 
 ## Credits
 * proteh: For making the C# port this code is based on.
