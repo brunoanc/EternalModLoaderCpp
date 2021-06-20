@@ -292,24 +292,22 @@ public:
     std::vector<std::byte> ToByteVector();
 };
 
+class PackageMapSpecInfo {
+public:
+    class PackageMapSpec *PackageMapSpec = NULL;
+    std::string PackageMapSpecPath;
+    bool invalidPackageMapSpec;
+    bool WasPackageMapSpecModified;
+};
+
 inline bool operator==(ResourceChunk& chunk1, const ResourceChunk& chunk2)
 {
-    if (chunk1.ResourceName.FullFileName == chunk2.ResourceName.FullFileName) {
-        return true;
-    }
-    else {
-        return false;
-    }
+    return chunk1.ResourceName.FullFileName == chunk2.ResourceName.FullFileName;
 }
 
 inline bool operator==(MapAsset& mapAsset1, const MapAsset& mapAsset2)
 {
-    if (mapAsset1.Name == mapAsset2.Name) {
-        return true;
-    }
-    else {
-        return false;
-    }
+    return mapAsset1.Name == mapAsset2.Name;
 }
 
 extern const int32_t Version;
@@ -336,6 +334,8 @@ extern std::string RED;
 extern std::string GREEN;
 extern std::string YELLOW;
 extern std::string BLUE;
+
+extern class PackageMapSpecInfo PackageMapSpecInfo;
 
 #ifdef _WIN32
 int32_t ResizeMmap(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, int64_t newSize);
@@ -389,5 +389,6 @@ int32_t GetSoundContainer(std::string &soundContainerName);
 void ReadSoundEntries(std::byte *mem, SoundContainer &soundContainer);
 std::vector<SoundEntry> GetSoundEntriesToModify(SoundContainer &soundContainer, uint32_t soundModId);
 void SetOptimalBufferSize(std::string driveRootPath);
+void ModifyPackageMapSpec();
 
 #endif

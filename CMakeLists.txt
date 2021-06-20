@@ -11,6 +11,7 @@ file(GLOB SOURCES
         ./BlangParser.cpp
         ./MapResourcesFile.cpp
         ./Mod.cpp
+        ./ModifyPackageMapSpec.cpp
         ./Oodle.cpp
         ./PackageMapSpec.cpp
         ./PathtoRes.cpp

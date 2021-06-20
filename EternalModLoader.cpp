@@ -645,6 +645,8 @@ int32_t main(int32_t argc, char **argv)
 #endif
     }
 
+    ModifyPackageMapSpec();
+
     if (Buffer != NULL)
         delete[] Buffer;
 
