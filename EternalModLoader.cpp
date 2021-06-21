@@ -53,7 +53,7 @@ std::string GREEN = "";
 std::string YELLOW = "";
 std::string BLUE = "";
 
-int32_t main(int32_t argc, char **argv)
+int main(int argc, char **argv)
 {
     std::ios::sync_with_stdio(false);
 
@@ -125,6 +125,8 @@ int32_t main(int32_t argc, char **argv)
             }
         }
     }
+
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
     ResourceContainerList.reserve(80);
     SoundContainerList.reserve(40);
@@ -559,8 +561,6 @@ int32_t main(int32_t argc, char **argv)
 
         return 0;
     }
-
-    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
     for (auto &resourceContainer : ResourceContainerList) {
         if (resourceContainer.Path.empty()) {
