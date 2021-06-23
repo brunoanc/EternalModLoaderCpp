@@ -20,6 +20,7 @@
 #include <string>
 #include <filesystem>
 #include <cstdlib>
+#include <mutex>
 
 #include "EternalModLoader.hpp"
 
@@ -110,9 +111,9 @@ int32_t EncodeSoundMod(SoundModFile &soundModFile)
 }
 
 #ifdef _WIN32
-void ReplaceSounds(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, SoundContainer &soundContainer)
+void ReplaceSounds(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, SoundContainer &soundContainer, std::stringstream &os)
 #else
-void ReplaceSounds(std::byte *&mem, int32_t &fd, SoundContainer &soundContainer)
+void ReplaceSounds(std::byte *&mem, int32_t &fd, SoundContainer &soundContainer, std::stringstream &os)
 #endif
 {
     int32_t fileCount = 0;
@@ -140,8 +141,8 @@ void ReplaceSounds(std::byte *&mem, int32_t &fd, SoundContainer &soundContainer)
         }
 
         if (soundModId == -1) {
-            std::cerr << RED << "ERROR: " << RESET << "Bad filename for sound file " << soundModFile.Name
-                << " - sound file names should be named after the sound id, or have the sound id at the end of the filename with format _id#{{id here}}, skipping" << std::endl;
+            os << RED << "ERROR: " << RESET << "Bad filename for sound file " << soundModFile.Name
+                << " - sound file names should be named after the sound id, or have the sound id at the end of the filename with format _id#{{id here}}, skipping" << '\n';
             continue;
         }
 
@@ -170,8 +171,12 @@ void ReplaceSounds(std::byte *&mem, int32_t &fd, SoundContainer &soundContainer)
 
         if (needsEncoding) {
             try {
+                mtx.lock();
+
                 if (EncodeSoundMod(soundModFile) == -1)
                     throw std::exception();
+
+                mtx.unlock();
                 
                 if (soundModFile.FileBytes.size() > 0) {
                     encodedSize = soundModFile.FileBytes.size();
@@ -182,24 +187,26 @@ void ReplaceSounds(std::byte *&mem, int32_t &fd, SoundContainer &soundContainer)
                 }
             }
             catch (...) {
-                std::cerr << RED << "ERROR: " << RESET << "Failed to encode sound mod file " << soundModFile.Name << " - corrupted?" << std::endl;
+                os << RED << "ERROR: " << RESET << "Failed to encode sound mod file " << soundModFile.Name << " - corrupted?" << '\n';
                 continue;
             }
         }
 
         if (format == -1) {
-            std::cerr << RED << "ERROR: " << RESET << "Couldn't determine the sound file format for " << soundModFile.Name << ", skipping" << std::endl;
+            os << RED << "ERROR: " << RESET << "Couldn't determine the sound file format for " << soundModFile.Name << ", skipping" << '\n';
             continue;
         }
         else if (format == 2 && needsDecoding) {
             try {
+                mtx.lock();
                 decodedSize = GetDecodedOpusFileSize(soundModFile);
+                mtx.unlock();
 
                 if (decodedSize == -1)
                     throw std::exception();
             }
             catch (...) {
-                std::cerr << RED << "ERROR: " << RESET << "Failed to get decoded size for " << soundModFile.Name << " - corrupted file?" << std::endl;
+                os << RED << "ERROR: " << RESET << "Failed to get decoded size for " << soundModFile.Name << " - corrupted file?" << '\n';
                 continue;
             }
         }
@@ -213,7 +220,7 @@ void ReplaceSounds(std::byte *&mem, int32_t &fd, SoundContainer &soundContainer)
 #else
         if (ResizeMmap(mem, fd, soundContainer.Path, soundModOffset, newContainerSize) == -1) {
 #endif
-            std::cerr << RED << "ERROR: " << RESET << "Failed to resize " << soundContainer.Path << std::endl;
+            os << RED << "ERROR: " << RESET << "Failed to resize " << soundContainer.Path << '\n';
             return;
         }
         
@@ -222,8 +229,8 @@ void ReplaceSounds(std::byte *&mem, int32_t &fd, SoundContainer &soundContainer)
         std::vector<SoundEntry> soundEntriesToModify = GetSoundEntriesToModify(soundContainer, soundModId);
 
         if (soundEntriesToModify.empty()) {
-            std::cerr << RED << "WARNING: " << RESET << "Couldn't find sound with id " << soundModId << " in "
-                << soundContainer.Name << ", sound will not be replaced" << std::endl;
+            os << RED << "WARNING: " << RESET << "Couldn't find sound with id " << soundModId << " in "
+                << soundContainer.Name << ", sound will not be replaced" << '\n';
             continue;
         }
 
@@ -236,19 +243,22 @@ void ReplaceSounds(std::byte *&mem, int32_t &fd, SoundContainer &soundContainer)
             std::copy(mem + soundEntry.InfoOffset + 12, mem + soundEntry.InfoOffset + 14, (std::byte*)&currentFormat);
 
             if (currentFormat != format) {
-                std::cerr << RED << "WARNING: " << RESET << "Format mismatch: sound file " << soundModFile.Name << " needs to be " << (currentFormat == 3 ? "WEM" : "OPUS") << " format." << '\n';
-                std::cerr << "The sound will be replaced but it might not work in-game." << std::endl;
+                os << RED << "WARNING: " << RESET << "Format mismatch: sound file " << soundModFile.Name << " needs to be " << (currentFormat == 3 ? "WEM" : "OPUS") << " format." << '\n';
+                os << "The sound will be replaced but it might not work in-game." << '\n';
 
                 format = (int16_t)currentFormat;
             }
         }
 
-        std::cout << "\tReplaced sound with id " << soundModId << " with " << soundModFile.Name << '\n';
+        os << "\tReplaced sound with id " << soundModId << " with " << soundModFile.Name << '\n';
         fileCount++;
     }
 
     if (fileCount > 0) {
-        std::cout << "Number of sounds replaced: " << GREEN << fileCount << " sound(s) "
-            << RESET << "in " << YELLOW << soundContainer.Path << RESET << "." << std::endl;
+        os << "Number of sounds replaced: " << GREEN << fileCount << " sound(s) "
+            << RESET << "in " << YELLOW << soundContainer.Path << RESET << "." << '\n';
     }
+
+    if (SlowMode)
+        os.flush();
 }

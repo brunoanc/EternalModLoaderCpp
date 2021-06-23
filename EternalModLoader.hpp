@@ -24,6 +24,8 @@
 #include <vector>
 #include <cmath>
 #include <cstdint>
+#include <sstream>
+#include <mutex>
 
 #include "AssetsInfo.hpp"
 #include "Oodle.hpp"
@@ -326,6 +328,9 @@ extern std::vector<SoundContainer> SoundContainerList;
 extern std::map<uint64_t, ResourceDataEntry> ResourceDataMap;
 extern const std::vector<std::string> SupportedFileFormats;
 
+extern std::vector<std::stringstream> stringStreams;
+extern int32_t streamIndex;
+
 extern std::byte *Buffer;
 extern int64_t BufferSize;
 
@@ -335,13 +340,15 @@ extern std::string GREEN;
 extern std::string YELLOW;
 extern std::string BLUE;
 
+extern std::mutex mtx;
+
 extern class PackageMapSpecInfo PackageMapSpecInfo;
 
 #ifdef _WIN32
 int32_t ResizeMmap(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, int64_t newSize);
-void ReplaceChunks(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, ResourceContainer &resourceContainer);
-void AddChunks(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, ResourceContainer &resourceContainer);
-void ReplaceSounds(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, SoundContainer &soundContainer);
+void ReplaceChunks(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, ResourceContainer &resourceContainer, std::stringstream &os);
+void AddChunks(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, ResourceContainer &resourceContainer, std::stringstream &os);
+void ReplaceSounds(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, SoundContainer &soundContainer, std::stringstream &os);
 int32_t SetModDataForChunk(
     std::byte *&mem,
     HANDLE &hFile,
@@ -351,13 +358,14 @@ int32_t SetModDataForChunk(
     ResourceModFile &modFile,
     uint64_t compressedSize,
     uint64_t uncompressedSize,
-    std::byte *compressionMode
+    std::byte *compressionMode,
+    std::stringstream &os
 );
 #else
 int32_t ResizeMmap(std::byte *&mem, int32_t &fd, std::string filePath, int64_t oldSize, int64_t newSize);
-void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContainer);
-void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContainer);
-void ReplaceSounds(std::byte *&mem, int32_t &fd, SoundContainer &soundContainer);
+void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContainer, std::stringstream &os);
+void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContainer, std::stringstream &os);
+void ReplaceSounds(std::byte *&mem, int32_t &fd, SoundContainer &soundContainer, std::stringstream &os);
 int32_t SetModDataForChunk(
     std::byte *&mem,
     int32_t &fd,
@@ -366,7 +374,8 @@ int32_t SetModDataForChunk(
     ResourceModFile &modFile,
     uint64_t compressedSize,
     uint64_t uncompressedSize,
-    std::byte *compressionMode
+    std::byte *compressionMode,
+    std::stringstream &os
 );
 #endif
 
@@ -390,5 +399,9 @@ void ReadSoundEntries(std::byte *mem, SoundContainer &soundContainer);
 std::vector<SoundEntry> GetSoundEntriesToModify(SoundContainer &soundContainer, uint32_t soundModId);
 void SetOptimalBufferSize(std::string driveRootPath);
 void ModifyPackageMapSpec();
+void LoadResourceMods(ResourceContainer &resourceContainer);
+void LoadSoundMods(SoundContainer &soundContainer);
+void LoadZippedMod(std::string zippedMod, bool listResources);
+void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLooseMod, int32_t &unzippedModCount);
 
 #endif

@@ -27,16 +27,16 @@
 #include "EternalModLoader.hpp"
 
 #ifdef _WIN32
-void AddChunks(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, ResourceContainer &resourceContainer)
+void AddChunks(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, ResourceContainer &resourceContainer, std::stringstream &os)
 #else
-void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContainer)
+void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContainer, std::stringstream &os)
 #endif
 {
-    std::stable_sort(resourceContainer.NewModFileList.begin(), resourceContainer.NewModFileList.end(),
-        [](ResourceModFile resource1, ResourceModFile resource2) { return resource1.Parent.LoadPriority > resource2.Parent.LoadPriority ? true : false; });
-
     if (resourceContainer.NewModFileList.empty())
         return;
+
+    std::stable_sort(resourceContainer.NewModFileList.begin(), resourceContainer.NewModFileList.end(),
+        [](ResourceModFile resource1, ResourceModFile resource2) { return resource1.Parent.LoadPriority > resource2.Parent.LoadPriority ? true : false; });
 
     int64_t fileSize = std::filesystem::file_size(resourceContainer.Path);
 
@@ -87,7 +87,7 @@ void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContaine
                         newModFile.PlaceByType = assetsInfoAssets.PlaceByType;
 
                         if (Verbose) {
-                            std::cout << "\tSet resources type " << newModFile.ResourceType << " (version: " << newModFile.Version.value()
+                            os << "\tSet resources type " << newModFile.ResourceType << " (version: " << newModFile.Version.value()
                                 << ", streamdb hash: " << newModFile.StreamDbHash.value() << ") for new file: " << newModFile.Name << '\n';
                         }
 
@@ -104,8 +104,8 @@ void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContaine
 
         if (resourceContainer.ContainsResourceWithName(modFile.Name)) {
             if (Verbose) {
-                std::cerr << RED << "WARNING: " << RESET << "Trying to add resource " << modFile.Name
-                    << " that has already been added to " << resourceContainer.Name << ", skipping" << std::endl;
+                os << RED << "WARNING: " << RESET << "Trying to add resource " << modFile.Name
+                    << " that has already been added to " << resourceContainer.Name << ", skipping" << '\n';
             }
 
             modFile.FileBytes.resize(0);
@@ -135,7 +135,7 @@ void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContaine
             modFile.SpecialByte3 = (std::byte)0;
 
             if (Verbose) {
-                std::cerr << RED << "WARNING: " << RESET << "No resource data found for file: " << modFile.Name << std::endl;
+                os << RED << "WARNING: " << RESET << "No resource data found for file: " << modFile.Name << '\n';
             }
         }
 
@@ -176,7 +176,7 @@ void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContaine
                 ResourceName newResourceName(modFile.ResourceType, modFile.ResourceType);
                 resourceContainer.NamesList.push_back(newResourceName);
 
-                std::cout << "\tAdded resource type name " << modFile.ResourceType << " to " << resourceContainer.Name << '\n';
+                os << "\tAdded resource type name " << modFile.ResourceType << " to " << resourceContainer.Name << '\n';
             }
         }
 
@@ -221,7 +221,7 @@ void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContaine
                 compressionMode = (std::byte)2;
 
                 if (Verbose)
-                    std::cout << "\tSuccessfully set compressed texture data for file " << modFile.Name << '\n';
+                    os << "\tSuccessfully set compressed texture data for file " << modFile.Name << '\n';
             }
             else if (CompressTextures) {
                 std::vector<std::byte> compressedData;
@@ -233,7 +233,7 @@ void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContaine
                         throw std::exception();
                 }
                 catch (...) {
-                    std::cerr << RED << "ERROR: " << RESET << "Failed to compress " << modFile.Name << std::endl;
+                    os << RED << "ERROR: " << RESET << "Failed to compress " << modFile.Name << '\n';
                     continue;
                 }
 
@@ -242,7 +242,7 @@ void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContaine
                 compressionMode = (std::byte)2;
 
                 if (Verbose)
-                    std::cout << "\tSuccessfully compressed texture file " << modFile.Name << '\n';
+                    os << "\tSuccessfully compressed texture file " << modFile.Name << '\n';
             }
         }
 
@@ -343,7 +343,7 @@ void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContaine
             std::copy(newFileInfo, newFileInfo + sizeof(newFileInfo), info.end() - 0x90);
         }
 
-        std::cout << "\tAdded " << modFile.Name << '\n';
+        os << "\tAdded " << modFile.Name << '\n';
         modFile.FileBytes.resize(0);
         newChunksCount++;
     }
@@ -429,7 +429,7 @@ void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContaine
 #else
         if (ResizeMmap(mem, fd, resourceContainer.Path, resourceFileSize, newContainerSize) == -1) {
 #endif
-            std::cerr << RED << "ERROR: " << RESET << "Failed to resize " << resourceContainer.Path << std::endl;
+            os << RED << "ERROR: " << RESET << "Failed to resize " << resourceContainer.Path << '\n';
             return;
         }
     }
@@ -437,5 +437,8 @@ void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContaine
     std::copy(data.begin(), data.end(), mem + pos);
 
     if (newChunksCount != 0)
-        std::cout << "Number of files added: " << GREEN << newChunksCount << " file(s) " << RESET << "in " << YELLOW << resourceContainer.Path << RESET << "." << std::endl;
+        os << "Number of files added: " << GREEN << newChunksCount << " file(s) " << RESET << "in " << YELLOW << resourceContainer.Path << RESET << "." << '\n';
+
+    if (SlowMode)
+        os.flush();
 }

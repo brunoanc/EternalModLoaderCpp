@@ -15,7 +15,8 @@ int32_t SetModDataForChunk(
     ResourceModFile &modFile,
     uint64_t compressedSize,
     uint64_t uncompressedSize,
-    std::byte *compressionMode
+    std::byte *compressionMode,
+    std::stringstream &os
 )
 #else
 int32_t SetModDataForChunk(
@@ -26,7 +27,8 @@ int32_t SetModDataForChunk(
     ResourceModFile &modFile,
     uint64_t compressedSize,
     uint64_t uncompressedSize,
-    std::byte *compressionMode
+    std::byte *compressionMode,
+    std::stringstream &os
 )
 #endif
 {
@@ -65,7 +67,7 @@ int32_t SetModDataForChunk(
 #else
             if (ResizeMmap(mem, fd, resourceContainer.Path, resourceFileSize, newContainerSize) == -1) {
 #endif
-                std::cerr << RED << "ERROR: " << RESET << "Failed to resize " << resourceContainer.Path << std::endl;
+                os << RED << "ERROR: " << RESET << "Failed to resize " << resourceContainer.Path << '\n';
                 return - 1;
             }
 

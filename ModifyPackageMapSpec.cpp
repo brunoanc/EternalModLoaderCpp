@@ -21,7 +21,7 @@ void ModifyPackageMapSpec()
                 std::cerr << RED << "ERROR: " << RESET << "Failed to write " << PackageMapSpecInfo.PackageMapSpecPath << std::endl;
             }
 
-            std::cout << "Modified "<< YELLOW << PackageMapSpecInfo.PackageMapSpecPath << RESET << std::endl;
+            std::cout << "Modified "<< YELLOW << PackageMapSpecInfo.PackageMapSpecPath << RESET << '\n';
             fclose(packageMapSpecFile);
         }
 

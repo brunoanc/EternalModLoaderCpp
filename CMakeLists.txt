@@ -9,6 +9,8 @@ file(GLOB SOURCES
         ./AssetsInfo.cpp
         ./BlangDecrypt.cpp
         ./BlangParser.cpp
+        ./LoadModFiles.cpp
+        ./LoadMods.cpp
         ./MapResourcesFile.cpp
         ./Mod.cpp
         ./ModifyPackageMapSpec.cpp
@@ -36,9 +38,9 @@ if(MSVC)
 else()
         if(DEFINED ENV{ETERNALMODLOADERCPP_STATIC})
                 set(OPENSSL_USE_STATIC_LIBS TRUE)
-                set (CMAKE_CXX_FLAGS "-Ofast -DNDEBUG -ftree-vectorize -msse2 -static")
+                set (CMAKE_CXX_FLAGS "-pthread -Ofast -DNDEBUG -ftree-vectorize -msse2 -static")
         else()
-                set (CMAKE_CXX_FLAGS "-Ofast -DNDEBUG -ftree-vectorize -msse2")
+                set (CMAKE_CXX_FLAGS "-pthread -Ofast -DNDEBUG -ftree-vectorize -msse2")
         endif()
 endif(MSVC)
 
