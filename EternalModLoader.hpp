@@ -26,6 +26,7 @@
 #include <cstdint>
 #include <sstream>
 #include <mutex>
+#include <atomic>
 
 #include "AssetsInfo.hpp"
 #include "Oodle.hpp"
@@ -402,6 +403,7 @@ void ModifyPackageMapSpec();
 void LoadResourceMods(ResourceContainer &resourceContainer);
 void LoadSoundMods(SoundContainer &soundContainer);
 void LoadZippedMod(std::string zippedMod, bool listResources);
-void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLooseMod, int32_t &unzippedModCount);
+void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLooseMod, std::atomic<int32_t> &unzippedModCount);
+void GetResourceContainerPathList();
 
 #endif

@@ -161,7 +161,7 @@ int main(int argc, char **argv)
     std::vector<std::string> zippedMods;
     std::vector<std::string> unzippedMods;
 
-    for (const auto &file : std::filesystem::directory_iterator(std::string(argv[1]) + separator + "Mods")) {
+    for (const auto &file : std::filesystem::recursive_directory_iterator(std::string(argv[1]) + separator + "Mods")) {
         if (!std::filesystem::is_regular_file(file.path()))
             continue;
 
@@ -173,8 +173,7 @@ int main(int argc, char **argv)
         }
     }
 
-    std::sort(zippedMods.begin(), zippedMods.end(), [](std::string str1, std::string str2) { return std::strcoll(str1.c_str(), str2.c_str()) <= 0 ? true : false; });
-    std::sort(unzippedMods.begin(), unzippedMods.end(), [](std::string str1, std::string str2) { return std::strcoll(str1.c_str(), str2.c_str()) <= 0 ? true : false; });
+    GetResourceContainerPathList();
 
     chrono::steady_clock::time_point zippedModsBegin = chrono::steady_clock::now();
 
@@ -182,7 +181,10 @@ int main(int argc, char **argv)
     zippedModLoadingThreads.reserve(zippedMods.size());
 
     for (const auto &zippedMod : zippedMods)
-        LoadZippedMod(zippedMod, listResources);
+        zippedModLoadingThreads.push_back(std::thread(LoadZippedMod, zippedMod, listResources));
+
+    for (auto &thread : zippedModLoadingThreads)
+        thread.join();
 
     chrono::steady_clock::time_point zippedModsEnd = chrono::steady_clock::now();
     double zippedModsTime = chrono::duration_cast<chrono::microseconds>(zippedModsEnd - zippedModsBegin).count() / 1000000.0;
@@ -192,14 +194,17 @@ int main(int argc, char **argv)
     std::vector<std::thread> unzippedModLoadingThreads;
     unzippedModLoadingThreads.reserve(unzippedMods.size());
 
-    int32_t unzippedModCount = 0;
+    std::atomic<int32_t> unzippedModCount = 0;
     Mod globalLooseMod;
     globalLooseMod.LoadPriority = INT_MIN;
 
     for (const auto &unzippedMod : unzippedMods)
-        LoadUnzippedMod(unzippedMod, listResources, globalLooseMod, unzippedModCount);
+        unzippedModLoadingThreads.push_back(std::thread(LoadUnzippedMod, unzippedMod, listResources, std::ref(globalLooseMod), std::ref(unzippedModCount)));
 
-    if (unzippedModCount > 0 && !(listResources))
+    for (auto &thread : unzippedModLoadingThreads)
+        thread.join();
+
+    if (unzippedModCount > 0 && !listResources)
         std::cout << "Found " << BLUE << unzippedModCount << " file(s) " << RESET << "in " << YELLOW << "'Mods' " << RESET << "folder..." << '\n';
 
     chrono::steady_clock::time_point unzippedModsEnd = chrono::steady_clock::now();

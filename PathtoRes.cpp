@@ -38,9 +38,6 @@ std::string PathToResourceContainer(std::string name)
     std::string resourcePath = name;
     bool recursive = true;
 
-    if (ResourceContainerPathList.empty())
-        GetResourceContainerPathList();
-
     if (StartsWith(ToLower(name), "dlc_hub")) {
         resourcePath = resourcePath.substr(4, name.size() - 4);
         resourcePath = BasePath + "game" + separator + "dlc" + separator + "hub" + separator + resourcePath;

@@ -489,7 +489,7 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                 if (mapResourcesFile == NULL && !invalidMapResources) {
                     for (auto &file : resourceContainer.ChunkList) {
                         if (EndsWith(file.ResourceName.NormalizedFileName, ".mapresources")) {
-                            if (EndsWith(resourceContainer.Name, "gameresources") && EndsWith(file.ResourceName.NormalizedFileName, "init.mapresources"))
+                            if (StartsWith(resourceContainer.Name, "gameresources") && EndsWith(file.ResourceName.NormalizedFileName, "init.mapresources"))
                                 continue;
 
                             mapResourcesChunk = &file;

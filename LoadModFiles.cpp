@@ -81,6 +81,8 @@ void LoadZippedMod(std::string zippedMod, bool listResources)
         }
 
         if (isSoundMod) {
+            mtx.lock();
+
             int32_t soundContainerIndex = GetSoundContainer(resourceName);
 
             if (soundContainerIndex == -1) {
@@ -89,6 +91,8 @@ void LoadZippedMod(std::string zippedMod, bool listResources)
 
                 soundContainerIndex = SoundContainerList.size() - 1;
             }
+
+            mtx.unlock();
 
             if (!listResources) {
                 std::string soundExtension = std::filesystem::path(modFileName).extension().string();
@@ -110,11 +114,16 @@ void LoadZippedMod(std::string zippedMod, bool listResources)
                 soundModFile.FileBytes = std::vector<std::byte>(unzippedEntry, unzippedEntry + unzippedEntrySize);
                 free(unzippedEntry);
 
+                mtx.lock();
                 SoundContainerList[soundContainerIndex].ModFileList.push_back(soundModFile);
+                mtx.unlock();
+
                 zippedModCount++;
             }
         }
         else {
+            mtx.lock();
+
             int32_t resourceContainerIndex = GetResourceContainer(resourceName);
 
             if (resourceContainerIndex == -1) {
@@ -123,6 +132,8 @@ void LoadZippedMod(std::string zippedMod, bool listResources)
 
                 resourceContainerIndex = ResourceContainerList.size() - 1;
             }
+
+            mtx.unlock();
 
             ResourceModFile resourceModFile(mod, modFileName);
 
@@ -178,7 +189,10 @@ void LoadZippedMod(std::string zippedMod, bool listResources)
                 }
             }
 
+            mtx.lock();
             ResourceContainerList[resourceContainerIndex].ModFileList.push_back(resourceModFile);
+            mtx.unlock();
+
             zippedModCount++;
         }
     }
@@ -189,10 +203,10 @@ void LoadZippedMod(std::string zippedMod, bool listResources)
     mz_zip_reader_end(&modZip);
 }
 
-void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLooseMod, int32_t &unzippedModCount)
+void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLooseMod, std::atomic<int32_t> &unzippedModCount)
 {
-    std::string unzippedModPath = unzippedMod;
-    std::vector<std::string> modFilePathParts = SplitString(unzippedModPath, separator);
+    std::replace(unzippedMod.begin(), unzippedMod.end(), separator, '/');
+    std::vector<std::string> modFilePathParts = SplitString(unzippedMod, '/');
 
     if (modFilePathParts.size() < 4)
         return;
@@ -203,10 +217,10 @@ void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLoo
 
     if (ToLower(resourceName) == "generated") {
         resourceName = "gameresources";
-        fileName = unzippedModPath.substr(modFilePathParts[1].size() + 3, unzippedModPath.size() - modFilePathParts[1].size() - 3);
+        fileName = unzippedMod.substr(modFilePathParts[1].size() + 3, unzippedMod.size() - modFilePathParts[1].size() - 3);
     }
     else {
-        fileName = unzippedModPath.substr(modFilePathParts[1].size() + resourceName.size() + 4, unzippedModPath.size() - resourceName.size() - 4);
+        fileName = unzippedMod.substr(modFilePathParts[1].size() + resourceName.size() + 4, unzippedMod.size() - resourceName.size() - 4);
     }
 
     std::string resourcePath = PathToResourceContainer(resourceName + ".resources");
@@ -219,6 +233,8 @@ void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLoo
     }
 
     if (isSoundMod) {
+        mtx.lock();
+
         int32_t soundContainerIndex = GetSoundContainer(resourceName);
 
         if (soundContainerIndex == -1) {
@@ -228,6 +244,8 @@ void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLoo
             soundContainerIndex = SoundContainerList.size() - 1;
         }
 
+        mtx.unlock();
+
         if (!listResources) {
             std::string soundExtension = std::filesystem::path(fileName).extension().string();
 
@@ -236,34 +254,39 @@ void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLoo
                 return;
             }
 
-            int64_t unzippedModSize = std::filesystem::file_size(unzippedModPath);
+            int64_t unzippedModSize = std::filesystem::file_size(unzippedMod);
 
             if (unzippedModSize > ResourceContainerList.max_size())
                 std::cerr << RED << "WARNING: " << RESET << "Skipped " << fileName << " - too large." << '\n';
             
             SoundModFile soundModFile(globalLooseMod, std::filesystem::path(fileName).filename().string());
             
-            FILE *unzippedModFile = fopen(unzippedModPath.c_str(), "rb");
+            FILE *unzippedModFile = fopen(unzippedMod.c_str(), "rb");
 
             if (!unzippedModFile) {
-                std::cerr << RED << "ERROR: " << RESET << "Failed to open " << unzippedModPath << " for reading." << '\n';
+                std::cerr << RED << "ERROR: " << RESET << "Failed to open " << unzippedMod << " for reading." << '\n';
                 return;
             }
 
             soundModFile.FileBytes.resize(unzippedModSize);
 
             if (fread(soundModFile.FileBytes.data(), 1, unzippedModSize, unzippedModFile) != unzippedModSize) {
-                std::cerr << RESET << "ERROR: " << RESET << "Failed to read from " << unzippedModPath << "." << '\n';
+                std::cerr << RESET << "ERROR: " << RESET << "Failed to read from " << unzippedMod << "." << '\n';
                 return;
             }
 
             fclose(unzippedModFile);
 
+            mtx.lock();
             SoundContainerList[soundContainerIndex].ModFileList.push_back(soundModFile);
+            mtx.unlock();
+
             unzippedModCount++;
         }
     }
     else {
+        mtx.lock();
+
         int32_t resourceContainerIndex = GetResourceContainer(resourceName);
 
         if (resourceContainerIndex == -1) {
@@ -273,25 +296,27 @@ void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLoo
             resourceContainerIndex = ResourceContainerList.size() - 1;
         }
 
+        mtx.unlock();
+
         ResourceModFile resourceModFile(globalLooseMod, fileName);
 
         if (!listResources) {
-            int64_t unzippedModSize = std::filesystem::file_size(unzippedModPath);
+            int64_t unzippedModSize = std::filesystem::file_size(unzippedMod);
 
             if (unzippedModSize > ResourceContainerList.max_size())
                 std::cerr << RED << "WARNING: " << RESET << "Skipped " << fileName << " - too large." << '\n';
 
-            FILE *unzippedModFile = fopen(unzippedModPath.c_str(), "rb");
+            FILE *unzippedModFile = fopen(unzippedMod.c_str(), "rb");
 
             if (!unzippedModFile) {
-                std::cerr << RED << "ERROR: " << RESET << "Failed to open " << unzippedModPath << " for reading." << '\n';
+                std::cerr << RED << "ERROR: " << RESET << "Failed to open " << unzippedMod << " for reading." << '\n';
                 return;
             }
 
             resourceModFile.FileBytes.resize(unzippedModSize);
 
             if (fread(resourceModFile.FileBytes.data(), 1, unzippedModSize, unzippedModFile) != unzippedModSize) {
-                std::cerr << RESET << "ERROR: " << RESET << "Failed to read from " << unzippedModPath << "." << '\n';
+                std::cerr << RESET << "ERROR: " << RESET << "Failed to read from " << unzippedMod << "." << '\n';
                 return;
             }
 
@@ -304,22 +329,22 @@ void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLoo
             && std::filesystem::path(modFilePathParts[5]).extension() == ".json") {
                 try {
                     if (listResources) {
-                        int64_t unzippedModSize = std::filesystem::file_size(unzippedModPath);
+                        int64_t unzippedModSize = std::filesystem::file_size(unzippedMod);
 
                         if (unzippedModSize > ResourceContainerList.max_size())
                             std::cerr << RED << "WARNING: " << RESET << "Skipped " << fileName << " - too large." << '\n';
 
-                        FILE *unzippedModFile = fopen(unzippedModPath.c_str(), "rb");
+                        FILE *unzippedModFile = fopen(unzippedMod.c_str(), "rb");
 
                         if (!unzippedModFile) {
-                            std::cerr << RED << "ERROR: " << RESET << "Failed to open " << unzippedModPath << " for reading." << '\n';
+                            std::cerr << RED << "ERROR: " << RESET << "Failed to open " << unzippedMod << " for reading." << '\n';
                             return;
                         }
 
                         resourceModFile.FileBytes.resize(unzippedModSize);
 
                         if (fread(resourceModFile.FileBytes.data(), 1, unzippedModSize, unzippedModFile) != unzippedModSize) {
-                            std::cerr << RESET << "ERROR: " << RESET << "Failed to read from " << unzippedModPath << "." << '\n';
+                            std::cerr << RESET << "ERROR: " << RESET << "Failed to read from " << unzippedMod << "." << '\n';
                             return;
                         }
 
@@ -347,7 +372,10 @@ void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLoo
             }
         }
 
+        mtx.lock();
         ResourceContainerList[resourceContainerIndex].ModFileList.push_back(resourceModFile);
+        mtx.unlock();
+
         unzippedModCount++;
     }
 }
