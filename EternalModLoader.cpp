@@ -168,7 +168,7 @@ int main(int argc, char **argv)
         if (file.path().extension() == ".zip" && file.path() == std::string(argv[1]) + separator + "Mods" + separator + file.path().filename().string()) {
             zippedMods.push_back(file.path().string());
         }
-        else {
+        else if (file.path().extension() != ".zip") {
             unzippedMods.push_back(file.path().string());
         }
     }
