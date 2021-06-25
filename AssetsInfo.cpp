@@ -19,7 +19,7 @@
 #include <iostream>
 
 #include "jsonxx/jsonxx.h"
-#include "EternalModLoader.hpp"
+#include "AssetsInfo.hpp"
 
 AssetsInfo::AssetsInfo(std::string &json)
 {

@@ -19,7 +19,7 @@
 #include <iostream>
 
 #include "jsonxx/jsonxx.h"
-#include "EternalModLoader.hpp"
+#include "PackageMapSpec.hpp"
 
 PackageMapSpec::PackageMapSpec(std::string &json)
 {
