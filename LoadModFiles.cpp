@@ -5,7 +5,7 @@
 #include "miniz/miniz.h"
 #include "EternalModLoader.hpp"
 
-void LoadZippedMod(std::string zippedMod, bool listResources)
+void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::string> &notFoundContainers)
 {
     int32_t zippedModCount = 0;
     std::vector<std::string> modFileNameList;
@@ -76,8 +76,18 @@ void LoadZippedMod(std::string zippedMod, bool listResources)
         if (resourcePath.empty()) {
             resourcePath = PathToSoundContainer(resourceName);
 
-            if (!resourcePath.empty())
+            if (!resourcePath.empty()) {
                 isSoundMod = true;
+            }
+            else {
+                mtx.lock();
+
+                if (std::find(notFoundContainers.begin(), notFoundContainers.end(), resourceName) == notFoundContainers.end())
+                    notFoundContainers.push_back(resourceName);
+
+                mtx.unlock();
+                continue;
+            }
         }
 
         if (isSoundMod) {
@@ -203,7 +213,7 @@ void LoadZippedMod(std::string zippedMod, bool listResources)
     mz_zip_reader_end(&modZip);
 }
 
-void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLooseMod, std::atomic<int32_t> &unzippedModCount)
+void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLooseMod, std::atomic<int32_t> &unzippedModCount, std::vector<std::string> &notFoundContainers)
 {
     std::replace(unzippedMod.begin(), unzippedMod.end(), separator, '/');
     std::vector<std::string> modFilePathParts = SplitString(unzippedMod, '/');
@@ -228,8 +238,18 @@ void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLoo
     if (resourcePath.empty()) {
         resourcePath = PathToSoundContainer(resourceName);
 
-        if (!resourcePath.empty())
+        if (!resourcePath.empty()) {
             isSoundMod = true;
+        }
+        else {
+            mtx.lock();
+
+            if (std::find(notFoundContainers.begin(), notFoundContainers.end(), resourceName) == notFoundContainers.end())
+                notFoundContainers.push_back(resourceName);
+
+            mtx.unlock();
+            return;
+        }
     }
 
     if (isSoundMod) {

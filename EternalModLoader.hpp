@@ -402,8 +402,8 @@ void SetOptimalBufferSize(std::string driveRootPath);
 void ModifyPackageMapSpec();
 void LoadResourceMods(ResourceContainer &resourceContainer);
 void LoadSoundMods(SoundContainer &soundContainer);
-void LoadZippedMod(std::string zippedMod, bool listResources);
-void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLooseMod, std::atomic<int32_t> &unzippedModCount);
+void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::string> &notFoundContainers);
+void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLooseMod, std::atomic<int32_t> &unzippedModCount, std::vector<std::string> &notFoundContainers);
 void GetResourceContainerPathList();
 
 #endif

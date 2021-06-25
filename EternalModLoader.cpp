@@ -160,6 +160,7 @@ int main(int argc, char **argv)
 
     std::vector<std::string> zippedMods;
     std::vector<std::string> unzippedMods;
+    std::vector<std::string> notFoundContainers;
 
     for (const auto &file : std::filesystem::recursive_directory_iterator(std::string(argv[1]) + separator + "Mods")) {
         if (!std::filesystem::is_regular_file(file.path()))
@@ -181,7 +182,7 @@ int main(int argc, char **argv)
     zippedModLoadingThreads.reserve(zippedMods.size());
 
     for (const auto &zippedMod : zippedMods)
-        zippedModLoadingThreads.push_back(std::thread(LoadZippedMod, zippedMod, listResources));
+        zippedModLoadingThreads.push_back(std::thread(LoadZippedMod, zippedMod, listResources, std::ref(notFoundContainers)));
 
     for (auto &thread : zippedModLoadingThreads)
         thread.join();
@@ -199,7 +200,7 @@ int main(int argc, char **argv)
     globalLooseMod.LoadPriority = INT_MIN;
 
     for (const auto &unzippedMod : unzippedMods)
-        unzippedModLoadingThreads.push_back(std::thread(LoadUnzippedMod, unzippedMod, listResources, std::ref(globalLooseMod), std::ref(unzippedModCount)));
+        unzippedModLoadingThreads.push_back(std::thread(LoadUnzippedMod, unzippedMod, listResources, std::ref(globalLooseMod), std::ref(unzippedModCount), std::ref(notFoundContainers)));
 
     for (auto &thread : unzippedModLoadingThreads)
         thread.join();
@@ -209,8 +210,6 @@ int main(int argc, char **argv)
 
     chrono::steady_clock::time_point unzippedModsEnd = chrono::steady_clock::now();
     double unzippedModsTime = chrono::duration_cast<chrono::microseconds>(unzippedModsEnd - unzippedModsBegin).count() / 1000000.0;
-
-    std::cout.flush();
 
     if (listResources) {
         for (auto &resourceContainer : ResourceContainerList) {
@@ -251,6 +250,11 @@ int main(int argc, char **argv)
         std::cout.flush();
         return 0;
     }
+
+    for (auto &container : notFoundContainers)
+        std::cerr << RED << "WARNING: " << YELLOW << container << RESET << " was not found! Skipping..." << std::endl;
+
+    std::cout.flush();
 
     chrono::steady_clock::time_point modLoadingBegin = chrono::steady_clock::now();
 

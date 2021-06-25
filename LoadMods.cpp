@@ -7,11 +7,6 @@ std::mutex mtx;
 
 void LoadResourceMods(ResourceContainer &resourceContainer)
 {
-    if (resourceContainer.Path.empty()) {
-        std::cerr << RED << "WARNING: " << YELLOW << resourceContainer.Name << ".resources" << RESET << " was not found! Skipping " << RED << resourceContainer.ModFileList.size() << " file(s)" << RESET << "..." << std::endl;
-        return;
-    }
-
     int64_t fileSize = std::filesystem::file_size(resourceContainer.Path);
 
     if (fileSize == 0) {
@@ -107,11 +102,6 @@ void LoadResourceMods(ResourceContainer &resourceContainer)
 
 void LoadSoundMods(SoundContainer &soundContainer)
 {
-    if (soundContainer.Path.empty()) {
-        std::cerr << RED << "WARNING: " << YELLOW << soundContainer.Name << ".resources" << RESET << " was not found! Skipping " << RED << soundContainer.ModFileList.size() << " file(s)" << RESET << "..." << std::endl;
-        return;
-    }
-
     int64_t fileSize = std::filesystem::file_size(soundContainer.Path);
 
     if (fileSize == 0) {
