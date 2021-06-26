@@ -21,8 +21,14 @@
 #include <algorithm>
 #include <fstream>
 
-#include "EternalModLoader.hpp"
+#include "Utils/Utils.hpp"
+#include "BlangFile/BlangFile.hpp"
 
+/**
+ * @brief Construct a new BlangFile object
+ * 
+ * @param blangBytes Vector containing the blang's bytes
+ */
 BlangFile::BlangFile(std::vector<std::byte> &blangBytes)
 {
     int32_t pos = 0;
@@ -79,6 +85,11 @@ BlangFile::BlangFile(std::vector<std::byte> &blangBytes)
     }
 }
 
+/**
+ * @brief Convert BlangFile object back to bytes
+ * 
+ * @return Vector containing the blang's bytes
+ */
 std::vector<std::byte> BlangFile::ToByteVector()
 {
     std::vector<std::byte> blangBytes;

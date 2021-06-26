@@ -19,19 +19,28 @@
 #ifndef ASSETSINFO_HPP
 #define ASSETSINFO_HPP
 
-#include <iostream>
-#include <vector>
-
+/**
+ * @brief AssetsInfo Layer class for deserialization
+ * 
+ */
 class AssetsInfoLayer {
 public:
     std::string Name;
 };
 
+/**
+ * @brief AssetsInfo Map class for deserialization
+ * 
+ */
 class AssetsInfoMap {
 public:
     std::string Name;
 };
 
+/**
+ * @brief AssetsInfo Resource class for deserialization
+ * 
+ */
 class AssetsInfoResource {
 public:
     std::string Name;
@@ -41,6 +50,10 @@ public:
     std::string PlaceByName;
 };
 
+/**
+ * @brief AssetsInfo Asset class for deserialization
+ * 
+ */
 class AssetsInfoAsset {
 public:
     uint64_t StreamDbHash = 0;
@@ -57,6 +70,10 @@ public:
     std::byte SpecialByte3 = (std::byte)0;
 };
 
+/**
+ * @brief AssetsInfo JSON class for deserialization
+ * 
+ */
 class AssetsInfo {
 public:
     std::vector<AssetsInfoLayer> Layers;

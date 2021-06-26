@@ -17,20 +17,24 @@
 */
 
 #include <iostream>
-#include <vector>
-#include <fstream>
 #include <iterator>
 #include <filesystem>
 #include <algorithm>
 #include <cstring>
+#include <sstream>
 
 #include "EternalModLoader.hpp"
 
-#ifdef _WIN32
-void AddChunks(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, ResourceContainer &resourceContainer, std::stringstream &os)
-#else
-void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContainer, std::stringstream &os)
-#endif
+extern const std::byte *DivinityMagic;
+
+/**
+ * @brief Add new chunks to the given resource file
+ * 
+ * @param memoryMappedFile MemoryMappedFile object containing the resource to modify
+ * @param resourceContainer ResourceContainer object containing the resources's data
+ * @param os StringStream to output to
+ */
+void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceContainer, std::stringstream &os)
 {
     if (resourceContainer.NewModFileList.empty())
         return;
@@ -38,27 +42,25 @@ void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContaine
     std::stable_sort(resourceContainer.NewModFileList.begin(), resourceContainer.NewModFileList.end(),
         [](ResourceModFile resource1, ResourceModFile resource2) { return resource1.Parent.LoadPriority > resource2.Parent.LoadPriority ? true : false; });
 
-    int64_t fileSize = std::filesystem::file_size(resourceContainer.Path);
+    std::vector<std::byte> header(memoryMappedFile.Mem, memoryMappedFile.Mem + resourceContainer.InfoOffset);
 
-    std::vector<std::byte> header(mem, mem + resourceContainer.InfoOffset);
+    std::vector<std::byte> info(memoryMappedFile.Mem + resourceContainer.InfoOffset, memoryMappedFile.Mem + resourceContainer.NamesOffset);
 
-    std::vector<std::byte> info(mem + resourceContainer.InfoOffset, mem + resourceContainer.NamesOffset);
+    std::vector<std::byte> nameOffsets(memoryMappedFile.Mem + resourceContainer.NamesOffset, memoryMappedFile.Mem + resourceContainer.NamesOffsetEnd);
 
-    std::vector<std::byte> nameOffsets(mem + resourceContainer.NamesOffset, mem + resourceContainer.NamesOffsetEnd);
+    std::vector<std::byte> names(memoryMappedFile.Mem + resourceContainer.NamesOffsetEnd, memoryMappedFile.Mem + resourceContainer.UnknownOffset);
 
-    std::vector<std::byte> names(mem + resourceContainer.NamesOffsetEnd, mem + resourceContainer.UnknownOffset);
-
-    std::vector<std::byte> unknown(mem + resourceContainer.UnknownOffset, mem + resourceContainer.Dummy7Offset);
+    std::vector<std::byte> unknown(memoryMappedFile.Mem + resourceContainer.UnknownOffset, memoryMappedFile.Mem + resourceContainer.Dummy7Offset);
 
     int64_t nameIdsOffset = resourceContainer.Dummy7Offset + (resourceContainer.TypeCount * 4);
 
-    std::vector<std::byte> typeIds(mem + resourceContainer.Dummy7Offset, mem + nameIdsOffset);
+    std::vector<std::byte> typeIds(memoryMappedFile.Mem + resourceContainer.Dummy7Offset, memoryMappedFile.Mem + nameIdsOffset);
 
-    std::vector<std::byte> nameIds(mem + nameIdsOffset, mem + resourceContainer.IdclOffset);
+    std::vector<std::byte> nameIds(memoryMappedFile.Mem + nameIdsOffset, memoryMappedFile.Mem + resourceContainer.IdclOffset);
 
-    std::vector<std::byte> idcl(mem + resourceContainer.IdclOffset, mem + resourceContainer.DataOffset);
+    std::vector<std::byte> idcl(memoryMappedFile.Mem + resourceContainer.IdclOffset, memoryMappedFile.Mem + resourceContainer.DataOffset);
 
-    std::vector<std::byte> data(mem + resourceContainer.DataOffset, mem + std::filesystem::file_size(resourceContainer.Path));
+    std::vector<std::byte> data(memoryMappedFile.Mem + resourceContainer.DataOffset, memoryMappedFile.Mem + memoryMappedFile.Size);
     int64_t originalDataSize = data.size();
 
     int32_t infoOldLength = info.size();
@@ -246,7 +248,7 @@ void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContaine
             }
         }
 
-        int64_t resourceFileSize = std::filesystem::file_size(resourceContainer.Path);
+        int64_t resourceFileSize = memoryMappedFile.Size;
         int64_t placement = 0x10 - (data.size() % 0x10) + 0x30;
         int64_t fileOffset = resourceFileSize + (data.size() - originalDataSize) + placement;
         data.resize(data.size() + placement + modFile.FileBytes.size());
@@ -395,46 +397,40 @@ void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContaine
     }
 
     uint64_t pos = 0;
-    std::copy(header.begin(), header.end(), mem + pos);
+    std::copy(header.begin(), header.end(), memoryMappedFile.Mem + pos);
     pos += header.size();
 
-    std::copy(info.begin(), info.end(), mem + pos);
+    std::copy(info.begin(), info.end(), memoryMappedFile.Mem + pos);
     pos += info.size();
 
-    std::copy(nameOffsets.begin(), nameOffsets.end(), mem + pos);
+    std::copy(nameOffsets.begin(), nameOffsets.end(), memoryMappedFile.Mem + pos);
     pos += nameOffsets.size();
 
-    std::copy(names.begin(), names.end(), mem + pos);
+    std::copy(names.begin(), names.end(), memoryMappedFile.Mem + pos);
     pos += names.size();
 
-    std::copy(unknown.begin(), unknown.end(), mem + pos);
+    std::copy(unknown.begin(), unknown.end(), memoryMappedFile.Mem + pos);
     pos += unknown.size();
 
-    std::copy(typeIds.begin(), typeIds.end(), mem + pos);
+    std::copy(typeIds.begin(), typeIds.end(), memoryMappedFile.Mem + pos);
     pos += typeIds.size();
 
-    std::copy(nameIds.begin(), nameIds.end(), mem + pos);
+    std::copy(nameIds.begin(), nameIds.end(), memoryMappedFile.Mem + pos);
     pos += nameIds.size();
 
-    std::copy(idcl.begin(), idcl.end(), mem + pos);
+    std::copy(idcl.begin(), idcl.end(), memoryMappedFile.Mem + pos);
     pos += idcl.size();
 
-    int64_t resourceFileSize = std::filesystem::file_size(resourceContainer.Path);
-
-    if (pos + data.size() > resourceFileSize) {
+    if (pos + data.size() > memoryMappedFile.Size) {
         int64_t newContainerSize = pos + data.size();
 
-#ifdef _WIN32
-        if (ResizeMmap(mem, hFile, fileMapping, newContainerSize) == -1) {
-#else
-        if (ResizeMmap(mem, fd, resourceContainer.Path, resourceFileSize, newContainerSize) == -1) {
-#endif
+        if (!memoryMappedFile.ResizeFile(newContainerSize)) {
             os << RED << "ERROR: " << RESET << "Failed to resize " << resourceContainer.Path << '\n';
             return;
         }
     }
 
-    std::copy(data.begin(), data.end(), mem + pos);
+    std::copy(data.begin(), data.end(), memoryMappedFile.Mem + pos);
 
     if (newChunksCount != 0)
         os << "Number of files added: " << GREEN << newChunksCount << " file(s) " << RESET << "in " << YELLOW << resourceContainer.Path << RESET << "." << '\n';

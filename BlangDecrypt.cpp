@@ -19,10 +19,7 @@
 #include <iostream>
 #include <algorithm>
 #include <iomanip>
-#include <sstream>
 #include <string>
-#include <vector>
-#include <fstream>
 #include <filesystem>
 #include <cstring>
 #include <ctime>
@@ -32,6 +29,20 @@
 
 #include "EternalModLoader.hpp"
 
+
+/**
+ * @brief Hash data using HMAC SHA256 algorithm
+ * 
+ * @param data1 First data bytes to hash
+ * @param data1Len Size of first data bytes
+ * @param data1 Second data bytes to hash
+ * @param data1Len Size of second data bytes
+ * @param data1 Third data bytes to hash
+ * @param data1Len Size of third data bytes
+ * @param hmacKey HMAC key used to hash, regular SHA256 will be used instead if it's NULL
+ * @param hmacKeyLen Size of HMAC key
+ * @return Data hash
+ */
 std::byte *HashData(const std::byte *data1, size_t data1Len, const std::byte *data2, size_t data2Len, const std::byte *data3, size_t data3Len, const std::byte *hmacKey, size_t hmacKeyLen)
 {
     if (hmacKey == NULL) {
@@ -53,7 +64,7 @@ std::byte *HashData(const std::byte *data1, size_t data1Len, const std::byte *da
         HMAC_CTX *ctx = HMAC_CTX_new();
         HMAC_Init_ex(ctx, hmacKey, hmacKeyLen, EVP_sha256(), NULL);
 
-        std::byte *md = (std::byte*)malloc(HMAC_size(ctx));
+        std::byte *md = new std::byte[HMAC_size(ctx)];
 
         HMAC_Update(ctx, (uint8_t*)data1, data1Len);
         HMAC_Update(ctx, (uint8_t*)data2, data2Len);
@@ -66,6 +77,16 @@ std::byte *HashData(const std::byte *data1, size_t data1Len, const std::byte *da
     }
 }
 
+/**
+ * @brief Encrypt data using AES 128 CBC algorithm
+ * 
+ * @param plaintext Bytes to encrypt
+ * @param plaintext_len Size of plaintext
+ * @param key Key to use for encryption
+ * @param iv IV to use for encryption
+ * @param ciphertext Buffer to store the ciphertext in
+ * @return Length of the ciphertext
+ */
 int32_t EncryptData(unsigned char *plaintext, int32_t plaintext_len, unsigned char *key, unsigned char *iv, unsigned char *ciphertext)
 {
     int32_t len;
@@ -86,6 +107,16 @@ int32_t EncryptData(unsigned char *plaintext, int32_t plaintext_len, unsigned ch
     return ciphertext_len;
 }
 
+/**
+ * @brief Decrypt data using AES 128 CBC algorithm
+ * 
+ * @param ciphertext Bytes to decrypt
+ * @param ciphertext_len Size of ciphertext
+ * @param key Key to use for decryption
+ * @param iv IV to use for decryption
+ * @param plaintext Buffer to store the plaintext in
+ * @return Length of the plaintext
+ */
 int32_t DecryptData(unsigned char *ciphertext, int32_t ciphertext_len, unsigned char *key, unsigned char *iv, unsigned char *plaintext)
 {
     int32_t len;
@@ -106,6 +137,16 @@ int32_t DecryptData(unsigned char *ciphertext, int32_t ciphertext_len, unsigned 
     return plaintext_len;
 }
 
+/**
+ * @brief Encrypt or decrypt data using the previously defined functions
+ * 
+ * @param decrypt Bool indicating wether to decrypt or encrypt
+ * @param inputData Data to encrypt/decrypt
+ * @param inputDataLen Size of input data
+ * @param key Key to use for encryption/decryption
+ * @param iv IV to use for encryption/decryption
+ * @return Vector containing the encrypted/decrypted data bytes
+ */
 std::vector<std::byte> CryptData(bool decrypt, std::byte *inputData, size_t inputDataLen, std::byte *key, std::byte *iv)
 {
     unsigned char *output = new unsigned char[inputDataLen + (inputDataLen % 16 == 0 ? 0 : (16 - inputDataLen % 16))];
@@ -125,6 +166,14 @@ std::vector<std::byte> CryptData(bool decrypt, std::byte *inputData, size_t inpu
     return outputVector;
 }
 
+/**
+ * @brief Encrypt/decrypt a blang file
+ * 
+ * @param fileData Vector containing the blang's bytes
+ * @param internalPath Blang's path as used by the game
+ * @param decrypt Bool indicating whether to decrypt or encrypt
+ * @return std::vector<std::byte> 
+ */
 std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string internalPath, bool decrypt)
 {
     std::string keyDeriveStatic = "swapTeam\n";

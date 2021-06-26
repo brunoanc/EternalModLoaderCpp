@@ -5,7 +5,8 @@
 //   Sean Middleditch <sean@middleditch.us>
 //   rlyeh <https://github.com/r-lyeh>
 
-#pragma once
+#ifndef JSONXX_H
+#define JSONXX_H
 
 #include <cstddef>
 #include <cassert>
@@ -532,3 +533,5 @@ inline Object &Object::operator<<(const T &value) {
 std::ostream& operator<<(std::ostream& stream, const jsonxx::Value& v);
 std::ostream& operator<<(std::ostream& stream, const jsonxx::Object& v);
 std::ostream& operator<<(std::ostream& stream, const jsonxx::Array& v);
+
+#endif

@@ -17,8 +17,6 @@
 */
 
 #include <iostream>
-#include <vector>
-#include <fstream>
 #include <filesystem>
 #include <algorithm>
 #include <cstring>
@@ -26,6 +24,7 @@
 #include <climits>
 #include <chrono>
 #include <thread>
+#include <sstream>
 
 #include "EternalModLoader.hpp"
 
@@ -33,10 +32,8 @@ namespace chrono = std::chrono;
 
 const int32_t Version = 9;
 const std::string ResourceDataFileName = "rs_data";
-const std::string PackageMapSpecJsonFileName = "packagemapspec.json";
-const std::byte *DivinityMagic = (std::byte*)"DIVINITY";
 
-char separator;
+char Separator;
 std::string BasePath;
 bool Verbose = false;
 bool SlowMode = false;
@@ -52,38 +49,31 @@ int32_t streamIndex = 0;
 std::byte *Buffer = NULL;
 int64_t BufferSize = -1;
 
-std::string RESET = "";
-std::string RED = "";
-std::string GREEN = "";
-std::string YELLOW = "";
-std::string BLUE = "";
+std::mutex mtx;
 
+/**
+ * @brief Program's main entrypoint
+ * 
+ * @param argc Number of arguments passed to program
+ * @param argv Array containing the arguments passed
+ * @return Exit code indicating success/failure
+ */
 int main(int argc, char **argv)
 {
+    // Disable sync with stdio
     std::ios::sync_with_stdio(false);
 
+    // Make cout fully buffered to increase program speed
     char coutBuf[8192];
     std::cout.rdbuf()->pubsetbuf(coutBuf, 8192);
 
-    separator = std::filesystem::path::preferred_separator;
+    Separator = std::filesystem::path::preferred_separator;
 
-    if (std::getenv("ETERNALMODLOADER_NO_COLORS") == NULL) {
-#ifdef _WIN32
-        HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-        DWORD dwMode = 0;
-        GetConsoleMode(hOut, &dwMode);
-        dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-        SetConsoleMode(hOut, dwMode);
-#endif
+    // Enable colored output
+    EnableColors();
 
-        RESET = "\033[0m";
-        RED = "\033[31m";
-        GREEN = "\033[32m";
-        YELLOW = "\033[33m";
-        BLUE = "\033[34m";
-    }
-
-    if (argc == 1 || argc > 3) {
+    // Display help
+    if (argc == 1) {
         std::cout << "EternalModLoaderCpp by PowerBall253, based on EternalModLoader by proteh\n\n";
         std::cout << "Loads DOOM Eternal mods from ZIPs or loose files in 'Mods' folder into the .resources files in the specified directory.\n\n";
         std::cout << "USAGE: " << argv[0] << " <game path | --version> [OPTIONS]\n";
@@ -96,12 +86,13 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    // Display and return program version
     if (!strcmp(argv[1], "--version")) {
         std::cout << Version << std::endl;
         return Version;
     }
 
-    BasePath = std::string(argv[1]) + separator + "base" + separator;
+    BasePath = std::string(argv[1]) + Separator + "base" + Separator;
 
     if (!std::filesystem::exists(BasePath)) {
         std::cerr << RED << "ERROR: " << RESET << "Game directory does not exist!" << std::endl;
@@ -110,6 +101,7 @@ int main(int argc, char **argv)
 
     bool listResources = false;
 
+    // Check arguments passed to program
     if (argc > 2) {
         for (int32_t i = 2; i < argc; i++) {
             if (!strcmp(argv[i], "--list-res")) {
@@ -134,9 +126,11 @@ int main(int argc, char **argv)
         }
     }
 
+    // Reserve enough space for all resource/sound containers
     ResourceContainerList.reserve(80);
     SoundContainerList.reserve(40);
 
+    // Parse rs_data
     if (!listResources) {
         std::string resourceDataFilePath = BasePath + ResourceDataFileName;
 
@@ -158,15 +152,16 @@ int main(int argc, char **argv)
         }
     }
 
+    // Find mods
     std::vector<std::string> zippedMods;
     std::vector<std::string> unzippedMods;
     std::vector<std::string> notFoundContainers;
 
-    for (const auto &file : std::filesystem::recursive_directory_iterator(std::string(argv[1]) + separator + "Mods")) {
+    for (const auto &file : std::filesystem::recursive_directory_iterator(std::string(argv[1]) + Separator + "Mods")) {
         if (!std::filesystem::is_regular_file(file.path()))
             continue;
 
-        if (file.path().extension() == ".zip" && file.path() == std::string(argv[1]) + separator + "Mods" + separator + file.path().filename().string()) {
+        if (file.path().extension() == ".zip" && file.path() == std::string(argv[1]) + Separator + "Mods" + Separator + file.path().filename().string()) {
             zippedMods.push_back(file.path().string());
         }
         else if (file.path().extension() != ".zip") {
@@ -174,8 +169,10 @@ int main(int argc, char **argv)
         }
     }
 
+    // Get the resource container paths
     GetResourceContainerPathList();
 
+    // Load zipped mods
     chrono::steady_clock::time_point zippedModsBegin = chrono::steady_clock::now();
 
     std::vector<std::thread> zippedModLoadingThreads;
@@ -190,6 +187,7 @@ int main(int argc, char **argv)
     chrono::steady_clock::time_point zippedModsEnd = chrono::steady_clock::now();
     double zippedModsTime = chrono::duration_cast<chrono::microseconds>(zippedModsEnd - zippedModsBegin).count() / 1000000.0;
 
+    // Load unzipped mods
     chrono::steady_clock::time_point unzippedModsBegin = chrono::steady_clock::now();
 
     std::vector<std::thread> unzippedModLoadingThreads;
@@ -211,6 +209,7 @@ int main(int argc, char **argv)
     chrono::steady_clock::time_point unzippedModsEnd = chrono::steady_clock::now();
     double unzippedModsTime = chrono::duration_cast<chrono::microseconds>(unzippedModsEnd - unzippedModsBegin).count() / 1000000.0;
 
+    // List resources to be modified and exit
     if (listResources) {
         for (auto &resourceContainer : ResourceContainerList) {
             if (resourceContainer.Path.empty())
@@ -251,11 +250,26 @@ int main(int argc, char **argv)
         return 0;
     }
 
+    // Display not found containers
     for (auto &container : notFoundContainers)
         std::cerr << RED << "WARNING: " << YELLOW << container << RESET << " was not found! Skipping..." << std::endl;
 
     std::cout.flush();
 
+    // Set buffer for file i/o
+    try {
+        SetOptimalBufferSize(std::filesystem::absolute(".").root_path().string());
+    }
+    catch (...) {
+        std::cerr << RED << "ERROR: " << RESET << "Error while determining the optimal buffer size, using 4096 as the default." << std::endl;
+
+        if (Buffer != NULL)
+            delete[] Buffer;
+
+        Buffer = new std::byte[4096];
+    }
+
+    // Load mods
     chrono::steady_clock::time_point modLoadingBegin = chrono::steady_clock::now();
 
     stringStreams.resize(ResourceContainerList.size() + SoundContainerList.size());
@@ -270,7 +284,7 @@ int main(int argc, char **argv)
         for (auto &soundContainer : SoundContainerList)
             modLoadingThreads.push_back(std::thread(LoadSoundMods, std::ref(soundContainer)));
 
-        for (int i = 0; i < modLoadingThreads.size(); i++) {
+        for (int32_t i = 0; i < modLoadingThreads.size(); i++) {
             modLoadingThreads[i].join();
             std::cout << stringStreams[i].rdbuf();
         }
@@ -283,11 +297,13 @@ int main(int argc, char **argv)
             LoadSoundMods(soundContainer);
     }
 
-    ModifyPackageMapSpec();
+    // Modify PackageMapSpec JSON file in disk
+    PackageMapSpecInfo.ModifyPackageMapSpec();
 
-    if (Buffer != NULL)
-        delete[] Buffer;
+    // Delete buffer
+    delete[] Buffer;
 
+    // Display metrics
     chrono::steady_clock::time_point modLoadingEnd = chrono::steady_clock::now();
     double modLoadingTime = chrono::duration_cast<chrono::microseconds>(modLoadingEnd - modLoadingBegin).count() / 1000000.0;
 
@@ -299,5 +315,6 @@ int main(int argc, char **argv)
 
     std::cout << GREEN << "Total time taken: " << zippedModsTime + unzippedModsTime + modLoadingTime << " seconds." << RESET << std::endl;
 
+    // Exit the program with error code 0
     return 0;
 }

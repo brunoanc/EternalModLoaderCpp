@@ -19,22 +19,11 @@
 #ifndef ETERNALMODLOADER_HPP
 #define ETERNALMODLOADER_HPP
 
+#include <vector>
 #include <map>
 #include <optional>
-#include <vector>
-#include <cmath>
-#include <cstdint>
-#include <sstream>
 #include <mutex>
 #include <atomic>
-
-#include "AssetsInfo.hpp"
-#include "Oodle.hpp"
-#include "PackageMapSpec.hpp"
-
-#ifdef __CYGWIN__
-#define _WIN32
-#endif
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -45,24 +34,22 @@
 #include <sys/mman.h>
 #endif
 
-class Mod {
-public:
-    std::string Name;
-    std::string Author;
-    std::string Description;
-    std::string Version;
-    int32_t LoadPriority = 0;
-    int32_t RequiredVersion = 0;
+#include "AssetsInfo/AssetsInfo.hpp"
+#include "BlangFile/BlangFile.hpp"
+#include "Colors/Colors.hpp"
+#include "MapResourcesFile/MapResourcesFile.hpp"
+#include "MemoryMappedFile/MemoryMappedFile.hpp"
+#include "Mod/Mod.hpp"
+#include "Oodle/Oodle.hpp"
+#include "PackageMapSpec/PackageMapSpec.hpp"
+#include "PackageMapSpec/PackageMapSpecInfo.hpp"
+#include "ResourceData/ResourceData.hpp"
+#include "Utils/Utils.hpp"
 
-    Mod(std::string name)
-    {
-        Name = name;
-    }
-
-    Mod() {}
-    Mod(std::string name, std::string &json);
-};
-
+/**
+ * @brief ResourceModFile class
+ * 
+ */
 class ResourceModFile {
 public:
     Mod Parent;
@@ -81,6 +68,12 @@ public:
     std::optional<std::byte> SpecialByte2 = std::nullopt;
     std::optional<std::byte> SpecialByte3 = std::nullopt;
 
+    /**
+     * @brief Construct a new ResourceModFile object
+     * 
+     * @param parent Mod to inherit data from
+     * @param name Mod file's name
+     */
     ResourceModFile(Mod parent, std::string name)
     {
         Parent = parent;
@@ -88,12 +81,22 @@ public:
     }
 };
 
+/**
+ * @brief SoundModFile class
+ * 
+ */
 class SoundModFile {
 public:
     Mod Parent;
     std::string Name;
     std::vector<std::byte> FileBytes;
 
+    /**
+     * @brief Construct a new SoundModFile object
+     * 
+     * @param parent Mod to inherit data from
+     * @param name Sound file's name
+     */
     SoundModFile(Mod parent, std::string name)
     {
         Parent = parent;
@@ -101,20 +104,34 @@ public:
     }
 };
 
+/**
+ * @brief ResourceName class
+ * 
+ */
 class ResourceName {
 public:
     std::string FullFileName;
     std::string NormalizedFileName;
 
-    ResourceName() {}
-
+    /**
+     * @brief Construct a new ResourceName object
+     * 
+     * @param fullFileName Resource's full name
+     * @param normalizedFileName Resource's normalized name
+     */
     ResourceName(std::string fullFileName, std::string normalizedFileName)
     {
         FullFileName = fullFileName;
         NormalizedFileName = normalizedFileName;
     }
+
+    ResourceName() {}
 };
 
+/**
+ * @brief ResourceChunk class
+ * 
+ */
 class ResourceChunk {
 public:
     class ResourceName ResourceName;
@@ -124,6 +141,12 @@ public:
     int64_t Size = 0;
     std::byte CompressionMode = (std::byte)0;
 
+    /**
+     * @brief Construct a new ResourceChunk object
+     * 
+     * @param name Resource chunk's name
+     * @param fileOffset Resource chunk's offset in the resource container
+     */
     ResourceChunk(class ResourceName name, int64_t fileOffset)
     {
         ResourceName = name;
@@ -136,6 +159,10 @@ public:
     ResourceChunk() {}
 };
 
+/**
+ * @brief ResourceContainer class
+ * 
+ */
 class ResourceContainer {
 public:
     std::string Name;
@@ -158,12 +185,24 @@ public:
     std::vector<ResourceModFile> ModFileList;
     std::vector<ResourceModFile> NewModFileList;
 
+    /**
+     * @brief Construct a new ResourceContainer object
+     * 
+     * @param name Resource container's name
+     * @param path Resource container's path
+     */
     ResourceContainer(std::string name, std::string path)
     {
         Name = name;
         Path = path;
     }
 
+    /**
+     * @brief Check if resource container contains a resource with the given name
+     * 
+     * @param name Name of the resource to find
+     * @return True if found, false otherwise
+     */
     bool ContainsResourceWithName(std::string name)
     {
         for (auto &resourceName : NamesList) {
@@ -174,6 +213,12 @@ public:
         return false;
     }
 
+    /**
+     * @brief Get the name ID from a resource
+     * 
+     * @param name Name of the resource to find
+     * @return the resource's ID if found, -1 otherwise
+     */
     int64_t GetResourceNameId(std::string name)
     {
         for (int32_t i = 0; i < NamesList.size(); i++) {
@@ -185,11 +230,21 @@ public:
     }
 };
 
+/**
+ * @brief SoundEntry class
+ * 
+ */
 class SoundEntry {
 public:
     uint32_t SoundId = 0;
     int64_t InfoOffset = 0;
 
+    /**
+     * @brief Construct a new SoundEntry object
+     * 
+     * @param soundId Sound's ID
+     * @param infoOffset Sound info's offset in the sound container
+     */
     SoundEntry(uint32_t soundId, int64_t infoOffset)
     {
         SoundId = soundId;
@@ -197,6 +252,10 @@ public:
     }
 };
 
+/**
+ * @brief SoundContainer class
+ * 
+ */
 class SoundContainer {
 public:
     std::string Name;
@@ -204,6 +263,12 @@ public:
     std::vector<SoundModFile> ModFileList;
     std::vector<SoundEntry> SoundEntries;
 
+    /**
+     * @brief Construct a new SoundContainer object
+     * 
+     * @param name Sound container's name
+     * @param path Sound container's path
+     */
     SoundContainer(std::string name, std::string path)
     {
         Name = name;
@@ -211,45 +276,22 @@ public:
     }
 };
 
-class BlangString {
-public:
-    uint32_t Hash = 0;
-    std::string Identifier;
-    std::string Text;
-    std::vector<std::byte> Unknown;
-
-    BlangString()
-    {
-        Identifier = "";
-        Text = "";
-    }
-
-    BlangString(uint32_t hash, std::string identifier, std::string text, std::vector<std::byte> unknown)
-    {
-        Hash = hash;
-        Identifier = identifier;
-        Text = text;
-        Unknown = unknown;
-    }
-};
-
-class BlangFile {
-public:
-    int64_t UnknownData = 0;
-    std::vector<BlangString> Strings;
-
-    BlangFile() {}
-    BlangFile(std::vector<std::byte> &blangBytes);
-
-    std::vector<std::byte> ToByteVector();
-};
-
+/**
+ * @brief BlangFileEntry class
+ * 
+ */
 class BlangFileEntry {
 public:
     class BlangFile BlangFile;
     ResourceChunk Chunk;
     bool WasModified = false;
 
+    /**
+     * @brief Construct a new BlangFileEntry object
+     * 
+     * @param blangFile BlangFile object
+     * @param chunk ResourceChunk containing the blang file
+     */
     BlangFileEntry(class BlangFile blangFile, ResourceChunk chunk)
     {
         BlangFile = blangFile;
@@ -259,66 +301,22 @@ public:
     BlangFileEntry() {}
 };
 
-class MapAsset {
-public:
-    int32_t AssetTypeIndex;
-    std::string Name;
-    int32_t UnknownData1 = 0;
-    int32_t UnknownData2 = 0;
-    int64_t UnknownData3 = 0;
-    int64_t UnknownData4 = 0;
-};
-
-class ResourceDataEntry {
-public:
-    uint64_t StreamDbHash = 0;
-    std::string ResourceType;
-    std::string MapResourceType;
-    std::string MapResourceName;
-    std::byte Version = (std::byte)0;
-    std::byte SpecialByte1 = (std::byte)0;
-    std::byte SpecialByte2 = (std::byte)0;
-    std::byte SpecialByte3 = (std::byte)0;
-};
-
-class MapResourcesFile {
-public:
-    int32_t Magic = 0;
-    std::vector<std::string> Layers;
-    std::vector<std::string> AssetTypes;
-    std::vector<MapAsset> Assets;
-    std::vector<std::string> Maps;
-
-    MapResourcesFile() {}
-    MapResourcesFile(std::vector<std::byte> &rawData);
-
-    std::vector<std::byte> ToByteVector();
-};
-
-class PackageMapSpecInfo {
-public:
-    class PackageMapSpec *PackageMapSpec = NULL;
-    std::string PackageMapSpecPath;
-    bool invalidPackageMapSpec;
-    bool WasPackageMapSpecModified;
-};
-
+/**
+ * @brief Equality operator for ResourceChunk objects
+ * 
+ * @param chunk1 First ResourceChunk object
+ * @param chunk2 Second ResourceChunk object
+ * @return True if equal, false otherwise
+ */
 inline bool operator==(ResourceChunk& chunk1, const ResourceChunk& chunk2)
 {
     return chunk1.ResourceName.FullFileName == chunk2.ResourceName.FullFileName;
 }
 
-inline bool operator==(MapAsset& mapAsset1, const MapAsset& mapAsset2)
-{
-    return mapAsset1.Name == mapAsset2.Name;
-}
-
+// Global variables
 extern const int32_t Version;
-extern const std::string ResourceDataFileName;
-extern const std::string PackageMapSpecJsonFileName;
-extern const std::byte *DivinityMagic;
 
-extern char separator;
+extern char Separator;
 extern std::string BasePath;
 extern bool Verbose;
 extern bool SlowMode;
@@ -335,75 +333,48 @@ extern int32_t streamIndex;
 extern std::byte *Buffer;
 extern int64_t BufferSize;
 
-extern std::string RESET;
-extern std::string RED;
-extern std::string GREEN;
-extern std::string YELLOW;
-extern std::string BLUE;
-
 extern std::mutex mtx;
 
 extern class PackageMapSpecInfo PackageMapSpecInfo;
 
-#ifdef _WIN32
-int32_t ResizeMmap(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, int64_t newSize);
-void ReplaceChunks(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, ResourceContainer &resourceContainer, std::stringstream &os);
-void AddChunks(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, ResourceContainer &resourceContainer, std::stringstream &os);
-void ReplaceSounds(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, SoundContainer &soundContainer, std::stringstream &os);
-int32_t SetModDataForChunk(
-    std::byte *&mem,
-    HANDLE &hFile,
-    HANDLE &fileMapping,
-    ResourceContainer &resourceContainer,
-    ResourceChunk &chunk,
-    ResourceModFile &modFile,
-    uint64_t compressedSize,
-    uint64_t uncompressedSize,
-    std::byte *compressionMode,
-    std::stringstream &os
-);
-#else
-int32_t ResizeMmap(std::byte *&mem, int32_t &fd, std::string filePath, int64_t oldSize, int64_t newSize);
-void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContainer, std::stringstream &os);
-void AddChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContainer, std::stringstream &os);
-void ReplaceSounds(std::byte *&mem, int32_t &fd, SoundContainer &soundContainer, std::stringstream &os);
-int32_t SetModDataForChunk(
-    std::byte *&mem,
-    int32_t &fd,
-    ResourceContainer &resourceContainer,
-    ResourceChunk &chunk,
-    ResourceModFile &modFile,
-    uint64_t compressedSize,
-    uint64_t uncompressedSize,
-    std::byte *compressionMode,
-    std::stringstream &os
-);
-#endif
-
-std::string PathToResourceContainer(std::string name);
-void ReadChunkInfo(std::byte *&mem, ResourceContainer &resourceContainer);
-ResourceChunk *GetChunk(std::string name, ResourceContainer &resourceContainer);
-void ReadResource(std::byte *&mem, ResourceContainer &resourceContainer);
-int32_t GetResourceContainer(std::string &resourceContainerName);
-std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string internalPath, bool decrypt);
-std::string RemoveWhitespace(std::string &stringWithWhitespace);
-std::string ToLower(std::string &str);
-std::vector<std::string> SplitString(std::string stringToSplit, char delimiter);
-std::map<uint64_t, ResourceDataEntry> ParseResourceData(std::string &filename);
-uint64_t CalculateResourceFileNameHash(std::string &input);
-std::string NormalizeResourceFilename(std::string filename);
-bool EndsWith(const std::string &fullString, const std::string &suffix);
-bool StartsWith(const std::string &fullString, const std::string &prefix);
-std::string PathToSoundContainer(std::string name);
-int32_t GetSoundContainer(std::string &soundContainerName);
-void ReadSoundEntries(std::byte *mem, SoundContainer &soundContainer);
-std::vector<SoundEntry> GetSoundEntriesToModify(SoundContainer &soundContainer, uint32_t soundModId);
-void SetOptimalBufferSize(std::string driveRootPath);
-void ModifyPackageMapSpec();
+// Resource mods
 void LoadResourceMods(ResourceContainer &resourceContainer);
+void ReadResource(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceContainer);
+void ReadChunkInfo(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceContainer);
+void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceContainer, std::stringstream &os);
+void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceContainer, std::stringstream &os);
+bool SetModDataForChunk(
+    MemoryMappedFile &memoryMappedFile,
+    ResourceContainer &resourceContainer,
+    ResourceChunk &chunk,
+    ResourceModFile &modFile,
+    uint64_t compressedSize,
+    uint64_t uncompressedSize,
+    std::byte *compressionMode
+);
+
+// Sound mods
 void LoadSoundMods(SoundContainer &soundContainer);
+void ReadSoundEntries(MemoryMappedFile &memoryMappedFile, SoundContainer &soundContainer);
+std::vector<SoundEntry> GetSoundEntriesToModify(SoundContainer &soundContainer, uint32_t soundModId);
+void ReplaceSounds(MemoryMappedFile &memoryMappedFile, SoundContainer &soundContainer, std::stringstream &os);
+
+// Path to containers
+std::string PathToResourceContainer(std::string name);
+std::string PathToSoundContainer(std::string name);
+
+// Get object
+int32_t GetResourceContainer(std::string &resourceContainerName);
+int32_t GetSoundContainer(std::string &soundContainerName);
+ResourceChunk *GetChunk(std::string name, ResourceContainer &resourceContainer);
+
+// Load mod files
 void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::string> &notFoundContainers);
 void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLooseMod, std::atomic<int32_t> &unzippedModCount, std::vector<std::string> &notFoundContainers);
+
+// Misc
+std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string internalPath, bool decrypt);
+void SetOptimalBufferSize(std::string driveRootPath);
 void GetResourceContainerPathList();
 
 #endif

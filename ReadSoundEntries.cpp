@@ -2,11 +2,17 @@
 
 #include "EternalModLoader.hpp"
 
-void ReadSoundEntries(std::byte *mem, SoundContainer &soundContainer)
+/**
+ * @brief Read all sound entries in the given sound container
+ * 
+ * @param memoryMappedFile MemoryMappedFile object containing the resource to read from
+ * @param soundContainer SoundContainer object to read data from
+ */
+void ReadSoundEntries(MemoryMappedFile &memoryMappedFile, SoundContainer &soundContainer)
 {
     uint32_t infoSize, headerSize;
-    std::copy(mem + 4, mem + 8, (std::byte*)&infoSize);
-    std::copy(mem + 8, mem + 12, (std::byte*)&headerSize);
+    std::copy(memoryMappedFile.Mem + 4, memoryMappedFile.Mem + 8, (std::byte*)&infoSize);
+    std::copy(memoryMappedFile.Mem + 8, memoryMappedFile.Mem + 12, (std::byte*)&headerSize);
 
     int64_t pos = headerSize + 12;
 
@@ -14,7 +20,7 @@ void ReadSoundEntries(std::byte *mem, SoundContainer &soundContainer)
         pos += 8;
 
         uint32_t soundId;
-        std::copy(mem + pos, mem + pos + 4, (std::byte*)&soundId);
+        std::copy(memoryMappedFile.Mem + pos, memoryMappedFile.Mem + pos + 4, (std::byte*)&soundId);
         pos += 4;
 
         soundContainer.SoundEntries.push_back(SoundEntry(soundId, pos));

@@ -5,6 +5,13 @@
 #include "miniz/miniz.h"
 #include "EternalModLoader.hpp"
 
+/**
+ * @brief Load mod files from zip
+ * 
+ * @param zippedMod Zipped mod path
+ * @param listResources Bool indicating whether to load the mod files or to only get the resources to modify
+ * @param notFoundContainers Vector to push not found resources to
+ */
 void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::string> &notFoundContainers)
 {
     int32_t zippedModCount = 0;
@@ -213,9 +220,18 @@ void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::s
     mz_zip_reader_end(&modZip);
 }
 
+/**
+ * @brief Load loose mod files from Mods directory
+ * 
+ * @param unzippedMod Loose mod path
+ * @param listResources Bool indicating whether to load the mod files or to only get the resources to modify
+ * @param globalLooseMod Mod object to use for all loose mods
+ * @param unzippedModCount Atomic int to increase with every unzipped mod loaded
+ * @param notFoundContainers Vector to push not found resources to
+ */
 void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLooseMod, std::atomic<int32_t> &unzippedModCount, std::vector<std::string> &notFoundContainers)
 {
-    std::replace(unzippedMod.begin(), unzippedMod.end(), separator, '/');
+    std::replace(unzippedMod.begin(), unzippedMod.end(), Separator, '/');
     std::vector<std::string> modFilePathParts = SplitString(unzippedMod, '/');
 
     if (modFilePathParts.size() < 4)

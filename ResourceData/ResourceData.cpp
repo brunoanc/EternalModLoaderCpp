@@ -18,9 +18,19 @@
 
 #include <iostream>
 #include <filesystem>
+#include <algorithm>
+#include <map>
 
-#include "EternalModLoader.hpp"
+#include "Colors/Colors.hpp"
+#include "Oodle/Oodle.hpp"
+#include "ResourceData/ResourceData.hpp"
 
+/**
+ * @brief Parse the resource data file from disk
+ * 
+ * @param fileName Resource data filename
+ * @return Map containing the parsed resource data
+ */
 std::map<uint64_t, ResourceDataEntry> ParseResourceData(std::string &fileName)
 {
     std::map<uint64_t, ResourceDataEntry> resourceDataMap;
@@ -113,6 +123,12 @@ std::map<uint64_t, ResourceDataEntry> ParseResourceData(std::string &fileName)
     return resourceDataMap;
 }
 
+/**
+ * @brief Calculate the resource filename hash
+ * 
+ * @param input Filename to hash
+ * @return Filename's resource hash
+ */
 uint64_t CalculateResourceFileNameHash(std::string &input)
 {
     uint64_t hashedValue = 3074457345618258791;

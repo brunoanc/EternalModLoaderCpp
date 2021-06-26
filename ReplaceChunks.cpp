@@ -20,18 +20,22 @@
 #include <filesystem>
 #include <algorithm>
 #include <cstring>
-#include <mutex>
 
 #include "jsonxx/jsonxx.h"
 #include "EternalModLoader.hpp"
 
+const std::byte *DivinityMagic = (std::byte*)"DIVINITY";
+const std::string PackageMapSpecJsonFileName = "packagemapspec.json";
 class PackageMapSpecInfo PackageMapSpecInfo;
 
-#ifdef _WIN32
-void ReplaceChunks(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, ResourceContainer &resourceContainer, std::stringstream &os)
-#else
-void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceContainer, std::stringstream &os)
-#endif
+/**
+ * @brief Replace chunks in the given resource file
+ * 
+ * @param memoryMappedFile MemoryMappedFile object containing the resource to modify
+ * @param resourceContainer ResourceContainer object containing the resources's data
+ * @param os StringStream to output to
+ */
+void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceContainer, std::stringstream &os)
 {
     ResourceChunk *mapResourcesChunk = NULL;
     MapResourcesFile *mapResourcesFile = NULL;
@@ -250,8 +254,8 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                         std::vector<std::byte> mapResourcesBytes(mapResourcesChunk->SizeZ);
                         uint64_t mapResourcesFileOffset;
 
-                        std::copy(mem + mapResourcesChunk->FileOffset, mem + mapResourcesChunk->FileOffset + 8, (std::byte*)&mapResourcesFileOffset);
-                        std::copy(mem + mapResourcesFileOffset, mem + mapResourcesFileOffset + mapResourcesBytes.size(), mapResourcesBytes.begin());
+                        std::copy(memoryMappedFile.Mem + mapResourcesChunk->FileOffset, memoryMappedFile.Mem + mapResourcesChunk->FileOffset + 8, (std::byte*)&mapResourcesFileOffset);
+                        std::copy(memoryMappedFile.Mem + mapResourcesFileOffset, memoryMappedFile.Mem + mapResourcesFileOffset + mapResourcesBytes.size(), mapResourcesBytes.begin());
 
                         try {
                             originalDecompressedMapResources = OodleDecompress(mapResourcesBytes, mapResourcesChunk->Size);
@@ -497,8 +501,8 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                             std::vector<std::byte> mapResourcesBytes(mapResourcesChunk->SizeZ);
                             uint64_t mapResourcesFileOffset;
 
-                            std::copy(mem + mapResourcesChunk->FileOffset, mem + mapResourcesChunk->FileOffset + 8, (std::byte*)&mapResourcesFileOffset);
-                            std::copy(mem + mapResourcesFileOffset, mem + mapResourcesFileOffset + mapResourcesBytes.size(), mapResourcesBytes.begin());
+                            std::copy(memoryMappedFile.Mem + mapResourcesChunk->FileOffset, memoryMappedFile.Mem + mapResourcesChunk->FileOffset + 8, (std::byte*)&mapResourcesFileOffset);
+                            std::copy(memoryMappedFile.Mem + mapResourcesFileOffset, memoryMappedFile.Mem + mapResourcesFileOffset + mapResourcesBytes.size(), mapResourcesBytes.begin());
 
                             try {
                                 originalDecompressedMapResources = OodleDecompress(mapResourcesBytes, mapResourcesChunk->Size);
@@ -576,10 +580,10 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
 
             if (!exists) {
                 int64_t fileOffset, size;
-                std::copy(mem + chunk->FileOffset, mem + chunk->FileOffset + 8, (std::byte*)&fileOffset);
-                std::copy(mem + chunk->FileOffset + 8, mem + chunk->FileOffset + 16, (std::byte*)&size);
+                std::copy(memoryMappedFile.Mem + chunk->FileOffset, memoryMappedFile.Mem + chunk->FileOffset + 8, (std::byte*)&fileOffset);
+                std::copy(memoryMappedFile.Mem + chunk->FileOffset + 8, memoryMappedFile.Mem + chunk->FileOffset + 16, (std::byte*)&size);
 
-                std::vector<std::byte> blangFileBytes(mem + fileOffset, mem + fileOffset + size);
+                std::vector<std::byte> blangFileBytes(memoryMappedFile.Mem + fileOffset, memoryMappedFile.Mem + fileOffset + size);
                 std::vector<std::byte> decryptedBlangFileBytes = IdCrypt(blangFileBytes, modFile.Name, true);
 
                 if (decryptedBlangFileBytes.empty()) {
@@ -678,11 +682,7 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
             }
         }
 
-#ifdef _WIN32
-        if (SetModDataForChunk(mem, hFile, fileMapping, resourceContainer, *chunk, modFile, compressedSize, uncompressedSize, &compressionMode, os) == -1) {
-#else
-        if (SetModDataForChunk(mem, fd, resourceContainer, *chunk, modFile, compressedSize, uncompressedSize, &compressionMode, os) == -1) {
-#endif
+        if (!SetModDataForChunk(memoryMappedFile, resourceContainer, *chunk, modFile, compressedSize, uncompressedSize, &compressionMode)) {
             os << RED << "ERROR: " << RESET << "Failed to set new mod data for " << modFile.Name << " in resource chunk." << '\n';
             continue;
         }
@@ -713,11 +713,7 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
         blangModFile.FileBytes = cryptData;
         std::byte compressionMode = (std::byte)0;
 
-#ifdef _WIN32
-        if (SetModDataForChunk(mem, hFile, fileMapping, resourceContainer, blangFileEntry.second.Chunk, blangModFile, blangModFile.FileBytes.size(), blangModFile.FileBytes.size(), &compressionMode, os) == -1) {
-#else
-        if (SetModDataForChunk(mem, fd, resourceContainer, blangFileEntry.second.Chunk, blangModFile, blangModFile.FileBytes.size(), blangModFile.FileBytes.size(), &compressionMode, os) == -1) {
-#endif
+        if (!SetModDataForChunk(memoryMappedFile, resourceContainer, blangFileEntry.second.Chunk, blangModFile, blangModFile.FileBytes.size(), blangModFile.FileBytes.size(), &compressionMode)) {
             os << RED << "ERROR: " << RESET << "Failed to set new mod data for " << blangFileEntry.first << "in resource chunk." << '\n';
             continue;
         }
@@ -739,11 +735,7 @@ void ReplaceChunks(std::byte *&mem, int32_t &fd, ResourceContainer &resourceCont
                 ResourceModFile mapResourcesModFile(Mod(), mapResourcesChunk->ResourceName.NormalizedFileName);
                 mapResourcesModFile.FileBytes = compressedMapResourcesData;
 
-#ifdef _WIN32
-                if (SetModDataForChunk(mem, hFile, fileMapping, resourceContainer, *mapResourcesChunk,  mapResourcesModFile, compressedMapResourcesData.size(), decompressedMapResourcesData.size(), NULL, os) == -1) {
-#else
-                if (SetModDataForChunk(mem, fd, resourceContainer, *mapResourcesChunk,  mapResourcesModFile, compressedMapResourcesData.size(), decompressedMapResourcesData.size(), NULL, os) == -1) {
-#endif
+                if (!SetModDataForChunk(memoryMappedFile, resourceContainer, *mapResourcesChunk,  mapResourcesModFile, compressedMapResourcesData.size(), decompressedMapResourcesData.size(), NULL)) {
                     os << RED << "ERROR: " << RESET << "Failed to set new mod data for " << mapResourcesChunk->ResourceName.NormalizedFileName << "in resource chunk." << '\n';
                     delete mapResourcesFile;
                     return;

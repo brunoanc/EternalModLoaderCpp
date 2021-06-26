@@ -19,8 +19,6 @@
 #include <iostream>
 #include <vector>
 
-#include "EternalModLoader.hpp"
-
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -28,17 +26,25 @@
 #include <dlfcn.h>
 #endif
 
+#include "Oodle/Oodle.hpp"
+
 static OodLZ_CompressFunc* OodLZ_Compress;
 static OodLZ_DecompressFunc* OodLZ_Decompress;
+extern std::string BasePath;
 
-int32_t OodleInit()
+/**
+ * @brief Init the Oodle functions from the dll
+ * 
+ * @return True on success, false otherwise
+ */
+bool OodleInit()
 {
 #ifdef _WIN32
     std::string oo2corePath = BasePath + "..\\oo2core_8_win64.dll";
     HMODULE oodle = LoadLibraryA(oo2corePath.c_str());
     
     if (!oodle)
-        return -1;
+        return false;
 
     OodLZ_Compress = (OodLZ_CompressFunc*)GetProcAddress(oodle, "OodleLZ_Compress");
     OodLZ_Decompress = (OodLZ_DecompressFunc*)GetProcAddress(oodle, "OodleLZ_Decompress");
@@ -47,22 +53,29 @@ int32_t OodleInit()
     void *oodle = dlopen(linoodlePath.c_str(), RTLD_LAZY);
 
     if (!oodle)
-        return -1;
+        return false;
 
     OodLZ_Compress = (OodLZ_CompressFunc*)dlsym(oodle, "OodleLZ_Compress");
     OodLZ_Decompress = (OodLZ_DecompressFunc*)dlsym(oodle, "OodleLZ_Decompress");
 #endif
 
     if (!OodLZ_Compress || !OodLZ_Decompress)
-        return -1;
+        return false;
 
-    return 0;
+    return true;
 }
 
+/**
+ * @brief Decompress the given data with the Oodle function
+ * 
+ * @param compressedData Byte vector containing the data to decompress
+ * @param decompressedSize Size of the data to decompress
+ * @return A byte vector containing the decompressed data, or an empty byte vector on failure
+ */
 std::vector<std::byte> OodleDecompress(std::vector<std::byte> &compressedData, int64_t decompressedSize)
 {
     if (!OodLZ_Decompress) {
-        if (OodleInit() == -1)
+        if (!OodleInit())
             throw std::exception();
     }
 
@@ -74,10 +87,18 @@ std::vector<std::byte> OodleDecompress(std::vector<std::byte> &compressedData, i
     return decompressedData;
 }
 
+/**
+ * @brief Compress the given data with the Oodle function
+ * 
+ * @param decompressedData Byte vector containing the data to compress
+ * @param format Oodle format to use for compression
+ * @param compressionLevel Oodle compression level to use for compression
+ * @return A byte vector containing the compressed data, or an empty byte vector on failure
+ */
 std::vector<std::byte> OodleCompress(std::vector<std::byte> &decompressedData, OodleFormat format, OodleCompressionLevel compressionLevel)
 {
     if (!OodLZ_Compress) {
-        if (OodleInit() == -1)
+        if (!OodleInit())
             throw std::exception();
     }
 
