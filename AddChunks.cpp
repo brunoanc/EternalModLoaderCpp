@@ -136,7 +136,7 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
             modFile.SpecialByte2 = (std::byte)0;
             modFile.SpecialByte3 = (std::byte)0;
 
-            if (Verbose) {
+            if (Verbose && !EndsWith(modFile.Name, ".decl")) {
                 os << RED << "WARNING: " << RESET << "No resource data found for file: " << modFile.Name << '\n';
             }
         }
