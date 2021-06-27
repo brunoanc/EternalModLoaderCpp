@@ -17,10 +17,16 @@
 */
 
 #include <iostream>
+#include <vector>
 
 #include "jsonxx/jsonxx.h"
-#include "EternalModLoader.hpp"
+#include "PackageMapSpec/PackageMapSpec.hpp"
 
+/**
+ * @brief Construct a new PackageMapSpec object
+ * 
+ * @param json JSON to deserialize
+ */
 PackageMapSpec::PackageMapSpec(std::string &json)
 {
     jsonxx::Object packageMapSpecJson;
@@ -58,6 +64,11 @@ PackageMapSpec::PackageMapSpec(std::string &json)
     }
 }
 
+/**
+ * @brief Convert the PackageMapSpec object back to JSON
+ * 
+ * @return Serialized PackageMapSpec JSON
+ */
 std::string PackageMapSpec::Dump()
 {
     jsonxx::Object packageMapSpecJson;

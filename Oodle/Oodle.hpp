@@ -19,9 +19,6 @@
 #ifndef OODLE_HPP
 #define OODLE_HPP
 
-#include <iostream>
-#include <vector>
-
 typedef int32_t OodLZ_CompressFunc(
     int32_t codec, uint8_t *src_buf, size_t src_len, uint8_t *dst_buf, int32_t level,
     void *opts, size_t offs, size_t unused, void *scratch, size_t scratch_size);

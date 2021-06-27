@@ -19,43 +19,14 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
-#include <filesystem>
 #include <cstring>
 
-#include "EternalModLoader.hpp"
-
-int32_t GetResourceContainer(std::string &resourceContainerName)
-{
-    for (int32_t i = 0; i < ResourceContainerList.size(); i++) {
-        if (ResourceContainerList[i].Name == resourceContainerName)
-            return i;
-    }
-
-    return -1;
-}
-
-int32_t GetSoundContainer(std::string &soundContainerName)
-{
-    for (int32_t i = 0; i < SoundContainerList.size(); i++) {
-        if (SoundContainerList[i].Name == soundContainerName)
-            return i;
-    }
-
-    return -1;
-}
-
-ResourceChunk *GetChunk(std::string name, ResourceContainer &resourceContainer)
-{
-    for (auto &chunk : resourceContainer.ChunkList) {
-        if (chunk.ResourceName.FullFileName == name
-            || chunk.ResourceName.NormalizedFileName == name) {
-                return &chunk;
-        }
-    }
-
-    return NULL;
-}
-
+/**
+ * @brief Remove all whitespace from a string
+ * 
+ * @param stringWithWhitespace String to modify
+ * @return String with removed whitespace
+ */
 std::string RemoveWhitespace(std::string &stringWithWhitespace)
 {
     std::string stringWithoutWhitespace = stringWithWhitespace;
@@ -64,6 +35,12 @@ std::string RemoveWhitespace(std::string &stringWithWhitespace)
     return stringWithoutWhitespace;
 }
 
+/**
+ * @brief Converts a string to lowercase
+ * 
+ * @param str String to modify
+ * @return String converted to lowercase
+ */
 std::string ToLower(std::string &str)
 {
     std::string lowercase = str;
@@ -72,6 +49,13 @@ std::string ToLower(std::string &str)
     return lowercase;
 }
 
+/**
+ * @brief Split a string using a delimiter character
+ * 
+ * @param stringToSplit String to split
+ * @param delimiter Delimiter to use for splitting
+ * @return Vector containing the split strings
+ */
 std::vector<std::string> SplitString(std::string stringToSplit, char delimiter)
 {
     std::vector<std::string> resultVector;
@@ -89,6 +73,13 @@ std::vector<std::string> SplitString(std::string stringToSplit, char delimiter)
     return resultVector;
 }
 
+/**
+ * @brief Check wether a string ends with a suffix
+ * 
+ * @param fullString String to check
+ * @param suffix Suffix to check for
+ * @return True if the string ends with the suffix, false otherwise
+ */
 bool EndsWith(const std::string &fullString, const std::string &suffix)
 {
     if (fullString.length() >= suffix.length()) {
@@ -99,11 +90,24 @@ bool EndsWith(const std::string &fullString, const std::string &suffix)
     }
 }
 
+/**
+ * @brief Check wether a string starts with a prefix
+ * 
+ * @param fullString String to check
+ * @param suffix Prefix to check for
+ * @return True if the string starts with the prefix, false otherwise
+ */
 bool StartsWith(const std::string &fullString, const std::string &prefix)
 {
     return 0 == fullString.rfind(prefix, 0);
 }
 
+/**
+ * @brief Normalize a resource filename
+ * 
+ * @param filename Filename to normalize
+ * @return Normalized filename
+ */
 std::string NormalizeResourceFilename(std::string filename)
 {
     if (filename.find_first_of('$') != std::string::npos)
@@ -116,42 +120,4 @@ std::string NormalizeResourceFilename(std::string filename)
         filename = filename.substr(filename.find_first_of('#'));
 
     return filename;
-}
-
-#ifdef _WIN32
-int32_t ResizeMmap(std::byte *&mem, HANDLE &hFile, HANDLE &fileMapping, int64_t newSize)
-#else
-int32_t ResizeMmap(std::byte *&mem, int32_t &fd, std::string filePath, int64_t oldSize, int64_t newSize)
-#endif
-{
-    try {
-#ifdef _WIN32
-        UnmapViewOfFile(mem);
-        CloseHandle(fileMapping);
-
-        fileMapping = CreateFileMappingA(hFile, NULL, PAGE_READWRITE, *((DWORD*)&newSize + 1), *(DWORD*)&newSize, NULL);
-
-        if (GetLastError() != ERROR_SUCCESS || fileMapping == NULL)
-            throw std::exception();
-
-        mem = (std::byte*)MapViewOfFile(fileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
-
-        if (GetLastError() != ERROR_SUCCESS || mem == NULL)
-            throw std::exception();
-#else
-        munmap(mem, oldSize);
-        std::filesystem::resize_file(filePath, newSize);
-        mem = (std::byte*)mmap(0, newSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-
-        if (mem == NULL)
-            throw std::exception();
-
-        madvise(mem, newSize, MADV_WILLNEED);
-#endif
-    }
-    catch (...) {
-        return -1;
-    }
-
-    return 0;
 }

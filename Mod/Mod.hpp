@@ -16,50 +16,25 @@
 * along with EternalModLoaderCpp. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef PACKAGEMAPSPEC_HPP
-#define PACKAGEMAPSPEC_HPP
+#ifndef MOD_HPP
+#define MOD_HPP
 
-#include <iostream>
-#include <vector>
-
-class PackageMapSpecFile {
+/**
+ * @brief Mod class
+ * 
+ */
+class Mod {
 public:
     std::string Name;
-};
+    std::string Author;
+    std::string Description;
+    std::string Version;
+    int32_t LoadPriority = 0;
+    int32_t RequiredVersion = 0;
 
-class PackageMapSpecMapFileRef {
-public:
-    int32_t File;
-    int32_t Map;
-
-    PackageMapSpecMapFileRef()
-    {
-        File = -1;
-        Map = -1;
-    }
-
-    PackageMapSpecMapFileRef(int32_t file, int32_t map)
-    {
-        File = file;
-        Map = map;
-    }
-};
-
-class PackageMapSpecMap {
-public:
-    std::string Name;
-};
-
-class PackageMapSpec {
-public:
-    std::vector<PackageMapSpecFile> Files;
-    std::vector<PackageMapSpecMapFileRef> MapFileRefs;
-    std::vector<PackageMapSpecMap> Maps;
-
-    PackageMapSpec() {}
-    PackageMapSpec(std::string &json);
-
-    std::string Dump();
+    Mod() {}
+    Mod(std::string name);
+    Mod(std::string name, std::string &json);
 };
 
 #endif

@@ -17,44 +17,49 @@
 */
 
 #include <iostream>
-#include <vector>
 
 #include "EternalModLoader.hpp"
 
-void ReadResource(std::byte *&mem, ResourceContainer &resourceContainer)
+/**
+ * @brief Read resource data
+ * 
+ * @param memoryMappedFile MemoryMappedFile object containing the resource to modify
+ * @param resourceContainer ResourceContainer object to read data into
+ */
+void ReadResource(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceContainer)
 {
     int32_t fileCount;
-    std::copy(mem + 0x20, mem + 0x24, (std::byte*)&fileCount);
+    std::copy(memoryMappedFile.Mem + 0x20, memoryMappedFile.Mem + 0x24, (std::byte*)&fileCount);
 
     int32_t unknownCount;
-    std::copy(mem + 0x24, mem + 0x28, (std::byte*)&unknownCount);
+    std::copy(memoryMappedFile.Mem + 0x24, memoryMappedFile.Mem + 0x28, (std::byte*)&unknownCount);
 
     int32_t dummy2Num;
-    std::copy(mem + 0x28, mem + 0x2C, (std::byte*)&dummy2Num);
+    std::copy(memoryMappedFile.Mem + 0x28, memoryMappedFile.Mem + 0x2C, (std::byte*)&dummy2Num);
 
     int32_t stringsSize;
-    std::copy(mem + 0x38, mem + 0x3C, (std::byte*)&stringsSize);
+    std::copy(memoryMappedFile.Mem + 0x38, memoryMappedFile.Mem + 0x3C, (std::byte*)&stringsSize);
 
     int64_t namesOffset;
-    std::copy(mem + 0x40, mem + 0x48, (std::byte*)&namesOffset);
+    std::copy(memoryMappedFile.Mem + 0x40, memoryMappedFile.Mem + 0x48, (std::byte*)&namesOffset);
 
     int64_t namesEnd;
-    std::copy(mem + 0x48, mem + 0x50, (std::byte*)&namesEnd);
+    std::copy(memoryMappedFile.Mem + 0x48, memoryMappedFile.Mem + 0x50, (std::byte*)&namesEnd);
 
     int64_t infoOffset;
-    std::copy(mem + 0x50, mem + 0x58, (std::byte*)&infoOffset);
+    std::copy(memoryMappedFile.Mem + 0x50, memoryMappedFile.Mem + 0x58, (std::byte*)&infoOffset);
 
     int64_t dummy7OffOrg;
-    std::copy(mem + 0x60, mem + 0x68, (std::byte*)&dummy7OffOrg);
+    std::copy(memoryMappedFile.Mem + 0x60, memoryMappedFile.Mem + 0x68, (std::byte*)&dummy7OffOrg);
 
     int64_t dataOff;
-    std::copy(mem + 0x68, mem + 0x70, (std::byte*)&dataOff);
+    std::copy(memoryMappedFile.Mem + 0x68, memoryMappedFile.Mem + 0x70, (std::byte*)&dataOff);
 
     int64_t idclOff;
-    std::copy(mem + 0x74, mem + 0x7C, (std::byte*)&idclOff);
+    std::copy(memoryMappedFile.Mem + 0x74, memoryMappedFile.Mem + 0x7C, (std::byte*)&idclOff);
 
     int64_t namesNum;
-    std::copy(mem + namesOffset, mem + namesOffset + 8, (std::byte*)&namesNum);
+    std::copy(memoryMappedFile.Mem + namesOffset, memoryMappedFile.Mem + namesOffset + 8, (std::byte*)&namesNum);
 
     int64_t namesOffsetEnd = namesOffset + (namesNum + 1) * 8;
     int64_t namesSize = namesEnd - namesOffsetEnd;
@@ -64,7 +69,7 @@ void ReadResource(std::byte *&mem, ResourceContainer &resourceContainer)
     char currentByte;
     
     for (int32_t i = 0; i < namesSize; i++) {
-        currentByte = (char)mem[namesOffsetEnd+ i];
+        currentByte = (char)memoryMappedFile.Mem[namesOffsetEnd+ i];
 
         if (currentByte == 0 || i == namesSize - 1) {
             if (currentNameBytes.empty())
@@ -98,5 +103,5 @@ void ReadResource(std::byte *&mem, ResourceContainer &resourceContainer)
     resourceContainer.UnknownOffset2 = namesEnd;
     resourceContainer.NamesList = namesList;
 
-    ReadChunkInfo(mem, resourceContainer);
+    ReadChunkInfo(memoryMappedFile, resourceContainer);
 }

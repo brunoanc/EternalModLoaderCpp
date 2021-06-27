@@ -449,9 +449,6 @@ static std::ostream& stream_string(std::ostream& stream,
             case '\\':
                 stream << "\\\\";
                 break;
-            case '/':
-                stream << "\\/";
-                break;
             case '\b':
                 stream << "\\b";
                 break;
@@ -566,7 +563,6 @@ std::string escape_string( const std::string &input, const bool quote = false ) 
             // exceptions
             map[ byte('"') ] = "\\\"";
             map[ byte('\\') ] = "\\\\";
-            map[ byte('/') ] = "\\/";
             map[ byte('\b') ] = "\\b";
             map[ byte('\f') ] = "\\f";
             map[ byte('\n') ] = "\\n";

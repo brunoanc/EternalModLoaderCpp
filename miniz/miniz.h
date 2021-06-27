@@ -110,8 +110,9 @@
      uses the 64-bit variants: fopen64(), stat64(), etc. Otherwise you won't be able to process large files
      (i.e. 32-bit stat() fails for me on files > 0x7FFFFFFF bytes).
 */
-#pragma once
 
+#ifndef MINIZ_H
+#define MINIZ_H
 
 
 
@@ -1336,3 +1337,5 @@ void *mz_zip_extract_archive_file_to_heap_v2(const char *pZip_filename, const ch
 #endif
 
 #endif /* MINIZ_NO_ARCHIVE_APIS */
+
+#endif

@@ -24,32 +24,39 @@
 
 std::vector<std::string> ResourceContainerPathList;
 
+/**
+ * @brief Get the resource container paths
+ * 
+ */
 void GetResourceContainerPathList()
 {
-    for (auto &file : std::filesystem::recursive_directory_iterator(BasePath + "game" + separator)) {
+    for (auto &file : std::filesystem::recursive_directory_iterator(BasePath + "game" + Separator)) {
         if (file.path().extension().string() == ".resources")
             ResourceContainerPathList.push_back(file.path().string());
     }
 }
 
+/**
+ * @brief Get the path to the resource container
+ * 
+ * @param name Name of the resource container to find
+ * @return Path to the resource container, or an empty string if not found
+ */
 std::string PathToResourceContainer(std::string name)
 {
     std::string searchPath = BasePath;
     std::string resourcePath = name;
     bool recursive = true;
 
-    if (ResourceContainerPathList.empty())
-        GetResourceContainerPathList();
-
     if (StartsWith(ToLower(name), "dlc_hub")) {
         resourcePath = resourcePath.substr(4, name.size() - 4);
-        resourcePath = BasePath + "game" + separator + "dlc" + separator + "hub" + separator + resourcePath;
+        resourcePath = BasePath + "game" + Separator + "dlc" + Separator + "hub" + Separator + resourcePath;
 
         if (std::filesystem::is_regular_file(searchPath + resourcePath))
             return resourcePath;
     }
     else if (StartsWith(ToLower(name), "hub")) {
-        resourcePath = BasePath + "game" + separator + "hub" + separator + resourcePath;
+        resourcePath = BasePath + "game" + Separator + "hub" + Separator + resourcePath;
 
         if (std::filesystem::is_regular_file(searchPath + resourcePath))
             return resourcePath;
@@ -64,7 +71,7 @@ std::string PathToResourceContainer(std::string name)
                 recursive = false;
         }
         else {
-            searchPath = BasePath + "game" + separator;
+            searchPath = BasePath + "game" + Separator;
         }
     }
 
@@ -82,9 +89,15 @@ std::string PathToResourceContainer(std::string name)
     return "";
 }
 
+/**
+ * @brief Get the path to the sound container
+ * 
+ * @param name Name of the sound container to find
+ * @return Path to the sound container, or an empty string if not found
+ */
 std::string PathToSoundContainer(std::string name)
 {
-    std::string searchPath = BasePath + "sound" + separator + "soundbanks" + separator + "pc" + separator;
+    std::string searchPath = BasePath + "sound" + Separator + "soundbanks" + Separator + "pc" + Separator;
     std::string sndPath = name + ".snd";
 
     if (std::filesystem::is_regular_file(searchPath + sndPath))

@@ -9,7 +9,10 @@ file(GLOB SOURCES
         ./AssetsInfo.cpp
         ./BlangDecrypt.cpp
         ./BlangParser.cpp
+        ./LoadModFiles.cpp
+        ./LoadMods.cpp
         ./MapResourcesFile.cpp
+        ./MemoryMappedFile.cpp
         ./Mod.cpp
         ./ModifyPackageMapSpec.cpp
         ./Oodle.cpp
@@ -28,17 +31,47 @@ file(GLOB SOURCES
         ./miniz/miniz.c
         )
 
+file(GLOB SOURCES
+        ./AssetsInfo/AssetsInfo.cpp
+        ./BlangFile/BlangFile.cpp
+        ./Colors/Colors.cpp
+        ./jsonxx/jsonxx.cc
+        ./MapResourcesFile/MapResourcesFile.cpp
+        ./MemoryMappedFile/MemoryMappedFile.cpp
+        ./miniz/miniz.c
+        ./Mod/Mod.cpp
+        ./Oodle/Oodle.cpp
+        ./PackageMapSpec/PackageMapSpec.cpp
+        ./PackageMapSpec/PackageMapSpecInfo.cpp
+        ./ResourceData/ResourceData.cpp
+        ./Utils/Utils.cpp
+        ./AddChunks.cpp
+        ./BlangDecrypt.cpp
+        ./EternalModLoader.cpp
+        ./GetObject.cpp
+        ./LoadModFiles.cpp
+        ./LoadMods.cpp
+        ./PathToRes.cpp
+        ./ReadChunkInfo.cpp
+        ./ReadResourceFile.cpp
+        ./ReadSoundEntries.cpp
+        ./ReplaceChunks.cpp
+        ./ReplaceSounds.cpp
+        ./SetBufferSize.cpp
+        ./SetModDataForChunk.cpp
+        )
+
 if(MSVC)
         if(DEFINED ENV{ETERNALMODLOADERCPP_STATIC})
                 set(OPENSSL_USE_STATIC_LIBS TRUE)
         endif()
-        set (CMAKE_CXX_FLAGS "/O2 /Oi /Ot /GL /EHsc")
+        set (CMAKE_CXX_FLAGS "/O2 /Oi /Ot /GL /EHsc /I \"${CMAKE_CURRENT_SOURCE_DIR}\"")
 else()
         if(DEFINED ENV{ETERNALMODLOADERCPP_STATIC})
                 set(OPENSSL_USE_STATIC_LIBS TRUE)
-                set (CMAKE_CXX_FLAGS "-Ofast -DNDEBUG -ftree-vectorize -msse2 -static")
+                set (CMAKE_CXX_FLAGS "-pthread -Ofast -DNDEBUG -ftree-vectorize -msse2 -static -I${CMAKE_CURRENT_SOURCE_DIR}")
         else()
-                set (CMAKE_CXX_FLAGS "-Ofast -DNDEBUG -ftree-vectorize -msse2")
+                set (CMAKE_CXX_FLAGS "-pthread -Ofast -DNDEBUG -ftree-vectorize -msse2 -I${CMAKE_CURRENT_SOURCE_DIR}")
         endif()
 endif(MSVC)
 

@@ -19,8 +19,13 @@
 #include <iostream>
 
 #include "jsonxx/jsonxx.h"
-#include "EternalModLoader.hpp"
+#include "AssetsInfo/AssetsInfo.hpp"
 
+/**
+ * @brief Construct a new AssetsInfo object from a JSON string
+ * 
+ * @param json JSON string to deserialize
+ */
 AssetsInfo::AssetsInfo(std::string &json)
 {
     jsonxx::Object assetsInfoJson;

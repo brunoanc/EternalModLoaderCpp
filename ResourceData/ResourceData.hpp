@@ -16,19 +16,26 @@
 * along with EternalModLoaderCpp. If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <iostream>
+#ifndef RESOURCEDATA_HPP
+#define RESOURCEDATA_HPP
 
-#include "jsonxx/jsonxx.h"
-#include "EternalModLoader.hpp"
+/**
+ * @brief ResourceData entry class
+ * 
+ */
+class ResourceDataEntry {
+public:
+    uint64_t StreamDbHash = 0;
+    std::string ResourceType;
+    std::string MapResourceType;
+    std::string MapResourceName;
+    std::byte Version = (std::byte)0;
+    std::byte SpecialByte1 = (std::byte)0;
+    std::byte SpecialByte2 = (std::byte)0;
+    std::byte SpecialByte3 = (std::byte)0;
+};
 
-Mod::Mod(std::string name, std::string &json)
-{
-    jsonxx::Object modJson;
-    modJson.parse(json);
+std::map<uint64_t, ResourceDataEntry> ParseResourceData(std::string &fileName);
+uint64_t CalculateResourceFileNameHash(std::string &input);
 
-    if (modJson.has<jsonxx::Number>("loadPriority"))
-        LoadPriority = modJson.get<jsonxx::Number>("loadPriority");
-
-    if (modJson.has<jsonxx::Number>("requiredVersion"))
-        RequiredVersion = modJson.get<jsonxx::Number>("requiredVersion");
-}
+#endif
