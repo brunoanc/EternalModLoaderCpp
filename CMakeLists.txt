@@ -4,34 +4,6 @@ project(EternalModLoader)
 set(CMAKE_CXX_STANDARD 17)
 
 file(GLOB SOURCES
-        ./EternalModLoader.cpp
-        ./AddChunks.cpp
-        ./AssetsInfo.cpp
-        ./BlangDecrypt.cpp
-        ./BlangParser.cpp
-        ./LoadModFiles.cpp
-        ./LoadMods.cpp
-        ./MapResourcesFile.cpp
-        ./MemoryMappedFile.cpp
-        ./Mod.cpp
-        ./ModifyPackageMapSpec.cpp
-        ./Oodle.cpp
-        ./PackageMapSpec.cpp
-        ./PathtoRes.cpp
-        ./ReadChunkInfo.cpp
-        ./ReadResourceFile.cpp
-        ./ReadSoundEntries.cpp
-        ./ReplaceChunks.cpp
-        ./ResourceData.cpp
-        ./ReplaceSounds.cpp
-        ./SetBufferSize.cpp
-        ./SetModDataForChunk.cpp
-        ./Utils.cpp
-        ./jsonxx/jsonxx.cc
-        ./miniz/miniz.c
-        )
-
-file(GLOB SOURCES
         ./AssetsInfo/AssetsInfo.cpp
         ./BlangFile/BlangFile.cpp
         ./Colors/Colors.cpp
