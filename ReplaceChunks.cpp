@@ -45,7 +45,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
     std::map<std::string, BlangFileEntry> blangFileEntries;
 
     std::stable_sort(resourceContainer.ModFileList.begin(), resourceContainer.ModFileList.end(),
-        [](ResourceModFile resource1, ResourceModFile resource2) { return resource1.Parent.LoadPriority > resource2.Parent.LoadPriority ? true : false; });
+        [](ResourceModFile &resource1, ResourceModFile &resource2) { return resource1.Parent.LoadPriority > resource2.Parent.LoadPriority; });
 
     for (auto &modFile : resourceContainer.ModFileList) {
         ResourceChunk *chunk = NULL;

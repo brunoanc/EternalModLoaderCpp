@@ -40,7 +40,7 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
         return;
 
     std::stable_sort(resourceContainer.NewModFileList.begin(), resourceContainer.NewModFileList.end(),
-        [](ResourceModFile resource1, ResourceModFile resource2) { return resource1.Parent.LoadPriority > resource2.Parent.LoadPriority ? true : false; });
+        [](ResourceModFile &resource1, ResourceModFile &resource2) { return resource1.Parent.LoadPriority > resource2.Parent.LoadPriority; });
 
     std::vector<std::byte> header(memoryMappedFile.Mem, memoryMappedFile.Mem + resourceContainer.InfoOffset);
 
