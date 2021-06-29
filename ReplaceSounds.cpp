@@ -17,6 +17,7 @@
 */
 
 #include <iostream>
+#include <algorithm>
 #include <string>
 #include <filesystem>
 #include <cstdlib>
@@ -132,7 +133,7 @@ bool EncodeSoundMod(SoundModFile &soundModFile)
 void ReplaceSounds(MemoryMappedFile &memoryMappedFile, SoundContainer &soundContainer, std::stringstream &os)
 {
     std::stable_sort(soundContainer.ModFileList.begin(), soundContainer.ModFileList.end(),
-                     [](SoundModFile &sound1, SoundModFile &sound2) { return sound1.Parent.LoadPriority > sound2.Parent.LoadPriority; });
+                     [](const SoundModFile &sound1, const SoundModFile &sound2) { return sound1.Parent.LoadPriority > sound2.Parent.LoadPriority; });
 
     int32_t fileCount = 0;
 
