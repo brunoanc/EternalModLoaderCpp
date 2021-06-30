@@ -35,13 +35,17 @@ void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::s
                 mod = Mod(mod.Name, modJson);
 
                 if (mod.RequiredVersion > Version) {
+                    mtx.lock();
                     std::cerr << RED << "WARNING: " << RESET << "Mod " << std::filesystem::path(zippedMod).filename().string() << " requires mod loader version "
                         << mod.RequiredVersion << " but the current mod loader version is " << Version << ", skipping" << '\n';
+                    mtx.unlock();
                     return;
                 }
             }
             catch (...) {
+                mtx.lock();
                 std::cerr << RED << "ERROR: " << RESET << "Failed to parse EternalMod.json - using defaults." << '\n';
+                mtx.unlock();
             }
         }
     }
@@ -51,7 +55,9 @@ void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::s
         char *zipEntryNameBuffer = new char[zipEntryNameSize];
 
         if (mz_zip_reader_get_filename(&modZip, i, zipEntryNameBuffer, zipEntryNameSize) != zipEntryNameSize || zipEntryNameBuffer == NULL) {
+            mtx.lock();
             std::cerr << RED << "ERROR: " << RESET << "Failed to read zip file entry from " << zippedMod << '\n';
+            mtx.unlock();
             delete[] zipEntryNameBuffer;
             continue;
         }
@@ -115,7 +121,9 @@ void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::s
                 std::string soundExtension = std::filesystem::path(modFileName).extension().string();
 
                 if (std::find(SupportedFileFormats.begin(), SupportedFileFormats.end(), soundExtension) == SupportedFileFormats.end()) {
+                    mtx.lock();
                     std::cerr << RED << "WARNING: " << RESET << "Unsupported sound mod file format " << soundExtension << " for file " << modFileName << '\n';
+                    mtx.unlock();
                     continue;
                 }
 
@@ -123,7 +131,9 @@ void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::s
                 size_t unzippedEntrySize;
 
                 if ((unzippedEntry = (std::byte*)mz_zip_reader_extract_to_heap(&modZip, i, &unzippedEntrySize, 0)) == NULL) {
+                    mtx.lock();
                     std::cerr << RED << "ERROR: " << "Failed to extract zip entry from " << zippedMod << '\n';
+                    mtx.unlock();
                     continue;
                 }
 
@@ -159,7 +169,9 @@ void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::s
                 size_t unzippedEntrySize;
 
                 if ((unzippedEntry = (std::byte*)mz_zip_reader_extract_to_heap(&modZip, i, &unzippedEntrySize, 0)) == NULL) {
+                    mtx.lock();
                     std::cerr << RED << "ERROR: " << "Failed to extract zip entry from " << zippedMod << '\n';
+                    mtx.unlock();
                     continue;
                 }
 
@@ -177,7 +189,9 @@ void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::s
                             size_t unzippedEntrySize;
 
                             if ((unzippedEntry = (std::byte*)mz_zip_reader_extract_to_heap(&modZip, i, &unzippedEntrySize, 0)) == NULL) {
+                                mtx.lock();
                                 std::cerr << RED << "ERROR: " << "Failed to extract zip entry from " << zippedMod << '\n';
+                                mtx.unlock();
                                 continue;
                             }
 
@@ -191,8 +205,10 @@ void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::s
                         resourceModFile.FileBytes.resize(0);
                     }
                     catch (...) {
+                        mtx.lock();
                         std::cerr << RED << "ERROR: " << RESET << "Failed to parse EternalMod/assetsinfo/"
                             << std::filesystem::path(resourceModFile.Name).stem().string() << ".json" << '\n';
+                        mtx.unlock();
                         continue;
                     }
                 }
@@ -214,8 +230,11 @@ void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::s
         }
     }
         
-    if (zippedModCount > 0 && !listResources)
+    if (zippedModCount > 0 && !listResources) {
+        mtx.lock();
         std::cout << "Found " << BLUE << zippedModCount << " file(s) " << RESET << "in archive " << YELLOW << zippedMod << RESET << "..." << '\n';
+        mtx.unlock();
+    }
 
     mz_zip_reader_end(&modZip);
 }
@@ -286,28 +305,31 @@ void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLoo
             std::string soundExtension = std::filesystem::path(fileName).extension().string();
 
             if (std::find(SupportedFileFormats.begin(), SupportedFileFormats.end(), soundExtension) == SupportedFileFormats.end()) {
+                mtx.lock();
                 std::cerr << RED << "WARNING: " << RESET << "Unsupported sound mod file format " << soundExtension << " for file " << fileName << '\n';
+                mtx.unlock();
                 return;
             }
 
             int64_t unzippedModSize = std::filesystem::file_size(unzippedMod);
-
-            if (unzippedModSize > ResourceContainerList.max_size())
-                std::cerr << RED << "WARNING: " << RESET << "Skipped " << fileName << " - too large." << '\n';
             
             SoundModFile soundModFile(globalLooseMod, std::filesystem::path(fileName).filename().string());
             
             FILE *unzippedModFile = fopen(unzippedMod.c_str(), "rb");
 
             if (!unzippedModFile) {
+                mtx.lock();
                 std::cerr << RED << "ERROR: " << RESET << "Failed to open " << unzippedMod << " for reading." << '\n';
+                mtx.unlock();
                 return;
             }
 
             soundModFile.FileBytes.resize(unzippedModSize);
 
             if (fread(soundModFile.FileBytes.data(), 1, unzippedModSize, unzippedModFile) != unzippedModSize) {
+                mtx.lock();
                 std::cerr << RESET << "ERROR: " << RESET << "Failed to read from " << unzippedMod << "." << '\n';
+                mtx.unlock();
                 return;
             }
 
@@ -339,20 +361,21 @@ void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLoo
         if (!listResources) {
             int64_t unzippedModSize = std::filesystem::file_size(unzippedMod);
 
-            if (unzippedModSize > ResourceContainerList.max_size())
-                std::cerr << RED << "WARNING: " << RESET << "Skipped " << fileName << " - too large." << '\n';
-
             FILE *unzippedModFile = fopen(unzippedMod.c_str(), "rb");
 
             if (!unzippedModFile) {
+                mtx.lock();
                 std::cerr << RED << "ERROR: " << RESET << "Failed to open " << unzippedMod << " for reading." << '\n';
+                mtx.unlock();
                 return;
             }
 
             resourceModFile.FileBytes.resize(unzippedModSize);
 
             if (fread(resourceModFile.FileBytes.data(), 1, unzippedModSize, unzippedModFile) != unzippedModSize) {
+                mtx.lock();
                 std::cerr << RESET << "ERROR: " << RESET << "Failed to read from " << unzippedMod << "." << '\n';
+                mtx.unlock();
                 return;
             }
 
@@ -367,20 +390,21 @@ void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLoo
                     if (listResources) {
                         int64_t unzippedModSize = std::filesystem::file_size(unzippedMod);
 
-                        if (unzippedModSize > ResourceContainerList.max_size())
-                            std::cerr << RED << "WARNING: " << RESET << "Skipped " << fileName << " - too large." << '\n';
-
                         FILE *unzippedModFile = fopen(unzippedMod.c_str(), "rb");
 
                         if (!unzippedModFile) {
+                            mtx.lock();
                             std::cerr << RED << "ERROR: " << RESET << "Failed to open " << unzippedMod << " for reading." << '\n';
+                            mtx.unlock();
                             return;
                         }
 
                         resourceModFile.FileBytes.resize(unzippedModSize);
 
                         if (fread(resourceModFile.FileBytes.data(), 1, unzippedModSize, unzippedModFile) != unzippedModSize) {
+                            mtx.lock();
                             std::cerr << RESET << "ERROR: " << RESET << "Failed to read from " << unzippedMod << "." << '\n';
+                            mtx.unlock();
                             return;
                         }
 
@@ -393,8 +417,10 @@ void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLoo
                     resourceModFile.FileBytes.resize(0);
                 }
                 catch (...) {
+                    mtx.lock();
                     std::cerr << RED << "ERROR: " << RESET << "Failed to parse EternalMod/assetsinfo/"
                         << std::filesystem::path(resourceModFile.Name).stem().string() << ".json" << '\n';
+                    mtx.unlock();
                     return;
                 }
             }

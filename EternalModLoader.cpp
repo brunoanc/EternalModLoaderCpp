@@ -63,9 +63,11 @@ int main(int argc, char **argv)
     // Disable sync with stdio
     std::ios::sync_with_stdio(false);
 
-    // Make cout fully buffered to increase program speed
+    // Make cout and cerr fully buffered to increase program speed
     char coutBuf[8192];
+    char cerrBuf[8192];
     std::cout.rdbuf()->pubsetbuf(coutBuf, 8192);
+    std::cerr.rdbuf()->pubsetbuf(cerrBuf, 8192);
 
     Separator = std::filesystem::path::preferred_separator;
 
