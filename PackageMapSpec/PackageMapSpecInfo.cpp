@@ -35,7 +35,7 @@ void PackageMapSpecInfo::ModifyPackageMapSpec()
         FILE *packageMapSpecFile = fopen(PackageMapSpecPath.c_str(), "wb");
 
         if (!packageMapSpecFile) {
-            std::cerr << RED << "ERROR: " << RESET << "Failed to write " << PackageMapSpecPath << std::endl;
+            std::cout << RED << "ERROR: " << RESET << "Failed to write " << PackageMapSpecPath << std::endl;
         }
         else {
             try {
@@ -45,7 +45,7 @@ void PackageMapSpecInfo::ModifyPackageMapSpec()
                     throw std::exception();
             }
             catch (...) {
-                std::cerr << RED << "ERROR: " << RESET << "Failed to write " << PackageMapSpecPath << std::endl;
+                std::cout << RED << "ERROR: " << RESET << "Failed to write " << PackageMapSpecPath << std::endl;
             }
 
             std::cout << "Modified "<< YELLOW << PackageMapSpecPath << RESET << '\n';

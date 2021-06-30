@@ -63,11 +63,9 @@ int main(int argc, char **argv)
     // Disable sync with stdio
     std::ios::sync_with_stdio(false);
 
-    // Make cout and cerr fully buffered to increase program speed
+    // Make cout fully buffered to increase program speed
     char coutBuf[8192];
-    char cerrBuf[8192];
     std::cout.rdbuf()->pubsetbuf(coutBuf, 8192);
-    std::cerr.rdbuf()->pubsetbuf(cerrBuf, 8192);
 
     Separator = std::filesystem::path::preferred_separator;
 
@@ -97,7 +95,7 @@ int main(int argc, char **argv)
     BasePath = std::string(argv[1]) + Separator + "base" + Separator;
 
     if (!std::filesystem::exists(BasePath)) {
-        std::cerr << RED << "ERROR: " << RESET << "Game directory does not exist!" << std::endl;
+        std::cout << RED << "ERROR: " << RESET << "Game directory does not exist!" << std::endl;
         return 1;
     }
 
@@ -122,7 +120,7 @@ int main(int argc, char **argv)
                 std::cout << YELLOW << "INFO: Texture compression is enabled." << RESET << std::endl;
             }
             else {
-                std::cerr << RED << "ERROR: " << RESET << "Unknown argument: " << argv[i] << std::endl;
+                std::cout << RED << "ERROR: " << RESET << "Unknown argument: " << argv[i] << std::endl;
                 return 1;
             }
         }
@@ -144,12 +142,12 @@ int main(int argc, char **argv)
                     throw std::exception();
             }
             catch (...) {
-                std::cerr << RED << "ERROR: " << RESET << "Failed to parse " << ResourceDataFileName << '\n';
+                std::cout << RED << "ERROR: " << RESET << "Failed to parse " << ResourceDataFileName << '\n';
             }
         }
         else {
             if (Verbose) {
-                std::cerr << RED << "WARNING: " << RESET << ResourceDataFileName << " was not found! There will be issues when adding existing new assets to containers..." << '\n';
+                std::cout << RED << "WARNING: " << RESET << ResourceDataFileName << " was not found! There will be issues when adding existing new assets to containers..." << '\n';
             }
         }
     }
@@ -254,7 +252,7 @@ int main(int argc, char **argv)
 
     // Display not found containers
     for (auto &container : notFoundContainers)
-        std::cerr << RED << "WARNING: " << YELLOW << container << RESET << " was not found! Skipping..." << std::endl;
+        std::cout << RED << "WARNING: " << YELLOW << container << RESET << " was not found! Skipping..." << std::endl;
 
     std::cout.flush();
 
@@ -263,7 +261,7 @@ int main(int argc, char **argv)
         SetOptimalBufferSize(std::filesystem::absolute(".").root_path().string());
     }
     catch (...) {
-        std::cerr << RED << "ERROR: " << RESET << "Error while determining the optimal buffer size, using 4096 as the default." << std::endl;
+        std::cout << RED << "ERROR: " << RESET << "Error while determining the optimal buffer size, using 4096 as the default." << std::endl;
 
         if (Buffer != NULL)
             delete[] Buffer;

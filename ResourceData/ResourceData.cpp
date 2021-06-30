@@ -60,7 +60,7 @@ std::map<uint64_t, ResourceDataEntry> ParseResourceData(std::string &fileName)
             throw std::exception();
     }
     catch (...) {
-        std::cerr << RED << "ERROR: " << RESET << "Failed to decompress " << fileName << std::endl;
+        std::cout << RED << "ERROR: " << RESET << "Failed to decompress " << fileName << std::endl;
         return resourceDataMap;
     }
 
