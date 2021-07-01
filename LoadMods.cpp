@@ -15,7 +15,7 @@ void LoadResourceMods(ResourceContainer &resourceContainer)
     std::stringstream &os = stringStreams[streamIndex++];
     mtx.unlock();
 
-    if (SlowMode)
+    if (!MultiThreading)
         ((std::ostream&)os).rdbuf(std::cout.rdbuf());
 
     MemoryMappedFile *memoryMappedFile;
@@ -46,7 +46,7 @@ void LoadSoundMods(SoundContainer &soundContainer)
     std::stringstream &os = stringStreams[streamIndex++];
     mtx.unlock();
 
-    if (SlowMode)
+    if (!MultiThreading)
         ((std::ostream&)os).rdbuf(std::cout.rdbuf());
 
     MemoryMappedFile *memoryMappedFile;

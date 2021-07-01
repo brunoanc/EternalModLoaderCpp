@@ -321,6 +321,7 @@ extern std::string BasePath;
 extern bool Verbose;
 extern bool SlowMode;
 extern bool CompressTextures;
+extern bool MultiThreading;
 
 extern std::vector<ResourceContainer> ResourceContainerList;
 extern std::vector<SoundContainer> SoundContainerList;

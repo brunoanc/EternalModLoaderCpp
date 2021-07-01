@@ -38,6 +38,7 @@ std::string BasePath;
 bool Verbose = false;
 bool SlowMode = false;
 bool CompressTextures = false;
+bool MultiThreading = true;
 
 std::vector<ResourceContainer> ResourceContainerList;
 std::vector<SoundContainer> SoundContainerList;
@@ -82,7 +83,8 @@ int main(int argc, char **argv)
         std::cout << "\t--list-res - List the .resources files that will be modified and exit.\n";
         std::cout << "\t--verbose - Print more information during the mod loading process.\n";
         std::cout << "\t--slow - Slow mod loading mode that produces lighter files.\n";
-        std::cout << "\t--compress-textures - Compress texture files during the mod loading process.\n" << std::endl;
+        std::cout << "\t--compress-textures - Compress texture files during the mod loading process.\n";
+        std::cout << "\t--disable-multithreading - Disables multi-threaded mod loading." << std::endl;
         return 1;
     }
 
@@ -118,6 +120,10 @@ int main(int argc, char **argv)
             else if (!strcmp(argv[i], "--compress-textures")) {
                 CompressTextures = true;
                 std::cout << YELLOW << "INFO: Texture compression is enabled." << RESET << std::endl;
+            }
+            else if (!strcmp(argv[i], "--disable-multithreading")) {
+                MultiThreading = false;
+                std::cout << YELLOW << "INFO: Multi-threading is disabled." << RESET << std::endl;
             }
             else {
                 std::cout << RED << "ERROR: " << RESET << "Unknown argument: " << argv[i] << std::endl;
@@ -175,14 +181,20 @@ int main(int argc, char **argv)
     // Load zipped mods
     chrono::steady_clock::time_point zippedModsBegin = chrono::steady_clock::now();
 
-    std::vector<std::thread> zippedModLoadingThreads;
-    zippedModLoadingThreads.reserve(zippedMods.size());
+    if (MultiThreading) {
+        std::vector<std::thread> zippedModLoadingThreads;
+        zippedModLoadingThreads.reserve(zippedMods.size());
 
-    for (const auto &zippedMod : zippedMods)
-        zippedModLoadingThreads.push_back(std::thread(LoadZippedMod, zippedMod, listResources, std::ref(notFoundContainers)));
+        for (const auto &zippedMod : zippedMods)
+            zippedModLoadingThreads.push_back(std::thread(LoadZippedMod, zippedMod, listResources, std::ref(notFoundContainers)));
 
-    for (auto &thread : zippedModLoadingThreads)
-        thread.join();
+        for (auto &thread : zippedModLoadingThreads)
+            thread.join();
+    }
+    else {
+        for (const auto &zippedMod : zippedMods)
+            LoadZippedMod(zippedMod, listResources, notFoundContainers);
+    }
 
     chrono::steady_clock::time_point zippedModsEnd = chrono::steady_clock::now();
     double zippedModsTime = chrono::duration_cast<chrono::microseconds>(zippedModsEnd - zippedModsBegin).count() / 1000000.0;
@@ -190,18 +202,24 @@ int main(int argc, char **argv)
     // Load unzipped mods
     chrono::steady_clock::time_point unzippedModsBegin = chrono::steady_clock::now();
 
-    std::vector<std::thread> unzippedModLoadingThreads;
-    unzippedModLoadingThreads.reserve(unzippedMods.size());
-
     std::atomic<int32_t> unzippedModCount = 0;
     Mod globalLooseMod;
     globalLooseMod.LoadPriority = INT_MIN;
 
-    for (const auto &unzippedMod : unzippedMods)
-        unzippedModLoadingThreads.push_back(std::thread(LoadUnzippedMod, unzippedMod, listResources, std::ref(globalLooseMod), std::ref(unzippedModCount), std::ref(notFoundContainers)));
+    if (MultiThreading) {
+        std::vector<std::thread> unzippedModLoadingThreads;
+        unzippedModLoadingThreads.reserve(unzippedMods.size());
 
-    for (auto &thread : unzippedModLoadingThreads)
-        thread.join();
+        for (const auto &unzippedMod : unzippedMods)
+            unzippedModLoadingThreads.push_back(std::thread(LoadUnzippedMod, unzippedMod, listResources, std::ref(globalLooseMod), std::ref(unzippedModCount), std::ref(notFoundContainers)));
+
+        for (auto &thread : unzippedModLoadingThreads)
+            thread.join();
+        }
+    else {
+        for (const auto &unzippedMod : unzippedMods)
+            LoadUnzippedMod(unzippedMod, listResources, globalLooseMod, unzippedModCount, notFoundContainers);
+    }
 
     if (unzippedModCount > 0 && !listResources)
         std::cout << "Found " << BLUE << unzippedModCount << " file(s) " << RESET << "in " << YELLOW << "'Mods' " << RESET << "folder..." << '\n';
@@ -274,7 +292,7 @@ int main(int argc, char **argv)
 
     stringStreams.resize(ResourceContainerList.size() + SoundContainerList.size());
 
-    if (!SlowMode) {
+    if (MultiThreading) {
         std::vector<std::thread> modLoadingThreads;
         modLoadingThreads.reserve(ResourceContainerList.size() + SoundContainerList.size());
 
