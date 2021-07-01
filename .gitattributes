@@ -1,2 +1,2 @@
-jsonxx/ -linguist-detectable
-miniz/ -linguist-detectable
+jsonxx/* -linguist-detectable
+miniz/* -linguist-detectable
