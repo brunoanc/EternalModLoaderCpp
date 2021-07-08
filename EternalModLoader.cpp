@@ -310,7 +310,7 @@ int main(int argc, char **argv)
 
     // Set buffer for file i/o
     try {
-        SetOptimalBufferSize(std::filesystem::absolute(".").root_path().string());
+        SetOptimalBufferSize(std::filesystem::current_path().root_path().string());
     }
     catch (...) {
         std::cout << RED << "ERROR: " << RESET << "Error while determining the optimal buffer size, using 4096 as the default." << std::endl;
