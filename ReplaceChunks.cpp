@@ -709,7 +709,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
             continue;
         }
 
-        ResourceModFile blangModFile(Mod(), blangFileEntry.first);
+        ResourceModFile blangModFile(Mod(), blangFileEntry.first, resourceContainer.Name);
         blangModFile.FileBytes = cryptData;
         std::byte compressionMode = (std::byte)0;
 
@@ -732,7 +732,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                 os << "ERROR: " << RESET << "Failed to compress " << mapResourcesChunk->ResourceName.NormalizedFileName << '\n';
             }
             else {
-                ResourceModFile mapResourcesModFile(Mod(), mapResourcesChunk->ResourceName.NormalizedFileName);
+                ResourceModFile mapResourcesModFile(Mod(), mapResourcesChunk->ResourceName.NormalizedFileName, resourceContainer.Name);
                 mapResourcesModFile.FileBytes = compressedMapResourcesData;
 
                 if (!SetModDataForChunk(memoryMappedFile, resourceContainer, *mapResourcesChunk,  mapResourcesModFile, compressedMapResourcesData.size(), decompressedMapResourcesData.size(), NULL)) {

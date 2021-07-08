@@ -162,7 +162,7 @@ void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::s
 
             mtx.unlock();
 
-            ResourceModFile resourceModFile(mod, modFileName);
+            ResourceModFile resourceModFile(mod, modFileName, resourceName);
 
             if (!listResources) {
                 std::byte *unzippedEntry;
@@ -222,9 +222,22 @@ void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::s
                 }
             }
 
-            mtx.lock();
-            ResourceContainerList[resourceContainerIndex].ModFileList.push_back(resourceModFile);
-            mtx.unlock();
+            if (mod.IsSafeForOnline) {
+                mtx.lock();
+
+                if (!IsModSafeForOnline(resourceModFile)) {
+                    AreModsSafeForOnline = false;
+                    mod.IsSafeForOnline = false;
+                }
+
+                mtx.unlock();
+            }
+
+            if (!LoadOnlineSafeModsOnly || (LoadOnlineSafeModsOnly && mod.IsSafeForOnline)) {
+                mtx.lock();
+                ResourceContainerList[resourceContainerIndex].ModFileList.push_back(resourceModFile);
+                mtx.unlock();
+            }
 
             zippedModCount++;
         }
@@ -232,7 +245,17 @@ void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::s
         
     if (zippedModCount > 0 && !listResources) {
         mtx.lock();
-        std::cout << "Found " << BLUE << zippedModCount << " file(s) " << RESET << "in archive " << YELLOW << zippedMod << RESET << "..." << '\n';
+
+        if (!LoadOnlineSafeModsOnly || (LoadOnlineSafeModsOnly && mod.IsSafeForOnline)) {
+            std::cout << "Found " << BLUE << zippedModCount << " file(s) " << RESET << "in archive " << YELLOW << zippedMod << RESET << "..." << '\n';
+
+            if (!mod.IsSafeForOnline)
+                std::cout << RED << "WARNING: " << RESET << "Mod " << YELLOW << zippedMod << RESET << " is not safe for online play, multiplayer will be disabled" << '\n';
+        }
+        else {
+            std::cout << RED << "WARNING: " << RESET << "Mod " << YELLOW << zippedMod << RESET << " is not safe for online play, skipping" << '\n';
+        }
+        
         mtx.unlock();
     }
 
@@ -356,7 +379,7 @@ void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLoo
 
         mtx.unlock();
 
-        ResourceModFile resourceModFile(globalLooseMod, fileName);
+        ResourceModFile resourceModFile(globalLooseMod, fileName, resourceName);
 
         if (!listResources) {
             int64_t unzippedModSize = std::filesystem::file_size(unzippedMod);
@@ -435,7 +458,17 @@ void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLoo
         }
 
         mtx.lock();
-        ResourceContainerList[resourceContainerIndex].ModFileList.push_back(resourceModFile);
+
+        if (globalLooseMod.IsSafeForOnline) {
+            if (!IsModSafeForOnline(resourceModFile)) {
+                AreModsSafeForOnline = false;
+                globalLooseMod.IsSafeForOnline = false;
+            }
+        }
+
+        if (!LoadOnlineSafeModsOnly || (LoadOnlineSafeModsOnly && globalLooseMod.IsSafeForOnline))
+            ResourceContainerList[resourceContainerIndex].ModFileList.push_back(resourceModFile);
+
         mtx.unlock();
 
         unzippedModCount++;

@@ -23,6 +23,7 @@ file(GLOB SOURCES
         ./GetObject.cpp
         ./LoadModFiles.cpp
         ./LoadMods.cpp
+        ./OnlineSafety.cpp
         ./PathToRes.cpp
         ./ReadChunkInfo.cpp
         ./ReadResourceFile.cpp

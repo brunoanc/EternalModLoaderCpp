@@ -29,6 +29,7 @@ public:
     std::string Author;
     std::string Description;
     std::string Version;
+    bool IsSafeForOnline = true;
     int32_t LoadPriority = 0;
     int32_t RequiredVersion = 0;
 

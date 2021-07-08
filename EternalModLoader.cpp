@@ -37,8 +37,10 @@ char Separator;
 std::string BasePath;
 bool Verbose = false;
 bool SlowMode = false;
+bool LoadOnlineSafeModsOnly = false;
 bool CompressTextures = false;
 bool MultiThreading = true;
+bool AreModsSafeForOnline = true;
 
 std::vector<ResourceContainer> ResourceContainerList;
 std::vector<SoundContainer> SoundContainerList;
@@ -83,6 +85,7 @@ int main(int argc, char **argv)
         std::cout << "\t--list-res - List the .resources files that will be modified and exit.\n";
         std::cout << "\t--verbose - Print more information during the mod loading process.\n";
         std::cout << "\t--slow - Slow mod loading mode that produces lighter files.\n";
+        std::cout << "\t--online-safe - Load only online-safe mods.\n";
         std::cout << "\t--compress-textures - Compress texture files during the mod loading process.\n";
         std::cout << "\t--disable-multithreading - Disables multi-threaded mod loading." << std::endl;
         return 1;
@@ -116,6 +119,10 @@ int main(int argc, char **argv)
             else if (!strcmp(argv[i], "--slow")) {
                 SlowMode = true;
                 std::cout << YELLOW << "INFO: Slow mod loading mode is enabled." << RESET << std::endl;
+            }
+            else if (!strcmp(argv[i], "--online-safe")) {
+                LoadOnlineSafeModsOnly = true;
+                std::cout << YELLOW << "INFO: Only online-safe mods will be loaded." << RESET << std::endl;
             }
             else if (!strcmp(argv[i], "--compress-textures")) {
                 CompressTextures = true;
@@ -221,11 +228,38 @@ int main(int argc, char **argv)
             LoadUnzippedMod(unzippedMod, listResources, globalLooseMod, unzippedModCount, notFoundContainers);
     }
 
-    if (unzippedModCount > 0 && !listResources)
-        std::cout << "Found " << BLUE << unzippedModCount << " file(s) " << RESET << "in " << YELLOW << "'Mods' " << RESET << "folder..." << '\n';
+    if (unzippedModCount > 0 && !listResources) {
+        if (LoadOnlineSafeModsOnly && !globalLooseMod.IsSafeForOnline) {
+            std::cout << RED << "WARNING: " << RESET << "Loose mod files are not safe for online play, skipping" << '\n';
+        }
+        else {
+            std::cout << "Found " << BLUE << unzippedModCount << " file(s) " << RESET << "in " << YELLOW << "'Mods' " << RESET << "folder..." << '\n';
+
+            if (!globalLooseMod.IsSafeForOnline)
+                std::cout << RED << "WARNING: " << RESET << "Loose mod files are not safe for online play, multiplayer will be disabled" << '\n';
+        }
+    }
 
     chrono::steady_clock::time_point unzippedModsEnd = chrono::steady_clock::now();
     double unzippedModsTime = chrono::duration_cast<chrono::microseconds>(unzippedModsEnd - unzippedModsBegin).count() / 1000000.0;
+
+    // Remove resources from the list if they have no mods to load
+    for (int i = ResourceContainerList.size() - 1; i >= 0; i--) {
+        if (ResourceContainerList[i].ModFileList.empty())
+            ResourceContainerList.erase(ResourceContainerList.begin() + i);
+    }
+
+    // Disable multiplayer if needed
+    if (!AreModsSafeForOnline && !LoadOnlineSafeModsOnly) {
+        for (auto &mod : GetMultiplayerDisablerMods()) {
+            for (auto &resourceContainer: ResourceContainerList) {
+                if (resourceContainer.Name == mod.ResourceName) {
+                    resourceContainer.ModFileList.push_back(mod);
+                    break;
+                }
+            }
+        }
+    }
 
     // List resources to be modified and exit
     if (listResources) {

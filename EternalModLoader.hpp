@@ -54,6 +54,7 @@ class ResourceModFile {
 public:
     Mod Parent;
     std::string Name;
+    std::string ResourceName;
     std::vector<std::byte> FileBytes;
     bool IsBlangJson = false;
     bool IsAssetsInfoJson = false;
@@ -73,11 +74,13 @@ public:
      * 
      * @param parent Mod to inherit data from
      * @param name Mod file's name
+     * @param resourceName Resource's name
      */
-    ResourceModFile(Mod parent, std::string name)
+    ResourceModFile(Mod parent, std::string name, std::string resourceName)
     {
         Parent = parent;
         Name = name;
+        ResourceName = resourceName;
     }
 };
 
@@ -320,8 +323,10 @@ extern char Separator;
 extern std::string BasePath;
 extern bool Verbose;
 extern bool SlowMode;
+extern bool LoadOnlineSafeModsOnly;
 extern bool CompressTextures;
 extern bool MultiThreading;
+extern bool AreModsSafeForOnline;
 
 extern std::vector<ResourceContainer> ResourceContainerList;
 extern std::vector<SoundContainer> SoundContainerList;
@@ -377,5 +382,9 @@ void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLoo
 std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string internalPath, bool decrypt);
 void SetOptimalBufferSize(std::string driveRootPath);
 void GetResourceContainerPathList();
+
+// Online Safety
+std::vector<ResourceModFile> GetMultiplayerDisablerMods();
+bool IsModSafeForOnline(ResourceModFile &mod);
 
 #endif
