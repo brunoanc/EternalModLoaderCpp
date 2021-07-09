@@ -266,44 +266,6 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
         std::copy((std::byte*)&assetTypeNameId, (std::byte*)&assetTypeNameId + 8, nameIds.end() - 16);
         std::copy((std::byte*)&nameId, (std::byte*)&nameId + 8, nameIds.end() - 8);
 
-        int64_t newInfoSectionOffset = -1;
-
-        /*if (!modFile.PlaceByName.empty()) {
-            int64_t existingNameId = -1;
-            int64_t existingNameOffset = -1;
-            if (!modFile.PlaceByType.empty()) {
-                existingNameId = resourceContainer.GetResourceNameId("generated/decls/" + ToLower(modFile.PlaceByType) + "/" + modFile.PlaceByName + ".decl");
-            }
-            if (existingNameId == -1) {
-                existingNameId = resourceContainer.GetResourceNameId(modFile.PlaceByName);
-            }
-            if (existingNameId != -1) {
-                for (int32_t i = 0, j = nameIds.size() / 8; i < j; i++) {
-                    int64_t currentNameId;
-                    std::copy(nameIds.begin() + i * 8, nameIds.begin() + i * 8 + 8, (std::byte*)&currentNameId);
-                    if (currentNameId == existingNameId) {
-                        existingNameOffset = i - 1;
-                        break;
-                    }
-                }
-                if (existingNameOffset != -1) {
-                    int32_t pos = 0;
-                    for (int32_t i = 0, j = info.size() / 0x90; i < j; i++) {
-                        pos += 32;
-                        int64_t nameOffset;
-                        std::copy(info.begin() + pos, info.begin() + pos + 8, (std::byte*)&nameOffset);
-                        pos += 0x70;
-                        if (nameOffset == existingNameOffset) {
-                            newInfoSectionOffset = i * 0x90;
-                            if (!modFile.PlaceBefore)
-                                newInfoSectionOffset += 0x90;
-                            break;
-                        }
-                    }
-                }
-            }
-        }*/
-
         std::byte newFileInfo[0x90];
         std::copy(info.end() - 0x90, info.end(), newFileInfo);
 
@@ -329,21 +291,11 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
 
         newFileInfo[sizeof(newFileInfo) - 0x20] = compressionMode;
 
-        int16_t metaEntries = 0;
+        uint16_t metaEntries = 0;
         std::copy((std::byte*)&metaEntries, (std::byte*)&metaEntries + 2, newFileInfo + sizeof(newFileInfo) - 0x10);
 
         info.resize(info.size() + 0x90);
-
-        if (newInfoSectionOffset != -1 /*&& modFile.ResourceType == "rs_streamfile"*/) {
-            int64_t bufSize = info.size() - newInfoSectionOffset - 0x90;
-            std::byte *buf = new std::byte[bufSize];
-            std::copy(info.begin() + newInfoSectionOffset, info.begin() + newInfoSectionOffset + bufSize, buf);
-            std::copy(buf, buf + bufSize, info.begin() + newInfoSectionOffset + 0x90);
-            std::copy(newFileInfo, newFileInfo + sizeof(newFileInfo), info.begin() + newInfoSectionOffset);
-        }
-        else {
-            std::copy(newFileInfo, newFileInfo + sizeof(newFileInfo), info.end() - 0x90);
-        }
+        std::copy(newFileInfo, newFileInfo + sizeof(newFileInfo), info.end() - 0x90);
 
         os << "\tAdded " << modFile.Name << '\n';
         modFile.FileBytes.resize(0);

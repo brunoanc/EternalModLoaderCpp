@@ -16,7 +16,7 @@ void ReadSoundEntries(MemoryMappedFile &memoryMappedFile, SoundContainer &soundC
 
     int64_t pos = headerSize + 12;
 
-    for (uint32_t i = 0, j = (infoSize - headerSize) / 32; i < j; i++) {
+    for (uint32_t i = 0; i < (infoSize - headerSize) / 32; i++) {
         pos += 8;
 
         uint32_t soundId;
