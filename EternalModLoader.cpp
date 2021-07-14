@@ -85,7 +85,7 @@ int main(int argc, char **argv)
         std::cout << "\t--list-res - List the .resources files that will be modified and exit.\n";
         std::cout << "\t--verbose - Print more information during the mod loading process.\n";
         std::cout << "\t--slow - Slow mod loading mode that produces lighter files.\n";
-        std::cout << "\t--online-safe - Load only online-safe mods.\n";
+        std::cout << "\t--online-safe - Only load online-safe mods.\n";
         std::cout << "\t--compress-textures - Compress texture files during the mod loading process.\n";
         std::cout << "\t--disable-multithreading - Disables multi-threaded mod loading." << std::endl;
         return 1;
