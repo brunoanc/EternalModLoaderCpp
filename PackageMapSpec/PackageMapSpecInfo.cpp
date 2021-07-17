@@ -21,7 +21,6 @@
 #include <iostream>
 #include <vector>
 
-#include "Colors/Colors.hpp"
 #include "PackageMapSpec/PackageMapSpec.hpp"
 #include "PackageMapSpec/PackageMapSpecInfo.hpp"
 
@@ -29,29 +28,29 @@
  * @brief Modify the PackageMapSpecInfo file in disk
  * 
  */
-void PackageMapSpecInfo::ModifyPackageMapSpec()
+bool PackageMapSpecInfo::ModifyPackageMapSpec()
 {
-    if (PackageMapSpec != NULL && WasPackageMapSpecModified) {
+    if (PackageMapSpec != nullptr && WasPackageMapSpecModified) {
         FILE *packageMapSpecFile = fopen(PackageMapSpecPath.c_str(), "wb");
 
         if (!packageMapSpecFile) {
-            std::cout << RED << "ERROR: " << RESET << "Failed to write " << PackageMapSpecPath << std::endl;
-        }
-        else {
-            try {
-                std::string newPackageMapSpecJson = PackageMapSpec->Dump();
-
-                if (fwrite(newPackageMapSpecJson.c_str(), 1, newPackageMapSpecJson.size(), packageMapSpecFile) != newPackageMapSpecJson.size())
-                    throw std::exception();
-            }
-            catch (...) {
-                std::cout << RED << "ERROR: " << RESET << "Failed to write " << PackageMapSpecPath << std::endl;
-            }
-
-            std::cout << "Modified "<< YELLOW << PackageMapSpecPath << RESET << '\n';
-            fclose(packageMapSpecFile);
+            delete PackageMapSpec;
+            return false;
         }
 
+        try {
+            std::string newPackageMapSpecJson = PackageMapSpec->Dump();
+
+            if (fwrite(newPackageMapSpecJson.c_str(), 1, newPackageMapSpecJson.size(), packageMapSpecFile) != newPackageMapSpecJson.size())
+                throw std::exception();
+        }
+        catch (...) {
+            return false;
+        }
+
+        fclose(packageMapSpecFile);
         delete PackageMapSpec;
     }
+
+    return true;
 }

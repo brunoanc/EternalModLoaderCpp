@@ -14,7 +14,7 @@
  * @param modFile ResourceModFile object containing the mod file's data
  * @param compressedSize Mod file's compressed size
  * @param uncompressedSize Mod file's uncompressed size
- * @param compressionMode Pointer to a byte containing the compression mode to set, if NULL it won't be changed
+ * @param compressionMode Pointer to a byte containing the compression mode to set, if nullptr it won't be changed
  * @return True on success, false otherwise
  */
 bool SetModDataForChunk(
@@ -95,7 +95,7 @@ bool SetModDataForChunk(
     std::copy((std::byte*)&compressedSize, (std::byte*)&compressedSize + 8, memoryMappedFile.Mem + chunk.SizeOffset);
     std::copy((std::byte*)&uncompressedSize, (std::byte*)&uncompressedSize + 8, memoryMappedFile.Mem + chunk.SizeOffset + 8);
 
-    if (compressionMode != NULL)
+    if (compressionMode != nullptr)
         memoryMappedFile.Mem[chunk.SizeOffset + 0x30] = *compressionMode;
 
     return true;

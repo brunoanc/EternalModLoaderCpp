@@ -27,7 +27,7 @@ void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::s
         char *unzippedModJson;
         size_t unzippedModJsonSize;
 
-        if ((unzippedModJson = (char*)mz_zip_reader_extract_file_to_heap(&modZip, "EternalMod.json", &unzippedModJsonSize, 0)) != NULL) {
+        if ((unzippedModJson = (char*)mz_zip_reader_extract_file_to_heap(&modZip, "EternalMod.json", &unzippedModJsonSize, 0)) != nullptr) {
             std::string modJson(unzippedModJson, unzippedModJsonSize);
             free(unzippedModJson);
 
@@ -51,10 +51,10 @@ void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::s
     }
 
     for (int32_t i = 0; i < modZip.m_total_files; i++) {
-        int32_t zipEntryNameSize = mz_zip_reader_get_filename(&modZip, i, NULL, 0);
+        int32_t zipEntryNameSize = mz_zip_reader_get_filename(&modZip, i, nullptr, 0);
         char *zipEntryNameBuffer = new char[zipEntryNameSize];
 
-        if (mz_zip_reader_get_filename(&modZip, i, zipEntryNameBuffer, zipEntryNameSize) != zipEntryNameSize || zipEntryNameBuffer == NULL) {
+        if (mz_zip_reader_get_filename(&modZip, i, zipEntryNameBuffer, zipEntryNameSize) != zipEntryNameSize || zipEntryNameBuffer == nullptr) {
             mtx.lock();
             std::cout << RED << "ERROR: " << RESET << "Failed to read zip file entry from " << zippedMod << '\n';
             mtx.unlock();
@@ -130,7 +130,7 @@ void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::s
                 std::byte *unzippedEntry;
                 size_t unzippedEntrySize;
 
-                if ((unzippedEntry = (std::byte*)mz_zip_reader_extract_to_heap(&modZip, i, &unzippedEntrySize, 0)) == NULL) {
+                if ((unzippedEntry = (std::byte*)mz_zip_reader_extract_to_heap(&modZip, i, &unzippedEntrySize, 0)) == nullptr) {
                     mtx.lock();
                     std::cout << RED << "ERROR: " << "Failed to extract zip entry from " << zippedMod << '\n';
                     mtx.unlock();
@@ -168,7 +168,7 @@ void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::s
                 std::byte *unzippedEntry;
                 size_t unzippedEntrySize;
 
-                if ((unzippedEntry = (std::byte*)mz_zip_reader_extract_to_heap(&modZip, i, &unzippedEntrySize, 0)) == NULL) {
+                if ((unzippedEntry = (std::byte*)mz_zip_reader_extract_to_heap(&modZip, i, &unzippedEntrySize, 0)) == nullptr) {
                     mtx.lock();
                     std::cout << RED << "ERROR: " << "Failed to extract zip entry from " << zippedMod << '\n';
                     mtx.unlock();
@@ -188,7 +188,7 @@ void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::s
                             std::byte *unzippedEntry;
                             size_t unzippedEntrySize;
 
-                            if ((unzippedEntry = (std::byte*)mz_zip_reader_extract_to_heap(&modZip, i, &unzippedEntrySize, 0)) == NULL) {
+                            if ((unzippedEntry = (std::byte*)mz_zip_reader_extract_to_heap(&modZip, i, &unzippedEntrySize, 0)) == nullptr) {
                                 mtx.lock();
                                 std::cout << RED << "ERROR: " << "Failed to extract zip entry from " << zippedMod << '\n';
                                 mtx.unlock();

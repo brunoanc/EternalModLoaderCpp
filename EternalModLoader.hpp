@@ -36,7 +36,6 @@
 
 #include "AssetsInfo/AssetsInfo.hpp"
 #include "BlangFile/BlangFile.hpp"
-#include "Colors/Colors.hpp"
 #include "MapResourcesFile/MapResourcesFile.hpp"
 #include "MemoryMappedFile/MemoryMappedFile.hpp"
 #include "Mod/Mod.hpp"
@@ -45,6 +44,13 @@
 #include "PackageMapSpec/PackageMapSpecInfo.hpp"
 #include "ResourceData/ResourceData.hpp"
 #include "Utils/Utils.hpp"
+
+// Colors for cout
+#define RESET "\033[0m"
+#define RED "\033[31m"
+#define GREEN "\033[32m"
+#define YELLOW "\033[33m"
+#define BLUE "\033[34m"
 
 /**
  * @brief ResourceModFile class

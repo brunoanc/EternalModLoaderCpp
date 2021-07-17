@@ -81,7 +81,7 @@ std::vector<std::byte> OodleDecompress(std::vector<std::byte> &compressedData, i
 
     std::vector<std::byte> decompressedData(decompressedSize);
 
-    if (OodLZ_Decompress((uint8_t*)compressedData.data(), compressedData.size(), (uint8_t*)decompressedData.data(), decompressedSize, 1, 1, 0, NULL, 0, NULL, NULL, NULL, 0, 0) == 0)
+    if (OodLZ_Decompress((uint8_t*)compressedData.data(), compressedData.size(), (uint8_t*)decompressedData.data(), decompressedSize, 1, 1, 0, nullptr, 0, nullptr, nullptr, nullptr, 0, 0) == 0)
         decompressedData.resize(0);
 
     return decompressedData;
@@ -106,7 +106,7 @@ std::vector<std::byte> OodleCompress(std::vector<std::byte> &decompressedData, O
     std::vector<std::byte> compressedData(compressedBufferSize);
 
     int32_t compressedSize = OodLZ_Compress(std::underlying_type<OodleFormat>::type(format), (uint8_t*)decompressedData.data(), decompressedData.size(),
-        (uint8_t*)compressedData.data(), std::underlying_type<OodleCompressionLevel>::type(compressionLevel), NULL, 0, 0, NULL, 0);
+        (uint8_t*)compressedData.data(), std::underlying_type<OodleCompressionLevel>::type(compressionLevel), nullptr, 0, 0, nullptr, 0);
 
     if (compressedSize <= 0) {
         compressedData.resize(0);

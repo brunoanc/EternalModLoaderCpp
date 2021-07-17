@@ -57,7 +57,7 @@ int32_t GetSoundContainer(std::string &soundContainerName)
  * 
  * @param name Name of the resource chunk to find
  * @param resourceContainer ResourceContainer object containing the resource to search in
- * @return Pointer to the ResourceChunk object, or NULL if not found 
+ * @return Pointer to the ResourceChunk object, or nullptr if not found 
  */
 ResourceChunk *GetChunk(std::string name, ResourceContainer &resourceContainer)
 {
@@ -68,5 +68,5 @@ ResourceChunk *GetChunk(std::string name, ResourceContainer &resourceContainer)
         }
     }
 
-    return NULL;
+    return nullptr;
 }

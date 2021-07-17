@@ -35,21 +35,21 @@ MemoryMappedFile::MemoryMappedFile(std::string filePath)
         throw std::exception();
 
 #ifdef _WIN32
-    FileHandle = CreateFileA(FilePath.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    FileHandle = CreateFileA(FilePath.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 
     if (GetLastError() != ERROR_SUCCESS || FileHandle == INVALID_HANDLE_VALUE)
         throw std::exception();
 
-    FileMapping = CreateFileMappingA(FileHandle, NULL, PAGE_READWRITE, *((DWORD*)&Size + 1), *(DWORD*)&Size, NULL);
+    FileMapping = CreateFileMappingA(FileHandle, nullptr, PAGE_READWRITE, *((DWORD*)&Size + 1), *(DWORD*)&Size, nullptr);
 
-    if (GetLastError() != ERROR_SUCCESS || FileMapping == NULL) {
+    if (GetLastError() != ERROR_SUCCESS || FileMapping == nullptr) {
         CloseHandle(FileHandle);
         throw std::exception();
     }
 
     Mem = (std::byte*)MapViewOfFile(FileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
 
-    if (GetLastError() != ERROR_SUCCESS || Mem == NULL) {
+    if (GetLastError() != ERROR_SUCCESS || Mem == nullptr) {
         CloseHandle(FileHandle);
         CloseHandle(FileMapping);
         throw std::exception();
@@ -62,7 +62,7 @@ MemoryMappedFile::MemoryMappedFile(std::string filePath)
 
     Mem = (std::byte*)mmap(0, Size, PROT_READ | PROT_WRITE, MAP_SHARED, FileDescriptor, 0);
 
-    if (Mem == NULL) {
+    if (Mem == nullptr) {
         close(FileDescriptor);
         throw std::exception();
     }
@@ -96,7 +96,7 @@ void MemoryMappedFile::UnmapFile()
 #endif
 
     Size = 0;
-    Mem = NULL;
+    Mem = nullptr;
 }
 
 /**
@@ -112,21 +112,21 @@ bool MemoryMappedFile::ResizeFile(uint64_t newSize)
         UnmapViewOfFile(Mem);
         CloseHandle(FileMapping);
 
-        FileMapping = CreateFileMappingA(FileHandle, NULL, PAGE_READWRITE, *((DWORD*)&newSize + 1), *(DWORD*)&newSize, NULL);
+        FileMapping = CreateFileMappingA(FileHandle, nullptr, PAGE_READWRITE, *((DWORD*)&newSize + 1), *(DWORD*)&newSize, nullptr);
 
-        if (GetLastError() != ERROR_SUCCESS || FileMapping == NULL)
+        if (GetLastError() != ERROR_SUCCESS || FileMapping == nullptr)
             return false;
 
         Mem = (std::byte*)MapViewOfFile(FileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
 
-        if (GetLastError() != ERROR_SUCCESS || Mem == NULL)
+        if (GetLastError() != ERROR_SUCCESS || Mem == nullptr)
             return false;
 #else
         munmap(Mem, Size);
         std::filesystem::resize_file(FilePath, newSize);
         Mem = (std::byte*)mmap(0, newSize, PROT_READ | PROT_WRITE, MAP_SHARED, FileDescriptor, 0);
 
-        if (Mem == NULL)
+        if (Mem == nullptr)
             return false;
 
         madvise(Mem, newSize, MADV_WILLNEED);

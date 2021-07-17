@@ -49,7 +49,7 @@ std::map<uint64_t, ResourceDataEntry> ResourceDataMap;
 std::vector<std::stringstream> stringStreams;
 int32_t streamIndex = 0;
 
-std::byte *Buffer = NULL;
+std::byte *Buffer = nullptr;
 int64_t BufferSize = -1;
 
 std::mutex mtx;
@@ -73,7 +73,13 @@ int main(int argc, char **argv)
     Separator = std::filesystem::path::preferred_separator;
 
     // Enable colored output
-    EnableColors();
+#ifdef _WIN32
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD dwMode = 0;
+    GetConsoleMode(hOut, &dwMode);
+    dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    SetConsoleMode(hOut, dwMode);
+#endif
 
     // Display help
     if (argc == 1) {
@@ -315,7 +321,7 @@ int main(int argc, char **argv)
     catch (...) {
         std::cout << RED << "ERROR: " << RESET << "Error while determining the optimal buffer size, using 4096 as the default." << std::endl;
 
-        if (Buffer != NULL)
+        if (Buffer != nullptr)
             delete[] Buffer;
 
         Buffer = new std::byte[4096];
@@ -350,7 +356,13 @@ int main(int argc, char **argv)
     }
 
     // Modify PackageMapSpec JSON file in disk
-    PackageMapSpecInfo.ModifyPackageMapSpec();
+    if (!PackageMapSpecInfo.ModifyPackageMapSpec()) {
+        std::cout << RED << "ERROR: " << RESET << "Failed to write " << PackageMapSpecInfo.PackageMapSpecPath << std::endl;
+    }
+    else {
+        std::cout << "Modified "<< YELLOW << PackageMapSpecInfo.PackageMapSpecPath << RESET << '\n';
+    }
+
 
     // Delete buffer
     delete[] Buffer;

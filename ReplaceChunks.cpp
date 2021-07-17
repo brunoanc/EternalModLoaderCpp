@@ -37,8 +37,8 @@ class PackageMapSpecInfo PackageMapSpecInfo;
  */
 void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceContainer, std::stringstream &os)
 {
-    ResourceChunk *mapResourcesChunk = NULL;
-    MapResourcesFile *mapResourcesFile = NULL;
+    ResourceChunk *mapResourcesChunk = nullptr;
+    MapResourcesFile *mapResourcesFile = nullptr;
     std::vector<std::byte> originalDecompressedMapResources;
     bool invalidMapResources = false;
     int32_t fileCount = 0;
@@ -48,14 +48,14 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
         [](const ResourceModFile &resource1, const ResourceModFile &resource2) { return resource1.Parent.LoadPriority > resource2.Parent.LoadPriority; });
 
     for (auto &modFile : resourceContainer.ModFileList) {
-        ResourceChunk *chunk = NULL;
+        ResourceChunk *chunk = nullptr;
 
         if (modFile.IsAssetsInfoJson && modFile.AssetsInfo.has_value()) {
 
             if (!modFile.AssetsInfo->Resources.empty()) {
                 mtx.lock();
 
-                if (PackageMapSpecInfo.PackageMapSpec == NULL && !PackageMapSpecInfo.invalidPackageMapSpec) {
+                if (PackageMapSpecInfo.PackageMapSpec == nullptr && !PackageMapSpecInfo.invalidPackageMapSpec) {
                     PackageMapSpecInfo.PackageMapSpecPath = BasePath + PackageMapSpecJsonFileName;
                     FILE *packageMapSpecFile = fopen(PackageMapSpecInfo.PackageMapSpecPath.c_str(), "rb");
 
@@ -87,7 +87,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                     }
                 }
 
-                if (PackageMapSpecInfo.PackageMapSpec != NULL && !PackageMapSpecInfo.invalidPackageMapSpec) {
+                if (PackageMapSpecInfo.PackageMapSpec != nullptr && !PackageMapSpecInfo.invalidPackageMapSpec) {
                     for (auto &extraResource : modFile.AssetsInfo->Resources) {
                         std::string extraResourcePath = PathToResourceContainer(extraResource.Name);
 
@@ -243,7 +243,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
             if (modFile.AssetsInfo->Assets.empty() && modFile.AssetsInfo->Maps.empty() && modFile.AssetsInfo->Layers.empty())
                 continue;
 
-            if (mapResourcesFile == NULL && !invalidMapResources) {
+            if (mapResourcesFile == nullptr && !invalidMapResources) {
                 for (auto &file : resourceContainer.ChunkList) {
                     if (EndsWith(file.ResourceName.NormalizedFileName, ".mapresources")) {
                         if (StartsWith(resourceContainer.Name, "gameresources") && EndsWith(file.ResourceName.NormalizedFileName, "init.mapresources"))
@@ -275,7 +275,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                 }
             }
 
-            if (mapResourcesFile == NULL || invalidMapResources) {
+            if (mapResourcesFile == nullptr || invalidMapResources) {
                 modFile.FileBytes.resize(0);
                 continue;
             }
@@ -460,7 +460,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
 
             chunk = GetChunk(modFile.Name, resourceContainer);
 
-            if (chunk == NULL) {
+            if (chunk == nullptr) {
                 modFile.FileBytes.resize(0);
                 continue;
             }
@@ -468,7 +468,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
         else {
             chunk = GetChunk(modFile.Name, resourceContainer);
 
-            if (chunk == NULL) {
+            if (chunk == nullptr) {
                 resourceContainer.NewModFileList.push_back(modFile);
 
                 std::map<uint64_t, ResourceDataEntry>::iterator x = ResourceDataMap.find(CalculateResourceFileNameHash(modFile.Name));
@@ -490,7 +490,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                     }
                 }
 
-                if (mapResourcesFile == NULL && !invalidMapResources) {
+                if (mapResourcesFile == nullptr && !invalidMapResources) {
                     for (auto &file : resourceContainer.ChunkList) {
                         if (EndsWith(file.ResourceName.NormalizedFileName, ".mapresources")) {
                             if (StartsWith(resourceContainer.Name, "gameresources") && EndsWith(file.ResourceName.NormalizedFileName, "init.mapresources"))
@@ -522,7 +522,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                     }
                 }
 
-                if (mapResourcesFile == NULL || invalidMapResources)
+                if (mapResourcesFile == nullptr || invalidMapResources)
                     continue;
 
                 bool alreadyExists = false;
@@ -722,7 +722,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
         fileCount++;
     }
 
-    if (mapResourcesFile != NULL && mapResourcesChunk != NULL && !originalDecompressedMapResources.empty()) {
+    if (mapResourcesFile != nullptr && mapResourcesChunk != nullptr && !originalDecompressedMapResources.empty()) {
         std::vector<std::byte> decompressedMapResourcesData = mapResourcesFile->ToByteVector();
 
         if (decompressedMapResourcesData != originalDecompressedMapResources) {
@@ -735,7 +735,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                 ResourceModFile mapResourcesModFile(Mod(), mapResourcesChunk->ResourceName.NormalizedFileName, resourceContainer.Name);
                 mapResourcesModFile.FileBytes = compressedMapResourcesData;
 
-                if (!SetModDataForChunk(memoryMappedFile, resourceContainer, *mapResourcesChunk,  mapResourcesModFile, compressedMapResourcesData.size(), decompressedMapResourcesData.size(), NULL)) {
+                if (!SetModDataForChunk(memoryMappedFile, resourceContainer, *mapResourcesChunk,  mapResourcesModFile, compressedMapResourcesData.size(), decompressedMapResourcesData.size(), nullptr)) {
                     os << RED << "ERROR: " << RESET << "Failed to set new mod data for " << mapResourcesChunk->ResourceName.NormalizedFileName << "in resource chunk." << '\n';
                     delete mapResourcesFile;
                     return;
