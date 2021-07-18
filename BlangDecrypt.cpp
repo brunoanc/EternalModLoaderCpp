@@ -86,24 +86,24 @@ std::byte *HashData(const std::byte *data1, size_t data1Len, const std::byte *da
  * @param ciphertext Buffer to store the ciphertext in
  * @return Length of the ciphertext
  */
-int32_t EncryptData(unsigned char *plaintext, int32_t plaintext_len, unsigned char *key, unsigned char *iv, unsigned char *ciphertext)
+int32_t EncryptData(unsigned char *plaintext, int32_t plaintextLen, unsigned char *key, unsigned char *iv, unsigned char *ciphertext)
 {
     int32_t len;
-    int32_t ciphertext_len;
+    int32_t ciphertextLen;
 
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
     EVP_EncryptInit_ex(ctx, EVP_aes_128_cbc(), nullptr, key, iv);
-    EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintext_len);
+    EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintextLen);
 
-    ciphertext_len = len;
+    ciphertextLen = len;
 
     EVP_EncryptFinal_ex(ctx, ciphertext + len, &len);
 
-    ciphertext_len += len;
+    ciphertextLen += len;
 
     EVP_CIPHER_CTX_free(ctx);
 
-    return ciphertext_len;
+    return ciphertextLen;
 }
 
 /**
@@ -116,24 +116,24 @@ int32_t EncryptData(unsigned char *plaintext, int32_t plaintext_len, unsigned ch
  * @param plaintext Buffer to store the plaintext in
  * @return Length of the plaintext
  */
-int32_t DecryptData(unsigned char *ciphertext, int32_t ciphertext_len, unsigned char *key, unsigned char *iv, unsigned char *plaintext)
+int32_t DecryptData(unsigned char *ciphertext, int32_t ciphertextLen, unsigned char *key, unsigned char *iv, unsigned char *plaintext)
 {
     int32_t len;
-    int32_t plaintext_len;
+    int32_t plaintextLen;
 
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
     EVP_DecryptInit_ex(ctx, EVP_aes_128_cbc(), nullptr, key, iv);
-    EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len);
+    EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertextLen);
 
-    plaintext_len = len;
+    plaintextLen = len;
 
     EVP_DecryptFinal_ex(ctx, plaintext + len, &len);
 
-    plaintext_len += len;
+    plaintextLen += len;
 
     EVP_CIPHER_CTX_free(ctx);
 
-    return plaintext_len;
+    return plaintextLen;
 }
 
 /**
@@ -148,7 +148,7 @@ int32_t DecryptData(unsigned char *ciphertext, int32_t ciphertext_len, unsigned 
  */
 std::vector<std::byte> CryptData(bool decrypt, std::byte *inputData, size_t inputDataLen, std::byte *key, std::byte *iv)
 {
-    unsigned char *output = new unsigned char[inputDataLen + (inputDataLen % 16 == 0 ? 0 : (16 - inputDataLen % 16))];
+    unsigned char *output = new unsigned char[inputDataLen + 16 - (inputDataLen % 16)];
     uint64_t newSize;
 
     if (decrypt) {

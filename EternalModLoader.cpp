@@ -257,9 +257,11 @@ int main(int argc, char **argv)
 
     // Disable multiplayer if needed
     if (!AreModsSafeForOnline && !LoadOnlineSafeModsOnly) {
-        for (auto &mod : GetMultiplayerDisablerMods()) {
-            for (auto &resourceContainer: ResourceContainerList) {
-                if (resourceContainer.Name == mod.ResourceName) {
+        std::vector<ResourceModFile> multiplayerDisablerMods = GetMultiplayerDisablerMods();
+
+        for (auto &mod : multiplayerDisablerMods) {
+            for (auto &resourceContainer : ResourceContainerList) {
+                if (mod.ResourceName == resourceContainer.Name) {
                     resourceContainer.ModFileList.push_back(mod);
                     break;
                 }
@@ -321,9 +323,7 @@ int main(int argc, char **argv)
     catch (...) {
         std::cout << RED << "ERROR: " << RESET << "Error while determining the optimal buffer size, using 4096 as the default." << std::endl;
 
-        if (Buffer != nullptr)
-            delete[] Buffer;
-
+        delete[] Buffer;
         Buffer = new std::byte[4096];
     }
 
