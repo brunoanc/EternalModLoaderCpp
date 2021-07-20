@@ -5,21 +5,29 @@ set(CMAKE_CXX_STANDARD 17)
 
 file(GLOB SOURCES
         ./AssetsInfo/AssetsInfo.cpp
+        ./AssetsInfo/AssetsInfo.hpp
         ./BlangFile/BlangFile.cpp
-        ./Colors/Colors.cpp
-        ./jsonxx/jsonxx.cc
+        ./BlangFile/BlangFile.hpp
         ./MapResourcesFile/MapResourcesFile.cpp
+        ./MapResourcesFile/MapResourcesFile.hpp
         ./MemoryMappedFile/MemoryMappedFile.cpp
-        ./miniz/miniz.c
+        ./MemoryMappedFile/MemoryMappedFile.hpp
         ./Mod/Mod.cpp
+        ./Mod/Mod.hpp
         ./Oodle/Oodle.cpp
+        ./Oodle/Oodle.hpp
         ./PackageMapSpec/PackageMapSpec.cpp
+        ./PackageMapSpec/PackageMapSpec.hpp
         ./PackageMapSpec/PackageMapSpecInfo.cpp
+        ./PackageMapSpec/PackageMapSpecInfo.hpp
         ./ResourceData/ResourceData.cpp
+        ./ResourceData/ResourceData.hpp
         ./Utils/Utils.cpp
+        ./Utils/Utils.hpp
+        ./EternalModLoader.cpp
+        ./EternalModLoader.hpp
         ./AddChunks.cpp
         ./BlangDecrypt.cpp
-        ./EternalModLoader.cpp
         ./GetObject.cpp
         ./LoadModFiles.cpp
         ./LoadMods.cpp
@@ -32,25 +40,33 @@ file(GLOB SOURCES
         ./ReplaceSounds.cpp
         ./SetBufferSize.cpp
         ./SetModDataForChunk.cpp
+        ./miniz/miniz.c
+        ./miniz/miniz.h
+        ./jsonxx/jsonxx.cc
+        ./jsonxx/jsonxx.h
         )
 
 if(MSVC)
         if(DEFINED ENV{ETERNALMODLOADERCPP_STATIC})
                 set(OPENSSL_USE_STATIC_LIBS TRUE)
         endif()
-        set (CMAKE_CXX_FLAGS "/O2 /Oi /Ot /GL /EHsc /I \"${CMAKE_CURRENT_SOURCE_DIR}\"")
+        set(CMAKE_CXX_FLAGS "/O2 /Oi /Ot /GL /EHsc /I \"${CMAKE_CURRENT_SOURCE_DIR}\"")
 else()
         if(DEFINED ENV{ETERNALMODLOADERCPP_STATIC})
                 set(OPENSSL_USE_STATIC_LIBS TRUE)
-                set (CMAKE_CXX_FLAGS "-pthread -Ofast -DNDEBUG -ftree-vectorize -msse2 -static -I${CMAKE_CURRENT_SOURCE_DIR}")
+                set(CMAKE_CXX_FLAGS "-pthread -Ofast -DNDEBUG -ftree-vectorize -msse2 -static -I${CMAKE_CURRENT_SOURCE_DIR}")
         else()
-                set (CMAKE_CXX_FLAGS "-pthread -Ofast -DNDEBUG -ftree-vectorize -msse2 -I${CMAKE_CURRENT_SOURCE_DIR}")
+                set(CMAKE_CXX_FLAGS "-pthread -Ofast -DNDEBUG -ftree-vectorize -msse2 -I${CMAKE_CURRENT_SOURCE_DIR}")
         endif()
 endif(MSVC)
 
 add_executable(DEternal_loadMods ${SOURCES})
 
 find_package(OpenSSL REQUIRED)
+
+if(MSVC)
+        target_link_options(DEternal_loadMods PUBLIC "/LTCG")
+endif(MSVC)
 
 target_link_libraries(
         DEternal_loadMods
