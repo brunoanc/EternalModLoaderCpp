@@ -38,7 +38,6 @@ file(GLOB SOURCES
         ./ReadSoundEntries.cpp
         ./ReplaceChunks.cpp
         ./ReplaceSounds.cpp
-        ./SetBufferSize.cpp
         ./SetModDataForChunk.cpp
         ./miniz/miniz.c
         ./miniz/miniz.h

@@ -250,7 +250,7 @@ int main(int argc, char **argv)
     double unzippedModsTime = chrono::duration_cast<chrono::microseconds>(unzippedModsEnd - unzippedModsBegin).count() / 1000000.0;
 
     // Remove resources from the list if they have no mods to load
-    for (int i = ResourceContainerList.size() - 1; i >= 0; i--) {
+    for (int32_t i = ResourceContainerList.size() - 1; i >= 0; i--) {
         if (ResourceContainerList[i].ModFileList.empty())
             ResourceContainerList.erase(ResourceContainerList.begin() + i);
     }
@@ -318,7 +318,12 @@ int main(int argc, char **argv)
 
     // Set buffer for file i/o
     try {
-        SetOptimalBufferSize(std::filesystem::current_path().root_path().string());
+        BufferSize = GetClusterSize(std::filesystem::current_path().root_path().string());
+
+        if (BufferSize == -1)
+            BufferSize = 4096;
+
+        Buffer = new std::byte[BufferSize];
     }
     catch (...) {
         std::cout << RED << "ERROR: " << RESET << "Error while determining the optimal buffer size, using 4096 as the default." << std::endl;

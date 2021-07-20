@@ -21,6 +21,13 @@
 #include <algorithm>
 #include <cstring>
 
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#else
+#include <sys/stat.h>
+#endif
+
 /**
  * @brief Remove all whitespace from a string
  * 
@@ -120,4 +127,26 @@ std::string NormalizeResourceFilename(std::string filename)
         filename = filename.substr(filename.find_first_of('#'));
 
     return filename;
+}
+
+/**
+ * @brief Get the disk's cluster size
+ * 
+ * @param driveRootPath Path to the drive root
+ * @return Disk's cluster size, or -1 on error
+ */
+int32_t GetClusterSize(std::string driveRootPath)
+{
+#ifdef _WIN32
+    DWORD sectorsPerCluster;
+    DWORD bytesPerSector;
+    DWORD numberOfFreeClusters;
+    DWORD totalNumberOfClusters;
+    bool result = GetDiskFreeSpaceA(driveRootPath.c_str(), &sectorsPerCluster, &bytesPerSector, &numberOfFreeClusters, &totalNumberOfClusters);
+
+    return result ? sectorsPerCluster * bytesPerSector : -1;
+#else
+    struct stat diskInfo;
+    return stat(driveRootPath.c_str(), &diskInfo) == 0 ? diskInfo.st_blksize : -1;
+#endif
 }

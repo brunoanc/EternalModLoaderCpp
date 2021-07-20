@@ -386,7 +386,6 @@ void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLoo
 
 // Misc
 std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string internalPath, bool decrypt);
-void SetOptimalBufferSize(std::string driveRootPath);
 void GetResourceContainerPathList();
 
 // Online Safety
