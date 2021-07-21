@@ -34,7 +34,7 @@
  * @param stringWithWhitespace String to modify
  * @return String with removed whitespace
  */
-std::string RemoveWhitespace(std::string &stringWithWhitespace)
+std::string RemoveWhitespace(const std::string &stringWithWhitespace)
 {
     std::string stringWithoutWhitespace = stringWithWhitespace;
     stringWithoutWhitespace.erase(std::remove_if(stringWithoutWhitespace.begin(), stringWithoutWhitespace.end(), [](char ch) { return std::isspace(ch); }), stringWithoutWhitespace.end());
@@ -48,7 +48,7 @@ std::string RemoveWhitespace(std::string &stringWithWhitespace)
  * @param str String to modify
  * @return String converted to lowercase
  */
-std::string ToLower(std::string &str)
+std::string ToLower(const std::string &str)
 {
     std::string lowercase = str;
     std::transform(lowercase.begin(), lowercase.end(), lowercase.begin(), [](unsigned char c) { return std::tolower(c); });
@@ -63,7 +63,7 @@ std::string ToLower(std::string &str)
  * @param delimiter Delimiter to use for splitting
  * @return Vector containing the split strings
  */
-std::vector<std::string> SplitString(std::string stringToSplit, char delimiter)
+std::vector<std::string> SplitString(std::string stringToSplit, const char delimiter)
 {
     std::vector<std::string> resultVector;
     size_t pos;
@@ -135,7 +135,7 @@ std::string NormalizeResourceFilename(std::string filename)
  * @param driveRootPath Path to the drive root
  * @return Disk's cluster size, or -1 on error
  */
-int32_t GetClusterSize(std::string driveRootPath)
+int32_t GetClusterSize(const std::string driveRootPath)
 {
 #ifdef _WIN32
     DWORD sectorsPerCluster;

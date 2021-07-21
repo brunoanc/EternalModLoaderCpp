@@ -42,7 +42,7 @@ void GetResourceContainerPathList()
  * @param name Name of the resource container to find
  * @return Path to the resource container, or an empty string if not found
  */
-std::string PathToResourceContainer(std::string name)
+std::string PathToResourceContainer(const std::string name)
 {
     std::string searchPath = BasePath;
     std::string resourcePath = name;
@@ -95,7 +95,7 @@ std::string PathToResourceContainer(std::string name)
  * @param name Name of the sound container to find
  * @return Path to the sound container, or an empty string if not found
  */
-std::string PathToSoundContainer(std::string name)
+std::string PathToSoundContainer(const std::string name)
 {
     std::string searchPath = BasePath + "sound" + Separator + "soundbanks" + Separator + "pc" + Separator;
     std::string sndPath = name + ".snd";

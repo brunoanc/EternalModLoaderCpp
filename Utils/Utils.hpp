@@ -19,12 +19,12 @@
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
-std::string RemoveWhitespace(std::string &stringWithWhitespace);
-std::string ToLower(std::string &str);
-std::vector<std::string> SplitString(std::string stringToSplit, char delimiter);
+std::string RemoveWhitespace(const std::string &stringWithWhitespace);
+std::string ToLower(const std::string &str);
+std::vector<std::string> SplitString(std::string stringToSplit, const char delimiter);
 bool EndsWith(const std::string &fullString, const std::string &suffix);
 bool StartsWith(const std::string &fullString, const std::string &prefix);
 std::string NormalizeResourceFilename(std::string filename);
-int32_t GetClusterSize(std::string driveRootPath);
+int32_t GetClusterSize(const std::string driveRootPath);
 
 #endif

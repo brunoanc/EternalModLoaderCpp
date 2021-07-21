@@ -82,7 +82,7 @@ public:
     std::vector<AssetsInfoAsset> Assets;
 
     AssetsInfo() {}
-    AssetsInfo(std::string &json);
+    AssetsInfo(const std::string &json);
 };
 
 #endif

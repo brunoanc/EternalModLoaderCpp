@@ -42,7 +42,8 @@
  * @param hmacKeyLen Size of HMAC key
  * @return Data hash
  */
-std::byte *HashData(const std::byte *data1, size_t data1Len, const std::byte *data2, size_t data2Len, const std::byte *data3, size_t data3Len, const std::byte *hmacKey, size_t hmacKeyLen)
+std::byte *HashData(const std::byte *data1, const size_t data1Len, const std::byte *data2, const size_t data2Len,
+    const std::byte *data3, const size_t data3Len, const std::byte *hmacKey, size_t hmacKeyLen)
 {
     if (hmacKey == nullptr) {
         SHA256_CTX sha256;
@@ -86,7 +87,7 @@ std::byte *HashData(const std::byte *data1, size_t data1Len, const std::byte *da
  * @param ciphertext Buffer to store the ciphertext in
  * @return Length of the ciphertext
  */
-int32_t EncryptData(unsigned char *plaintext, int32_t plaintextLen, unsigned char *key, unsigned char *iv, unsigned char *ciphertext)
+int32_t EncryptData(const unsigned char *plaintext, const size_t plaintextLen, const unsigned char *key, const unsigned char *iv, unsigned char *ciphertext)
 {
     int32_t len;
     int32_t ciphertextLen;
@@ -116,7 +117,7 @@ int32_t EncryptData(unsigned char *plaintext, int32_t plaintextLen, unsigned cha
  * @param plaintext Buffer to store the plaintext in
  * @return Length of the plaintext
  */
-int32_t DecryptData(unsigned char *ciphertext, int32_t ciphertextLen, unsigned char *key, unsigned char *iv, unsigned char *plaintext)
+int32_t DecryptData(const unsigned char *ciphertext, const size_t ciphertextLen, const unsigned char *key, const unsigned char *iv, unsigned char *plaintext)
 {
     int32_t len;
     int32_t plaintextLen;
@@ -146,7 +147,7 @@ int32_t DecryptData(unsigned char *ciphertext, int32_t ciphertextLen, unsigned c
  * @param iv IV to use for encryption/decryption
  * @return Vector containing the encrypted/decrypted data bytes
  */
-std::vector<std::byte> CryptData(bool decrypt, std::byte *inputData, size_t inputDataLen, std::byte *key, std::byte *iv)
+std::vector<std::byte> CryptData(const bool decrypt, const std::byte *inputData, const size_t inputDataLen, const std::byte *key, const std::byte *iv)
 {
     unsigned char *output = new unsigned char[inputDataLen + 16 - (inputDataLen % 16)];
     uint64_t newSize;
@@ -173,7 +174,7 @@ std::vector<std::byte> CryptData(bool decrypt, std::byte *inputData, size_t inpu
  * @param decrypt Bool indicating whether to decrypt or encrypt
  * @return std::vector<std::byte> 
  */
-std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string internalPath, bool decrypt)
+std::vector<std::byte> IdCrypt(const std::vector<std::byte> &fileData, const std::string internalPath, const bool decrypt)
 {
     std::string keyDeriveStatic = "swapTeam\n";
     srand(time(nullptr));

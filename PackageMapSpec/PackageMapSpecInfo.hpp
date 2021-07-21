@@ -30,7 +30,7 @@ public:
     bool invalidPackageMapSpec;
     bool WasPackageMapSpecModified;
 
-    bool ModifyPackageMapSpec();
+    bool ModifyPackageMapSpec() const;
 };
 
 #endif

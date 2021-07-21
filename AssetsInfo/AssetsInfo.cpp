@@ -26,7 +26,7 @@
  * 
  * @param json JSON string to deserialize
  */
-AssetsInfo::AssetsInfo(std::string &json)
+AssetsInfo::AssetsInfo(const std::string &json)
 {
     jsonxx::Object assetsInfoJson;
     assetsInfoJson.parse(json);

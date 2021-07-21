@@ -20,7 +20,7 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
     mz_zip_zero_struct(&modZip);
     mz_zip_reader_init_file(&modZip, zippedMod.c_str(), 0);
 
-    Mod mod(std::filesystem::path(zippedMod).filename().string());
+    Mod mod;
 
     if (!ListResources) {
         char *unzippedModJson;
@@ -31,7 +31,7 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
             free(unzippedModJson);
 
             try {
-                mod = Mod(mod.Name, modJson);
+                mod = Mod(modJson);
 
                 if (mod.RequiredVersion > Version) {
                     mtx.lock();

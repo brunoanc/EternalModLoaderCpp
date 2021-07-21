@@ -72,7 +72,7 @@ bool OodleInit()
  * @param decompressedSize Size of the data to decompress
  * @return A byte vector containing the decompressed data, or an empty byte vector on failure
  */
-std::vector<std::byte> OodleDecompress(std::vector<std::byte> &compressedData, int64_t decompressedSize)
+std::vector<std::byte> OodleDecompress(const std::vector<std::byte> &compressedData, const size_t decompressedSize)
 {
     if (!OodLZ_Decompress) {
         if (!OodleInit())
@@ -95,7 +95,7 @@ std::vector<std::byte> OodleDecompress(std::vector<std::byte> &compressedData, i
  * @param compressionLevel Oodle compression level to use for compression
  * @return A byte vector containing the compressed data, or an empty byte vector on failure
  */
-std::vector<std::byte> OodleCompress(std::vector<std::byte> &decompressedData, OodleFormat format, OodleCompressionLevel compressionLevel)
+std::vector<std::byte> OodleCompress(const std::vector<std::byte> &decompressedData, const OodleFormat format, const OodleCompressionLevel compressionLevel)
 {
     if (!OodLZ_Compress) {
         if (!OodleInit())

@@ -362,9 +362,9 @@ bool SetModDataForChunk(
     ResourceContainer &resourceContainer,
     ResourceChunk &chunk,
     ResourceModFile &modFile,
-    uint64_t compressedSize,
-    uint64_t uncompressedSize,
-    std::byte *compressionMode
+    const uint64_t compressedSize,
+    const uint64_t uncompressedSize,
+    const std::byte *compressionMode
 );
 
 // Sound mods
@@ -374,24 +374,24 @@ std::vector<SoundEntry> GetSoundEntriesToModify(SoundContainer &soundContainer, 
 void ReplaceSounds(MemoryMappedFile &memoryMappedFile, SoundContainer &soundContainer, std::stringstream &os);
 
 // Path to containers
-std::string PathToResourceContainer(std::string name);
-std::string PathToSoundContainer(std::string name);
+std::string PathToResourceContainer(const std::string name);
+std::string PathToSoundContainer(const std::string name);
 
 // Get object
-int32_t GetResourceContainer(std::string &resourceContainerName);
-int32_t GetSoundContainer(std::string &soundContainerName);
-ResourceChunk *GetChunk(std::string name, ResourceContainer &resourceContainer);
+int32_t GetResourceContainer(const std::string &resourceContainerName);
+int32_t GetSoundContainer(const std::string &soundContainerName);
+ResourceChunk *GetChunk(const std::string name, ResourceContainer &resourceContainer);
 
 // Load mod files
 void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundContainers);
 void LoadUnzippedMod(std::string unzippedMod, Mod &globalLooseMod, std::atomic<int32_t> &unzippedModCount, std::vector<std::string> &notFoundContainers);
 
 // Misc
-std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string internalPath, bool decrypt);
+std::vector<std::byte> IdCrypt(const std::vector<std::byte> &fileData, const std::string internalPath, const bool decrypt);
 void GetResourceContainerPathList();
 
 // Online Safety
 std::vector<ResourceModFile> GetMultiplayerDisablerMods();
-bool IsModSafeForOnline(ResourceModFile &mod);
+bool IsModSafeForOnline(const ResourceModFile &mod);
 
 #endif

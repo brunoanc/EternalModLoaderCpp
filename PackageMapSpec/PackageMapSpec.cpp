@@ -27,7 +27,7 @@
  * 
  * @param json JSON to deserialize
  */
-PackageMapSpec::PackageMapSpec(std::string &json)
+PackageMapSpec::PackageMapSpec(const std::string &json)
 {
     jsonxx::Object packageMapSpecJson;
     packageMapSpecJson.parse(json);

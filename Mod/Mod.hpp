@@ -34,8 +34,7 @@ public:
     int32_t RequiredVersion = 0;
 
     Mod() {}
-    Mod(std::string name);
-    Mod(std::string name, std::string &json);
+    Mod(const std::string &json);
 };
 
 #endif

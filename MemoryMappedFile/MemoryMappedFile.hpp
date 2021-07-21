@@ -38,11 +38,11 @@ public:
     std::byte *Mem;
     uint64_t Size = 0;
 
-    MemoryMappedFile(std::string filePath);
+    MemoryMappedFile(const std::string filePath);
     ~MemoryMappedFile();
 
     void UnmapFile();
-    bool ResizeFile(uint64_t newSize);
+    bool ResizeFile(const uint64_t newSize);
 private:
 #ifdef _WIN32
     HANDLE FileHandle;

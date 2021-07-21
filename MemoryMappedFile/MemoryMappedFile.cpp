@@ -26,7 +26,7 @@
  * 
  * @param filePath Path to the file to map in memory
  */
-MemoryMappedFile::MemoryMappedFile(std::string filePath)
+MemoryMappedFile::MemoryMappedFile(const std::string filePath)
 {
     FilePath = filePath;
     Size = std::filesystem::file_size(FilePath);
@@ -105,7 +105,7 @@ void MemoryMappedFile::UnmapFile()
  * @param newSize New size for file
  * @return True on success, false otherwise
  */
-bool MemoryMappedFile::ResizeFile(uint64_t newSize)
+bool MemoryMappedFile::ResizeFile(const uint64_t newSize)
 {
     try {
 #ifdef _WIN32

@@ -36,7 +36,15 @@ public:
         Text = "";
     }
 
-    BlangString(uint32_t hash, std::string identifier, std::string text, std::vector<std::byte> unknown)
+    /**
+     * @brief Construct a new BlangString object
+     * 
+     * @param hash String's hash
+     * @param identifier String's identifier
+     * @param text String's text
+     * @param unknown Unknown bytes
+     */
+    BlangString(const uint32_t hash, const std::string identifier, const std::string text, const std::vector<std::byte> &unknown)
     {
         Hash = hash;
         Identifier = identifier;
@@ -55,7 +63,7 @@ public:
     std::vector<BlangString> Strings;
 
     BlangFile() {}
-    BlangFile(std::vector<std::byte> &blangBytes);
+    BlangFile(const std::vector<std::byte> &blangBytes);
 
     std::vector<std::byte> ToByteVector();
 };

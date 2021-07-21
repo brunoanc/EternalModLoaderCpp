@@ -35,7 +35,7 @@ public:
     std::byte SpecialByte3 = (std::byte)0;
 };
 
-std::map<uint64_t, ResourceDataEntry> ParseResourceData(std::string &fileName);
-uint64_t CalculateResourceFileNameHash(std::string &input);
+std::map<uint64_t, ResourceDataEntry> ParseResourceData(const std::string &fileName);
+uint64_t CalculateResourceFileNameHash(const std::string &input);
 
 #endif

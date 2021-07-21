@@ -28,7 +28,7 @@
  * @brief Modify the PackageMapSpecInfo file in disk
  * 
  */
-bool PackageMapSpecInfo::ModifyPackageMapSpec()
+bool PackageMapSpecInfo::ModifyPackageMapSpec() const
 {
     if (PackageMapSpec != nullptr && WasPackageMapSpecModified) {
         FILE *packageMapSpecFile = fopen(PackageMapSpecPath.c_str(), "wb");

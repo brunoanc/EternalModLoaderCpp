@@ -22,9 +22,9 @@ bool SetModDataForChunk(
     ResourceContainer &resourceContainer,
     ResourceChunk &chunk,
     ResourceModFile &modFile,
-    uint64_t compressedSize,
-    uint64_t uncompressedSize,
-    std::byte *compressionMode
+    const uint64_t compressedSize,
+    const uint64_t uncompressedSize,
+    const std::byte *compressionMode
 )
 {
     chunk.Size = uncompressedSize;

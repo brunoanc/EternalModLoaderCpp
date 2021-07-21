@@ -30,7 +30,7 @@
  * @param fileName Resource data filename
  * @return Map containing the parsed resource data
  */
-std::map<uint64_t, ResourceDataEntry> ParseResourceData(std::string &fileName)
+std::map<uint64_t, ResourceDataEntry> ParseResourceData(const std::string &fileName)
 {
     std::map<uint64_t, ResourceDataEntry> resourceDataMap;
     int64_t filesize = std::filesystem::file_size(fileName);
@@ -127,7 +127,7 @@ std::map<uint64_t, ResourceDataEntry> ParseResourceData(std::string &fileName)
  * @param input Filename to hash
  * @return Filename's resource hash
  */
-uint64_t CalculateResourceFileNameHash(std::string &input)
+uint64_t CalculateResourceFileNameHash(const std::string &input)
 {
     uint64_t hashedValue = 3074457345618258791;
 
