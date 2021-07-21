@@ -82,7 +82,7 @@ public:
     PackageMapSpec() {}
     PackageMapSpec(std::string &json);
 
-    std::string Dump();
+    std::string Dump() const;
 };
 
 #endif

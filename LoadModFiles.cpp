@@ -9,10 +9,9 @@
  * @brief Load mod files from zip
  * 
  * @param zippedMod Zipped mod path
- * @param listResources Bool indicating whether to load the mod files or to only get the resources to modify
  * @param notFoundContainers Vector to push not found resources to
  */
-void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::string> &notFoundContainers)
+void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundContainers)
 {
     int32_t zippedModCount = 0;
     std::vector<std::string> modFileNameList;
@@ -23,7 +22,7 @@ void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::s
 
     Mod mod(std::filesystem::path(zippedMod).filename().string());
 
-    if (!listResources) {
+    if (!ListResources) {
         char *unzippedModJson;
         size_t unzippedModJsonSize;
 
@@ -117,7 +116,7 @@ void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::s
 
             mtx.unlock();
 
-            if (!listResources) {
+            if (!ListResources) {
                 std::string soundExtension = std::filesystem::path(modFileName).extension().string();
 
                 if (std::find(SupportedFileFormats.begin(), SupportedFileFormats.end(), soundExtension) == SupportedFileFormats.end()) {
@@ -164,7 +163,7 @@ void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::s
 
             ResourceModFile resourceModFile(mod, modFileName, resourceName);
 
-            if (!listResources) {
+            if (!ListResources) {
                 std::byte *unzippedEntry;
                 size_t unzippedEntrySize;
 
@@ -184,7 +183,7 @@ void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::s
                 && ToLower(modFilePathParts[2]) == "assetsinfo"
                 && std::filesystem::path(modFilePathParts[3]).extension() == ".json") {
                     try {
-                        if (listResources) {
+                        if (ListResources) {
                             std::byte *unzippedEntry;
                             size_t unzippedEntrySize;
 
@@ -243,7 +242,7 @@ void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::s
         }
     }
         
-    if (zippedModCount > 0 && !listResources) {
+    if (zippedModCount > 0 && !ListResources) {
         mtx.lock();
 
         if (!LoadOnlineSafeModsOnly || (LoadOnlineSafeModsOnly && mod.IsSafeForOnline)) {
@@ -266,12 +265,11 @@ void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::s
  * @brief Load loose mod files from Mods directory
  * 
  * @param unzippedMod Loose mod path
- * @param listResources Bool indicating whether to load the mod files or to only get the resources to modify
  * @param globalLooseMod Mod object to use for all loose mods
  * @param unzippedModCount Atomic int to increase with every unzipped mod loaded
  * @param notFoundContainers Vector to push not found resources to
  */
-void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLooseMod, std::atomic<int32_t> &unzippedModCount, std::vector<std::string> &notFoundContainers)
+void LoadUnzippedMod(std::string unzippedMod, Mod &globalLooseMod, std::atomic<int32_t> &unzippedModCount, std::vector<std::string> &notFoundContainers)
 {
     std::replace(unzippedMod.begin(), unzippedMod.end(), Separator, '/');
     std::vector<std::string> modFilePathParts = SplitString(unzippedMod, '/');
@@ -324,7 +322,7 @@ void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLoo
 
         mtx.unlock();
 
-        if (!listResources) {
+        if (!ListResources) {
             std::string soundExtension = std::filesystem::path(fileName).extension().string();
 
             if (std::find(SupportedFileFormats.begin(), SupportedFileFormats.end(), soundExtension) == SupportedFileFormats.end()) {
@@ -381,7 +379,7 @@ void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLoo
 
         ResourceModFile resourceModFile(globalLooseMod, fileName, resourceName);
 
-        if (!listResources) {
+        if (!ListResources) {
             int64_t unzippedModSize = std::filesystem::file_size(unzippedMod);
 
             FILE *unzippedModFile = fopen(unzippedMod.c_str(), "rb");
@@ -410,7 +408,7 @@ void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLoo
             && ToLower(modFilePathParts[4]) == "assetsinfo"
             && std::filesystem::path(modFilePathParts[5]).extension() == ".json") {
                 try {
-                    if (listResources) {
+                    if (ListResources) {
                         int64_t unzippedModSize = std::filesystem::file_size(unzippedMod);
 
                         FILE *unzippedModFile = fopen(unzippedMod.c_str(), "rb");

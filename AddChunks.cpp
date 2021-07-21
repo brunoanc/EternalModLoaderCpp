@@ -25,8 +25,6 @@
 
 #include "EternalModLoader.hpp"
 
-extern const std::byte *DivinityMagic;
-
 /**
  * @brief Add new chunks to the given resource file
  * 

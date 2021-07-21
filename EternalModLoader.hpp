@@ -212,7 +212,7 @@ public:
      * @param name Name of the resource to find
      * @return True if found, false otherwise
      */
-    bool ContainsResourceWithName(std::string name)
+    bool ContainsResourceWithName(std::string name) const
     {
         for (auto &resourceName : NamesList) {
             if (resourceName.FullFileName == name || resourceName.NormalizedFileName == name)
@@ -228,7 +228,7 @@ public:
      * @param name Name of the resource to find
      * @return the resource's ID if found, -1 otherwise
      */
-    int64_t GetResourceNameId(std::string name)
+    int64_t GetResourceNameId(std::string name) const
     {
         for (int32_t i = 0; i < NamesList.size(); i++) {
             if (NamesList[i].FullFileName == name || NamesList[i].NormalizedFileName == name)
@@ -327,6 +327,7 @@ extern const int32_t Version;
 
 extern char Separator;
 extern std::string BasePath;
+extern bool ListResources;
 extern bool Verbose;
 extern bool SlowMode;
 extern bool LoadOnlineSafeModsOnly;
@@ -348,6 +349,7 @@ extern int64_t BufferSize;
 extern std::mutex mtx;
 
 extern class PackageMapSpecInfo PackageMapSpecInfo;
+extern const std::byte *DivinityMagic;
 
 // Resource mods
 void LoadResourceMods(ResourceContainer &resourceContainer);
@@ -381,8 +383,8 @@ int32_t GetSoundContainer(std::string &soundContainerName);
 ResourceChunk *GetChunk(std::string name, ResourceContainer &resourceContainer);
 
 // Load mod files
-void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::string> &notFoundContainers);
-void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLooseMod, std::atomic<int32_t> &unzippedModCount, std::vector<std::string> &notFoundContainers);
+void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundContainers);
+void LoadUnzippedMod(std::string unzippedMod, Mod &globalLooseMod, std::atomic<int32_t> &unzippedModCount, std::vector<std::string> &notFoundContainers);
 
 // Misc
 std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string internalPath, bool decrypt);

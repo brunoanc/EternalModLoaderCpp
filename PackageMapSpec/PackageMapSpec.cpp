@@ -69,7 +69,7 @@ PackageMapSpec::PackageMapSpec(std::string &json)
  * 
  * @return Serialized PackageMapSpec JSON
  */
-std::string PackageMapSpec::Dump()
+std::string PackageMapSpec::Dump() const
 {
     jsonxx::Object packageMapSpecJson;
     jsonxx::Array files;

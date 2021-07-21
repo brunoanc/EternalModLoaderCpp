@@ -35,6 +35,7 @@ const std::string ResourceDataFileName = "rs_data";
 
 char Separator;
 std::string BasePath;
+bool ListResources = false;
 bool Verbose = false;
 bool SlowMode = false;
 bool LoadOnlineSafeModsOnly = false;
@@ -110,13 +111,11 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    bool listResources = false;
-
     // Check arguments passed to program
     if (argc > 2) {
         for (int32_t i = 2; i < argc; i++) {
             if (!strcmp(argv[i], "--list-res")) {
-                listResources = true;
+                ListResources = true;
             }
             else if (!strcmp(argv[i], "--verbose")) {
                 Verbose = true;
@@ -150,7 +149,7 @@ int main(int argc, char **argv)
     SoundContainerList.reserve(40);
 
     // Parse rs_data
-    if (!listResources) {
+    if (!ListResources) {
         std::string resourceDataFilePath = BasePath + ResourceDataFileName;
 
         if (std::filesystem::exists(resourceDataFilePath)) {
@@ -199,14 +198,14 @@ int main(int argc, char **argv)
         zippedModLoadingThreads.reserve(zippedMods.size());
 
         for (const auto &zippedMod : zippedMods)
-            zippedModLoadingThreads.push_back(std::thread(LoadZippedMod, zippedMod, listResources, std::ref(notFoundContainers)));
+            zippedModLoadingThreads.push_back(std::thread(LoadZippedMod, zippedMod, std::ref(notFoundContainers)));
 
         for (auto &thread : zippedModLoadingThreads)
             thread.join();
     }
     else {
         for (const auto &zippedMod : zippedMods)
-            LoadZippedMod(zippedMod, listResources, notFoundContainers);
+            LoadZippedMod(zippedMod, notFoundContainers);
     }
 
     chrono::steady_clock::time_point zippedModsEnd = chrono::steady_clock::now();
@@ -224,17 +223,17 @@ int main(int argc, char **argv)
         unzippedModLoadingThreads.reserve(unzippedMods.size());
 
         for (const auto &unzippedMod : unzippedMods)
-            unzippedModLoadingThreads.push_back(std::thread(LoadUnzippedMod, unzippedMod, listResources, std::ref(globalLooseMod), std::ref(unzippedModCount), std::ref(notFoundContainers)));
+            unzippedModLoadingThreads.push_back(std::thread(LoadUnzippedMod, unzippedMod, std::ref(globalLooseMod), std::ref(unzippedModCount), std::ref(notFoundContainers)));
 
         for (auto &thread : unzippedModLoadingThreads)
             thread.join();
         }
     else {
         for (const auto &unzippedMod : unzippedMods)
-            LoadUnzippedMod(unzippedMod, listResources, globalLooseMod, unzippedModCount, notFoundContainers);
+            LoadUnzippedMod(unzippedMod, globalLooseMod, unzippedModCount, notFoundContainers);
     }
 
-    if (unzippedModCount > 0 && !listResources) {
+    if (unzippedModCount > 0 && !ListResources) {
         if (LoadOnlineSafeModsOnly && !globalLooseMod.IsSafeForOnline) {
             std::cout << RED << "WARNING: " << RESET << "Loose mod files are not safe for online play, skipping" << '\n';
         }
@@ -270,7 +269,7 @@ int main(int argc, char **argv)
     }
 
     // List resources to be modified and exit
-    if (listResources) {
+    if (ListResources) {
         for (auto &resourceContainer : ResourceContainerList) {
             if (resourceContainer.Path.empty())
                 continue;

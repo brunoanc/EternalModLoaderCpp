@@ -130,7 +130,7 @@ MapResourcesFile::MapResourcesFile(std::vector<std::byte> &rawData)
  * 
  * @return Vector containing the MapResources file's bytes
  */
-std::vector<std::byte> MapResourcesFile::ToByteVector()
+std::vector<std::byte> MapResourcesFile::ToByteVector() const
 {
     std::vector<std::byte> mapResourcesBytes;
 
