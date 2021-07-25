@@ -30,15 +30,17 @@
 
 namespace chrono = std::chrono;
 
-const int32_t Version = 9;
 const std::string ResourceDataFileName = "rs_data";
 
 char Separator;
 std::string BasePath;
+bool ListResources = false;
 bool Verbose = false;
 bool SlowMode = false;
+bool LoadOnlineSafeModsOnly = false;
 bool CompressTextures = false;
 bool MultiThreading = true;
+bool AreModsSafeForOnline = true;
 
 std::vector<ResourceContainer> ResourceContainerList;
 std::vector<SoundContainer> SoundContainerList;
@@ -47,7 +49,7 @@ std::map<uint64_t, ResourceDataEntry> ResourceDataMap;
 std::vector<std::stringstream> stringStreams;
 int32_t streamIndex = 0;
 
-std::byte *Buffer = NULL;
+std::byte *Buffer = nullptr;
 int64_t BufferSize = -1;
 
 std::mutex mtx;
@@ -71,7 +73,13 @@ int main(int argc, char **argv)
     Separator = std::filesystem::path::preferred_separator;
 
     // Enable colored output
-    EnableColors();
+#ifdef _WIN32
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD dwMode = 0;
+    GetConsoleMode(hOut, &dwMode);
+    dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    SetConsoleMode(hOut, dwMode);
+#endif
 
     // Display help
     if (argc == 1) {
@@ -83,6 +91,7 @@ int main(int argc, char **argv)
         std::cout << "\t--list-res - List the .resources files that will be modified and exit.\n";
         std::cout << "\t--verbose - Print more information during the mod loading process.\n";
         std::cout << "\t--slow - Slow mod loading mode that produces lighter files.\n";
+        std::cout << "\t--online-safe - Only load online-safe mods.\n";
         std::cout << "\t--compress-textures - Compress texture files during the mod loading process.\n";
         std::cout << "\t--disable-multithreading - Disables multi-threaded mod loading." << std::endl;
         return 1;
@@ -101,13 +110,11 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    bool listResources = false;
-
     // Check arguments passed to program
     if (argc > 2) {
         for (int32_t i = 2; i < argc; i++) {
             if (!strcmp(argv[i], "--list-res")) {
-                listResources = true;
+                ListResources = true;
             }
             else if (!strcmp(argv[i], "--verbose")) {
                 Verbose = true;
@@ -116,6 +123,10 @@ int main(int argc, char **argv)
             else if (!strcmp(argv[i], "--slow")) {
                 SlowMode = true;
                 std::cout << YELLOW << "INFO: Slow mod loading mode is enabled." << RESET << std::endl;
+            }
+            else if (!strcmp(argv[i], "--online-safe")) {
+                LoadOnlineSafeModsOnly = true;
+                std::cout << YELLOW << "INFO: Only online-safe mods will be loaded." << RESET << std::endl;
             }
             else if (!strcmp(argv[i], "--compress-textures")) {
                 CompressTextures = true;
@@ -137,7 +148,7 @@ int main(int argc, char **argv)
     SoundContainerList.reserve(40);
 
     // Parse rs_data
-    if (!listResources) {
+    if (!ListResources) {
         std::string resourceDataFilePath = BasePath + ResourceDataFileName;
 
         if (std::filesystem::exists(resourceDataFilePath)) {
@@ -186,14 +197,14 @@ int main(int argc, char **argv)
         zippedModLoadingThreads.reserve(zippedMods.size());
 
         for (const auto &zippedMod : zippedMods)
-            zippedModLoadingThreads.push_back(std::thread(LoadZippedMod, zippedMod, listResources, std::ref(notFoundContainers)));
+            zippedModLoadingThreads.push_back(std::thread(LoadZippedMod, zippedMod, std::ref(notFoundContainers)));
 
         for (auto &thread : zippedModLoadingThreads)
             thread.join();
     }
     else {
         for (const auto &zippedMod : zippedMods)
-            LoadZippedMod(zippedMod, listResources, notFoundContainers);
+            LoadZippedMod(zippedMod, notFoundContainers);
     }
 
     chrono::steady_clock::time_point zippedModsEnd = chrono::steady_clock::now();
@@ -211,24 +222,53 @@ int main(int argc, char **argv)
         unzippedModLoadingThreads.reserve(unzippedMods.size());
 
         for (const auto &unzippedMod : unzippedMods)
-            unzippedModLoadingThreads.push_back(std::thread(LoadUnzippedMod, unzippedMod, listResources, std::ref(globalLooseMod), std::ref(unzippedModCount), std::ref(notFoundContainers)));
+            unzippedModLoadingThreads.push_back(std::thread(LoadUnzippedMod, unzippedMod, std::ref(globalLooseMod), std::ref(unzippedModCount), std::ref(notFoundContainers)));
 
         for (auto &thread : unzippedModLoadingThreads)
             thread.join();
         }
     else {
         for (const auto &unzippedMod : unzippedMods)
-            LoadUnzippedMod(unzippedMod, listResources, globalLooseMod, unzippedModCount, notFoundContainers);
+            LoadUnzippedMod(unzippedMod, globalLooseMod, unzippedModCount, notFoundContainers);
     }
 
-    if (unzippedModCount > 0 && !listResources)
-        std::cout << "Found " << BLUE << unzippedModCount << " file(s) " << RESET << "in " << YELLOW << "'Mods' " << RESET << "folder..." << '\n';
+    if (unzippedModCount > 0 && !ListResources) {
+        if (LoadOnlineSafeModsOnly && !globalLooseMod.IsSafeForOnline) {
+            std::cout << RED << "WARNING: " << RESET << "Loose mod files are not safe for online play, skipping" << '\n';
+        }
+        else {
+            std::cout << "Found " << BLUE << unzippedModCount << " file(s) " << RESET << "in " << YELLOW << "'Mods' " << RESET << "folder..." << '\n';
+
+            if (!globalLooseMod.IsSafeForOnline)
+                std::cout << YELLOW << "WARNING: Loose mod files are not safe for online play, multiplayer will be disabled" << RESET << '\n';
+        }
+    }
 
     chrono::steady_clock::time_point unzippedModsEnd = chrono::steady_clock::now();
     double unzippedModsTime = chrono::duration_cast<chrono::microseconds>(unzippedModsEnd - unzippedModsBegin).count() / 1000000.0;
 
+    // Remove resources from the list if they have no mods to load
+    for (int32_t i = ResourceContainerList.size() - 1; i >= 0; i--) {
+        if (ResourceContainerList[i].ModFileList.empty())
+            ResourceContainerList.erase(ResourceContainerList.begin() + i);
+    }
+
+    // Disable multiplayer if needed
+    if (!AreModsSafeForOnline && !LoadOnlineSafeModsOnly) {
+        std::vector<ResourceModFile> multiplayerDisablerMods = GetMultiplayerDisablerMods();
+
+        for (auto &mod : multiplayerDisablerMods) {
+            for (auto &resourceContainer : ResourceContainerList) {
+                if (mod.ResourceName == resourceContainer.Name) {
+                    resourceContainer.ModFileList.push_back(mod);
+                    break;
+                }
+            }
+        }
+    }
+
     // List resources to be modified and exit
-    if (listResources) {
+    if (ListResources) {
         for (auto &resourceContainer : ResourceContainerList) {
             if (resourceContainer.Path.empty())
                 continue;
@@ -276,14 +316,17 @@ int main(int argc, char **argv)
 
     // Set buffer for file i/o
     try {
-        SetOptimalBufferSize(std::filesystem::absolute(".").root_path().string());
+        BufferSize = GetClusterSize(std::filesystem::current_path().root_path().string());
+
+        if (BufferSize == -1)
+            BufferSize = 4096;
+
+        Buffer = new std::byte[BufferSize];
     }
     catch (...) {
         std::cout << RED << "ERROR: " << RESET << "Error while determining the optimal buffer size, using 4096 as the default." << std::endl;
 
-        if (Buffer != NULL)
-            delete[] Buffer;
-
+        delete[] Buffer;
         Buffer = new std::byte[4096];
     }
 
@@ -316,7 +359,13 @@ int main(int argc, char **argv)
     }
 
     // Modify PackageMapSpec JSON file in disk
-    PackageMapSpecInfo.ModifyPackageMapSpec();
+    if (!PackageMapSpecInfo.ModifyPackageMapSpec()) {
+        std::cout << RED << "ERROR: " << RESET << "Failed to write " << PackageMapSpecInfo.PackageMapSpecPath << std::endl;
+    }
+    else {
+        std::cout << "Modified "<< YELLOW << PackageMapSpecInfo.PackageMapSpecPath << RESET << '\n';
+    }
+
 
     // Delete buffer
     delete[] Buffer;

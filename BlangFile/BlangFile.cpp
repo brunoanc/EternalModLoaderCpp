@@ -29,7 +29,7 @@
  * 
  * @param blangBytes Vector containing the blang's bytes
  */
-BlangFile::BlangFile(std::vector<std::byte> &blangBytes)
+BlangFile::BlangFile(const std::vector<std::byte> &blangBytes)
 {
     int32_t pos = 0;
 

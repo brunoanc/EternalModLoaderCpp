@@ -38,13 +38,14 @@
  * @param data1Len Size of second data bytes
  * @param data1 Third data bytes to hash
  * @param data1Len Size of third data bytes
- * @param hmacKey HMAC key used to hash, regular SHA256 will be used instead if it's NULL
+ * @param hmacKey HMAC key used to hash, regular SHA256 will be used instead if it's nullptr
  * @param hmacKeyLen Size of HMAC key
  * @return Data hash
  */
-std::byte *HashData(const std::byte *data1, size_t data1Len, const std::byte *data2, size_t data2Len, const std::byte *data3, size_t data3Len, const std::byte *hmacKey, size_t hmacKeyLen)
+std::byte *HashData(const std::byte *data1, const size_t data1Len, const std::byte *data2, const size_t data2Len,
+    const std::byte *data3, const size_t data3Len, const std::byte *hmacKey, size_t hmacKeyLen)
 {
-    if (hmacKey == NULL) {
+    if (hmacKey == nullptr) {
         SHA256_CTX sha256;
         SHA256_Init(&sha256);
 
@@ -61,7 +62,7 @@ std::byte *HashData(const std::byte *data1, size_t data1Len, const std::byte *da
         uint32_t md_len;
 
         HMAC_CTX *ctx = HMAC_CTX_new();
-        HMAC_Init_ex(ctx, hmacKey, hmacKeyLen, EVP_sha256(), NULL);
+        HMAC_Init_ex(ctx, hmacKey, hmacKeyLen, EVP_sha256(), nullptr);
 
         std::byte *md = new std::byte[HMAC_size(ctx)];
 
@@ -86,24 +87,24 @@ std::byte *HashData(const std::byte *data1, size_t data1Len, const std::byte *da
  * @param ciphertext Buffer to store the ciphertext in
  * @return Length of the ciphertext
  */
-int32_t EncryptData(unsigned char *plaintext, int32_t plaintext_len, unsigned char *key, unsigned char *iv, unsigned char *ciphertext)
+size_t EncryptData(const unsigned char *plaintext, const size_t plaintextLen, const unsigned char *key, const unsigned char *iv, unsigned char *ciphertext)
 {
     int32_t len;
-    int32_t ciphertext_len;
+    size_t ciphertextLen;
 
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
-    EVP_EncryptInit_ex(ctx, EVP_aes_128_cbc(), NULL, key, iv);
-    EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintext_len);
+    EVP_EncryptInit_ex(ctx, EVP_aes_128_cbc(), nullptr, key, iv);
+    EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintextLen);
 
-    ciphertext_len = len;
+    ciphertextLen = len;
 
     EVP_EncryptFinal_ex(ctx, ciphertext + len, &len);
 
-    ciphertext_len += len;
+    ciphertextLen += len;
 
     EVP_CIPHER_CTX_free(ctx);
 
-    return ciphertext_len;
+    return ciphertextLen;
 }
 
 /**
@@ -116,24 +117,24 @@ int32_t EncryptData(unsigned char *plaintext, int32_t plaintext_len, unsigned ch
  * @param plaintext Buffer to store the plaintext in
  * @return Length of the plaintext
  */
-int32_t DecryptData(unsigned char *ciphertext, int32_t ciphertext_len, unsigned char *key, unsigned char *iv, unsigned char *plaintext)
+size_t DecryptData(const unsigned char *ciphertext, const size_t ciphertextLen, const unsigned char *key, const unsigned char *iv, unsigned char *plaintext)
 {
     int32_t len;
-    int32_t plaintext_len;
+    size_t plaintextLen;
 
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
-    EVP_DecryptInit_ex(ctx, EVP_aes_128_cbc(), NULL, key, iv);
-    EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len);
+    EVP_DecryptInit_ex(ctx, EVP_aes_128_cbc(), nullptr, key, iv);
+    EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertextLen);
 
-    plaintext_len = len;
+    plaintextLen = len;
 
     EVP_DecryptFinal_ex(ctx, plaintext + len, &len);
 
-    plaintext_len += len;
+    plaintextLen += len;
 
     EVP_CIPHER_CTX_free(ctx);
 
-    return plaintext_len;
+    return plaintextLen;
 }
 
 /**
@@ -146,10 +147,10 @@ int32_t DecryptData(unsigned char *ciphertext, int32_t ciphertext_len, unsigned 
  * @param iv IV to use for encryption/decryption
  * @return Vector containing the encrypted/decrypted data bytes
  */
-std::vector<std::byte> CryptData(bool decrypt, std::byte *inputData, size_t inputDataLen, std::byte *key, std::byte *iv)
+std::vector<std::byte> CryptData(const bool decrypt, const std::byte *inputData, const size_t inputDataLen, const std::byte *key, const std::byte *iv)
 {
-    unsigned char *output = new unsigned char[inputDataLen + (inputDataLen % 16 == 0 ? 0 : (16 - inputDataLen % 16))];
-    uint64_t newSize;
+    unsigned char *output = new unsigned char[inputDataLen + 16 - (inputDataLen % 16)];
+    size_t newSize;
 
     if (decrypt) {
         newSize = DecryptData((unsigned char*)inputData, inputDataLen, (unsigned char*)key, (unsigned char*)iv, output);
@@ -173,10 +174,10 @@ std::vector<std::byte> CryptData(bool decrypt, std::byte *inputData, size_t inpu
  * @param decrypt Bool indicating whether to decrypt or encrypt
  * @return std::vector<std::byte> 
  */
-std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string internalPath, bool decrypt)
+std::vector<std::byte> IdCrypt(const std::vector<std::byte> &fileData, const std::string internalPath, const bool decrypt)
 {
     std::string keyDeriveStatic = "swapTeam\n";
-    srand(time(NULL));
+    srand(time(nullptr));
 
     std::byte fileSalt[0xC];
 
@@ -190,7 +191,7 @@ std::vector<std::byte> IdCrypt(std::vector<std::byte> fileData, std::string inte
     std::byte *encKey;
 
     try {
-        encKey = HashData(fileSalt, 0xC, (std::byte*)keyDeriveStatic.c_str(), 0xA, (std::byte*)internalPath.c_str(), internalPath.size(), NULL, 0);
+        encKey = HashData(fileSalt, 0xC, (std::byte*)keyDeriveStatic.c_str(), 0xA, (std::byte*)internalPath.c_str(), internalPath.size(), nullptr, 0);
     }
     catch (...) {
         return std::vector<std::byte>();

@@ -66,7 +66,8 @@ int32_t GetDecodedOpusFileSize(SoundModFile &soundModFile)
         return -1;
     }
 
-    remove("tmp.wav");
+    std::filesystem::remove("tmp.opus");
+    std::filesystem::remove("tmp.wav");
 
     return decSize + 20;
 }
@@ -118,7 +119,9 @@ bool EncodeSoundMod(SoundModFile &soundModFile)
         return false;
 
     fclose(encFile);
-    remove("tmp.ogg");
+
+    std::filesystem::remove("tmp.wav");
+    std::filesystem::remove("tmp.ogg");
 
     return true;
 }

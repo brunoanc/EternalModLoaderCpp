@@ -48,7 +48,7 @@ public:
     MapResourcesFile() {}
     MapResourcesFile(std::vector<std::byte> &rawData);
 
-    std::vector<std::byte> ToByteVector();
+    std::vector<std::byte> ToByteVector() const;
 };
 
 /**

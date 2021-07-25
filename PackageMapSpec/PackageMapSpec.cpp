@@ -27,7 +27,7 @@
  * 
  * @param json JSON to deserialize
  */
-PackageMapSpec::PackageMapSpec(std::string &json)
+PackageMapSpec::PackageMapSpec(const std::string &json)
 {
     jsonxx::Object packageMapSpecJson;
     packageMapSpecJson.parse(json);
@@ -69,7 +69,7 @@ PackageMapSpec::PackageMapSpec(std::string &json)
  * 
  * @return Serialized PackageMapSpec JSON
  */
-std::string PackageMapSpec::Dump()
+std::string PackageMapSpec::Dump() const
 {
     jsonxx::Object packageMapSpecJson;
     jsonxx::Array files;

@@ -29,12 +29,12 @@ public:
     std::string Author;
     std::string Description;
     std::string Version;
+    bool IsSafeForOnline = true;
     int32_t LoadPriority = 0;
     int32_t RequiredVersion = 0;
 
     Mod() {}
-    Mod(std::string name);
-    Mod(std::string name, std::string &json);
+    Mod(const std::string &json);
 };
 
 #endif

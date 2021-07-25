@@ -58,7 +58,7 @@ enum class OodleFormat
     Akkorokamui
 };
 
-std::vector<std::byte> OodleDecompress(std::vector<std::byte> &compressedData, int64_t decompressedSize);
-std::vector<std::byte> OodleCompress(std::vector<std::byte> &compressedData, OodleFormat format, OodleCompressionLevel compressionLevel);
+std::vector<std::byte> OodleDecompress(const std::vector<std::byte> &compressedData, const size_t decompressedSize);
+std::vector<std::byte> OodleCompress(const std::vector<std::byte> &compressedData, const OodleFormat format, const OodleCompressionLevel compressionLevel);
 
 #endif

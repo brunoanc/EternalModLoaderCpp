@@ -22,22 +22,12 @@
 #include "Mod/Mod.hpp"
 
 /**
- * @brief Construct a new Mod object
- * 
- * @param name Mod's name
- */
-Mod::Mod(std::string name)
-{
-    Name = name;
-}
-
-/**
  * @brief Construct a new Mod:: Mod object
  * 
  * @param name Mod's name
  * @param json JSON string to deserialize
  */
-Mod::Mod(std::string name, std::string &json)
+Mod::Mod(const std::string &json)
 {
     jsonxx::Object modJson;
     modJson.parse(json);

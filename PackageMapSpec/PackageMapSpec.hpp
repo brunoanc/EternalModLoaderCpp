@@ -80,9 +80,9 @@ public:
     std::vector<PackageMapSpecMap> Maps;
 
     PackageMapSpec() {}
-    PackageMapSpec(std::string &json);
+    PackageMapSpec(const std::string &json);
 
-    std::string Dump();
+    std::string Dump() const;
 };
 
 #endif

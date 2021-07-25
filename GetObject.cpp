@@ -26,7 +26,7 @@
  * @param resourceContainerName Name of the resource container to find
  * @return Index of the resource container, or -1 if not found
  */
-int32_t GetResourceContainer(std::string &resourceContainerName)
+int32_t GetResourceContainer(const std::string &resourceContainerName)
 {
     for (int32_t i = 0; i < ResourceContainerList.size(); i++) {
         if (ResourceContainerList[i].Name == resourceContainerName)
@@ -42,7 +42,7 @@ int32_t GetResourceContainer(std::string &resourceContainerName)
  * @param soundContainerName Name of the sound container to find
  * @return Index of the sound container, or -1 if not found
  */
-int32_t GetSoundContainer(std::string &soundContainerName)
+int32_t GetSoundContainer(const std::string &soundContainerName)
 {
     for (int32_t i = 0; i < SoundContainerList.size(); i++) {
         if (SoundContainerList[i].Name == soundContainerName)
@@ -57,9 +57,9 @@ int32_t GetSoundContainer(std::string &soundContainerName)
  * 
  * @param name Name of the resource chunk to find
  * @param resourceContainer ResourceContainer object containing the resource to search in
- * @return Pointer to the ResourceChunk object, or NULL if not found 
+ * @return Pointer to the ResourceChunk object, or nullptr if not found 
  */
-ResourceChunk *GetChunk(std::string name, ResourceContainer &resourceContainer)
+ResourceChunk *GetChunk(const std::string name, ResourceContainer &resourceContainer)
 {
     for (auto &chunk : resourceContainer.ChunkList) {
         if (chunk.ResourceName.FullFileName == name
@@ -68,5 +68,5 @@ ResourceChunk *GetChunk(std::string name, ResourceContainer &resourceContainer)
         }
     }
 
-    return NULL;
+    return nullptr;
 }

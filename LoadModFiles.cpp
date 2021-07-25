@@ -9,10 +9,9 @@
  * @brief Load mod files from zip
  * 
  * @param zippedMod Zipped mod path
- * @param listResources Bool indicating whether to load the mod files or to only get the resources to modify
  * @param notFoundContainers Vector to push not found resources to
  */
-void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::string> &notFoundContainers)
+void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundContainers)
 {
     int32_t zippedModCount = 0;
     std::vector<std::string> modFileNameList;
@@ -21,18 +20,18 @@ void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::s
     mz_zip_zero_struct(&modZip);
     mz_zip_reader_init_file(&modZip, zippedMod.c_str(), 0);
 
-    Mod mod(std::filesystem::path(zippedMod).filename().string());
+    Mod mod;
 
-    if (!listResources) {
+    if (!ListResources) {
         char *unzippedModJson;
         size_t unzippedModJsonSize;
 
-        if ((unzippedModJson = (char*)mz_zip_reader_extract_file_to_heap(&modZip, "EternalMod.json", &unzippedModJsonSize, 0)) != NULL) {
+        if ((unzippedModJson = (char*)mz_zip_reader_extract_file_to_heap(&modZip, "EternalMod.json", &unzippedModJsonSize, 0)) != nullptr) {
             std::string modJson(unzippedModJson, unzippedModJsonSize);
             free(unzippedModJson);
 
             try {
-                mod = Mod(mod.Name, modJson);
+                mod = Mod(modJson);
 
                 if (mod.RequiredVersion > Version) {
                     mtx.lock();
@@ -51,10 +50,10 @@ void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::s
     }
 
     for (int32_t i = 0; i < modZip.m_total_files; i++) {
-        int32_t zipEntryNameSize = mz_zip_reader_get_filename(&modZip, i, NULL, 0);
+        int32_t zipEntryNameSize = mz_zip_reader_get_filename(&modZip, i, nullptr, 0);
         char *zipEntryNameBuffer = new char[zipEntryNameSize];
 
-        if (mz_zip_reader_get_filename(&modZip, i, zipEntryNameBuffer, zipEntryNameSize) != zipEntryNameSize || zipEntryNameBuffer == NULL) {
+        if (mz_zip_reader_get_filename(&modZip, i, zipEntryNameBuffer, zipEntryNameSize) != zipEntryNameSize || zipEntryNameBuffer == nullptr) {
             mtx.lock();
             std::cout << RED << "ERROR: " << RESET << "Failed to read zip file entry from " << zippedMod << '\n';
             mtx.unlock();
@@ -117,7 +116,7 @@ void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::s
 
             mtx.unlock();
 
-            if (!listResources) {
+            if (!ListResources) {
                 std::string soundExtension = std::filesystem::path(modFileName).extension().string();
 
                 if (std::find(SupportedFileFormats.begin(), SupportedFileFormats.end(), soundExtension) == SupportedFileFormats.end()) {
@@ -130,7 +129,7 @@ void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::s
                 std::byte *unzippedEntry;
                 size_t unzippedEntrySize;
 
-                if ((unzippedEntry = (std::byte*)mz_zip_reader_extract_to_heap(&modZip, i, &unzippedEntrySize, 0)) == NULL) {
+                if ((unzippedEntry = (std::byte*)mz_zip_reader_extract_to_heap(&modZip, i, &unzippedEntrySize, 0)) == nullptr) {
                     mtx.lock();
                     std::cout << RED << "ERROR: " << "Failed to extract zip entry from " << zippedMod << '\n';
                     mtx.unlock();
@@ -162,13 +161,13 @@ void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::s
 
             mtx.unlock();
 
-            ResourceModFile resourceModFile(mod, modFileName);
+            ResourceModFile resourceModFile(mod, modFileName, resourceName);
 
-            if (!listResources) {
+            if (!ListResources) {
                 std::byte *unzippedEntry;
                 size_t unzippedEntrySize;
 
-                if ((unzippedEntry = (std::byte*)mz_zip_reader_extract_to_heap(&modZip, i, &unzippedEntrySize, 0)) == NULL) {
+                if ((unzippedEntry = (std::byte*)mz_zip_reader_extract_to_heap(&modZip, i, &unzippedEntrySize, 0)) == nullptr) {
                     mtx.lock();
                     std::cout << RED << "ERROR: " << "Failed to extract zip entry from " << zippedMod << '\n';
                     mtx.unlock();
@@ -184,11 +183,11 @@ void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::s
                 && ToLower(modFilePathParts[2]) == "assetsinfo"
                 && std::filesystem::path(modFilePathParts[3]).extension() == ".json") {
                     try {
-                        if (listResources) {
+                        if (ListResources) {
                             std::byte *unzippedEntry;
                             size_t unzippedEntrySize;
 
-                            if ((unzippedEntry = (std::byte*)mz_zip_reader_extract_to_heap(&modZip, i, &unzippedEntrySize, 0)) == NULL) {
+                            if ((unzippedEntry = (std::byte*)mz_zip_reader_extract_to_heap(&modZip, i, &unzippedEntrySize, 0)) == nullptr) {
                                 mtx.lock();
                                 std::cout << RED << "ERROR: " << "Failed to extract zip entry from " << zippedMod << '\n';
                                 mtx.unlock();
@@ -222,17 +221,40 @@ void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::s
                 }
             }
 
-            mtx.lock();
-            ResourceContainerList[resourceContainerIndex].ModFileList.push_back(resourceModFile);
-            mtx.unlock();
+            if (mod.IsSafeForOnline) {
+                mtx.lock();
+
+                if (!IsModSafeForOnline(resourceModFile)) {
+                    AreModsSafeForOnline = false;
+                    mod.IsSafeForOnline = false;
+                }
+
+                mtx.unlock();
+            }
+
+            if (!LoadOnlineSafeModsOnly || (LoadOnlineSafeModsOnly && mod.IsSafeForOnline)) {
+                mtx.lock();
+                ResourceContainerList[resourceContainerIndex].ModFileList.push_back(resourceModFile);
+                mtx.unlock();
+            }
 
             zippedModCount++;
         }
     }
         
-    if (zippedModCount > 0 && !listResources) {
+    if (zippedModCount > 0 && !ListResources) {
         mtx.lock();
-        std::cout << "Found " << BLUE << zippedModCount << " file(s) " << RESET << "in archive " << YELLOW << zippedMod << RESET << "..." << '\n';
+
+        if (!LoadOnlineSafeModsOnly || (LoadOnlineSafeModsOnly && mod.IsSafeForOnline)) {
+            std::cout << "Found " << BLUE << zippedModCount << " file(s) " << RESET << "in archive " << YELLOW << zippedMod << RESET << "..." << '\n';
+
+            if (!mod.IsSafeForOnline)
+                std::cout << YELLOW << "WARNING: Mod " << zippedMod << " is not safe for online play, multiplayer will be disabled" << RESET << '\n';
+        }
+        else {
+            std::cout << RED << "WARNING: " << RESET << "Mod " << YELLOW << zippedMod << RESET << " is not safe for online play, skipping" << '\n';
+        }
+        
         mtx.unlock();
     }
 
@@ -243,12 +265,11 @@ void LoadZippedMod(std::string zippedMod, bool listResources, std::vector<std::s
  * @brief Load loose mod files from Mods directory
  * 
  * @param unzippedMod Loose mod path
- * @param listResources Bool indicating whether to load the mod files or to only get the resources to modify
  * @param globalLooseMod Mod object to use for all loose mods
  * @param unzippedModCount Atomic int to increase with every unzipped mod loaded
  * @param notFoundContainers Vector to push not found resources to
  */
-void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLooseMod, std::atomic<int32_t> &unzippedModCount, std::vector<std::string> &notFoundContainers)
+void LoadUnzippedMod(std::string unzippedMod, Mod &globalLooseMod, std::atomic<int32_t> &unzippedModCount, std::vector<std::string> &notFoundContainers)
 {
     std::replace(unzippedMod.begin(), unzippedMod.end(), Separator, '/');
     std::vector<std::string> modFilePathParts = SplitString(unzippedMod, '/');
@@ -301,7 +322,7 @@ void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLoo
 
         mtx.unlock();
 
-        if (!listResources) {
+        if (!ListResources) {
             std::string soundExtension = std::filesystem::path(fileName).extension().string();
 
             if (std::find(SupportedFileFormats.begin(), SupportedFileFormats.end(), soundExtension) == SupportedFileFormats.end()) {
@@ -356,9 +377,9 @@ void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLoo
 
         mtx.unlock();
 
-        ResourceModFile resourceModFile(globalLooseMod, fileName);
+        ResourceModFile resourceModFile(globalLooseMod, fileName, resourceName);
 
-        if (!listResources) {
+        if (!ListResources) {
             int64_t unzippedModSize = std::filesystem::file_size(unzippedMod);
 
             FILE *unzippedModFile = fopen(unzippedMod.c_str(), "rb");
@@ -387,7 +408,7 @@ void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLoo
             && ToLower(modFilePathParts[4]) == "assetsinfo"
             && std::filesystem::path(modFilePathParts[5]).extension() == ".json") {
                 try {
-                    if (listResources) {
+                    if (ListResources) {
                         int64_t unzippedModSize = std::filesystem::file_size(unzippedMod);
 
                         FILE *unzippedModFile = fopen(unzippedMod.c_str(), "rb");
@@ -435,7 +456,17 @@ void LoadUnzippedMod(std::string unzippedMod, bool listResources, Mod &globalLoo
         }
 
         mtx.lock();
-        ResourceContainerList[resourceContainerIndex].ModFileList.push_back(resourceModFile);
+
+        if (globalLooseMod.IsSafeForOnline) {
+            if (!IsModSafeForOnline(resourceModFile)) {
+                AreModsSafeForOnline = false;
+                globalLooseMod.IsSafeForOnline = false;
+            }
+        }
+
+        if (!LoadOnlineSafeModsOnly || (LoadOnlineSafeModsOnly && globalLooseMod.IsSafeForOnline))
+            ResourceContainerList[resourceContainerIndex].ModFileList.push_back(resourceModFile);
+
         mtx.unlock();
 
         unzippedModCount++;

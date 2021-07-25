@@ -25,12 +25,12 @@
  */
 class PackageMapSpecInfo {
 public:
-    class PackageMapSpec *PackageMapSpec = NULL;
+    class PackageMapSpec *PackageMapSpec = nullptr;
     std::string PackageMapSpecPath;
     bool invalidPackageMapSpec;
     bool WasPackageMapSpecModified;
 
-    void ModifyPackageMapSpec();
+    bool ModifyPackageMapSpec() const;
 };
 
 #endif
