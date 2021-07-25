@@ -249,7 +249,7 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
             std::cout << "Found " << BLUE << zippedModCount << " file(s) " << RESET << "in archive " << YELLOW << zippedMod << RESET << "..." << '\n';
 
             if (!mod.IsSafeForOnline)
-                std::cout << RED << "WARNING: " << RESET << "Mod " << YELLOW << zippedMod << RESET << " is not safe for online play, multiplayer will be disabled" << '\n';
+                std::cout << YELLOW << "WARNING: Mod " << zippedMod << " is not safe for online play, multiplayer will be disabled" << RESET << '\n';
         }
         else {
             std::cout << RED << "WARNING: " << RESET << "Mod " << YELLOW << zippedMod << RESET << " is not safe for online play, skipping" << '\n';

@@ -64,6 +64,7 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
     int32_t infoOldLength = info.size();
     int32_t nameIdsOldLength = nameIds.size();
     int32_t newChunksCount = 0;
+    int32_t addedCount = 0;
 
     for (auto &modFile : resourceContainer.ModFileList) {
         if (modFile.IsAssetsInfoJson && modFile.AssetsInfo.has_value() && !modFile.AssetsInfo.value().Assets.empty()) {
@@ -295,7 +296,11 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
         info.resize(info.size() + 0x90);
         std::copy(newFileInfo, newFileInfo + sizeof(newFileInfo), info.end() - 0x90);
 
-        os << "\tAdded " << modFile.Name << '\n';
+        if (modFile.Announce) {
+            os << "\tAdded " << modFile.Name << '\n';
+            addedCount++;
+        }
+
         modFile.FileBytes.resize(0);
         newChunksCount++;
     }
@@ -382,8 +387,8 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
 
     std::copy(data.begin(), data.end(), memoryMappedFile.Mem + pos);
 
-    if (newChunksCount != 0)
-        os << "Number of files added: " << GREEN << newChunksCount << " file(s) " << RESET << "in " << YELLOW << resourceContainer.Path << RESET << "." << '\n';
+    if (addedCount != 0)
+        os << "Number of files added: " << GREEN << addedCount << " file(s) " << RESET << "in " << YELLOW << resourceContainer.Path << RESET << "." << '\n';
 
     if (SlowMode)
         os.flush();

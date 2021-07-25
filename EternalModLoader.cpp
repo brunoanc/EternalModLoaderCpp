@@ -30,7 +30,6 @@
 
 namespace chrono = std::chrono;
 
-const int32_t Version = 9;
 const std::string ResourceDataFileName = "rs_data";
 
 char Separator;
@@ -241,7 +240,7 @@ int main(int argc, char **argv)
             std::cout << "Found " << BLUE << unzippedModCount << " file(s) " << RESET << "in " << YELLOW << "'Mods' " << RESET << "folder..." << '\n';
 
             if (!globalLooseMod.IsSafeForOnline)
-                std::cout << RED << "WARNING: " << RESET << "Loose mod files are not safe for online play, multiplayer will be disabled" << '\n';
+                std::cout << YELLOW << "WARNING: Loose mod files are not safe for online play, multiplayer will be disabled" << RESET << '\n';
         }
     }
 

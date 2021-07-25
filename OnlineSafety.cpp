@@ -209,22 +209,22 @@ std::vector<ResourceModFile> GetMultiplayerDisablerMods()
     std::vector<ResourceModFile> multiplayerDisablerMods;
     multiplayerDisablerMods.reserve(2 + SWFs.size() + Languages.size());
 
-    ResourceModFile multiplayerDisablerDecl(parentMod, "generated/decls/menuelement/main_menu/screens/multiplayer.decl", "gameresources_patch2");
+    ResourceModFile multiplayerDisablerDecl(parentMod, "generated/decls/menuelement/main_menu/screens/multiplayer.decl", "gameresources_patch2", false);
     multiplayerDisablerDecl.FileBytes = std::vector<std::byte>((std::byte*)DeclMultiplayerDisabled, (std::byte*)DeclMultiplayerDisabled + sizeof(DeclMultiplayerDisabled));
     multiplayerDisablerMods.push_back(multiplayerDisablerDecl);
 
-    ResourceModFile playOnlineDisablerDecl(parentMod, "generated/decls/menuelement/main_menu/screens/battle_arena_play_online.decl", "gameresources_patch2");
+    ResourceModFile playOnlineDisablerDecl(parentMod, "generated/decls/menuelement/main_menu/screens/battle_arena_play_online.decl", "gameresources_patch2", false);
     multiplayerDisablerDecl.FileBytes = std::vector<std::byte>((std::byte*)DeclPlayOnlineDisabled, (std::byte*)DeclPlayOnlineDisabled + sizeof(DeclPlayOnlineDisabled));
     multiplayerDisablerMods.push_back(playOnlineDisablerDecl);
 
     for (auto &swf : SWFs) {
-        ResourceModFile multiplayerDisablerSwf(parentMod, swf, "gameresources_patch2");
+        ResourceModFile multiplayerDisablerSwf(parentMod, swf, "gameresources_patch2", false);
         multiplayerDisablerSwf.FileBytes = std::vector<std::byte>((std::byte*)GenericSwfData, (std::byte*)GenericSwfData + sizeof(GenericSwfData));
         multiplayerDisablerMods.push_back(multiplayerDisablerSwf);
     }
 
     for (auto &language : Languages) {
-        ResourceModFile multiplayerDisablerBlang(parentMod, "EternalMod/strings/" + language + ".json", "gameresources_patch2");
+        ResourceModFile multiplayerDisablerBlang(parentMod, "EternalMod/strings/" + language + ".json", "gameresources_patch2", false);
         multiplayerDisablerBlang.IsBlangJson = true;
         multiplayerDisablerBlang.FileBytes = std::vector<std::byte>((std::byte*)BlangJsonMultiplayerDisabled, (std::byte*)BlangJsonMultiplayerDisabled + sizeof(BlangJsonMultiplayerDisabled));
         multiplayerDisablerMods.push_back(multiplayerDisablerBlang);

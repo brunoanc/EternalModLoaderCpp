@@ -601,6 +601,9 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                 }
             }
 
+            if (!blangFileEntry.Announce && modFile.Announce)
+                blangFileEntry.Announce = true;
+
             jsonxx::Object blangJson;
 
             try {
@@ -623,7 +626,9 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                         stringFound = true;
                         blangString.Text = blangJsonString.get<jsonxx::String>("text");
 
-                        os << "\tReplaced " << blangString.Identifier << " in " << modFile.Name << '\n';
+                        if (modFile.Announce)
+                            os << "\tReplaced " << blangString.Identifier << " in " << modFile.Name << '\n';
+
                         blangFileEntries[blangFilePath].WasModified = true;
                         break;
                     }
@@ -637,7 +642,9 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                 newBlangString.Text = blangJsonString.get<jsonxx::String>("text");
                 blangFileEntries[blangFilePath].BlangFile.Strings.push_back(newBlangString);
 
-                os << "\tAdded " << blangJsonString.get<jsonxx::String>("name") << " in " << modFile.Name << '\n';
+                if (modFile.Announce)
+                    os << "\tAdded " << blangJsonString.get<jsonxx::String>("name") << " in " << modFile.Name << '\n';
+
                 blangFileEntries[blangFilePath].WasModified = true;
             }
 
@@ -687,7 +694,9 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
             continue;
         }
 
-        os << "\tReplaced " << modFile.Name << '\n';
+        if (modFile.Announce)
+            os << "\tReplaced " << modFile.Name << '\n';
+
         fileCount++;
     }
 
@@ -718,7 +727,9 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
             continue;
         }
 
-        os << "\tModified " << blangFileEntry.first << '\n';
+        if (blangFileEntry.second.Announce)
+            os << "\tModified " << blangFileEntry.first << '\n';
+
         fileCount++;
     }
 

@@ -74,6 +74,7 @@ public:
     std::optional<std::byte> SpecialByte1 = std::nullopt;
     std::optional<std::byte> SpecialByte2 = std::nullopt;
     std::optional<std::byte> SpecialByte3 = std::nullopt;
+    bool Announce = true;
 
     /**
      * @brief Construct a new ResourceModFile object
@@ -81,12 +82,14 @@ public:
      * @param parent Mod to inherit data from
      * @param name Mod file's name
      * @param resourceName Resource's name
+     * @param announce Whether
      */
-    ResourceModFile(Mod parent, std::string name, std::string resourceName)
+    ResourceModFile(Mod parent, std::string name, std::string resourceName, bool announce = true)
     {
         Parent = parent;
         Name = name;
         ResourceName = resourceName;
+        Announce = announce;
     }
 };
 
@@ -294,6 +297,7 @@ public:
     class BlangFile BlangFile;
     ResourceChunk Chunk;
     bool WasModified = false;
+    bool Announce = false;
 
     /**
      * @brief Construct a new BlangFileEntry object
@@ -323,7 +327,7 @@ inline bool operator==(ResourceChunk& chunk1, const ResourceChunk& chunk2)
 }
 
 // Global variables
-extern const int32_t Version;
+inline constexpr int32_t Version = 10;
 
 extern char Separator;
 extern std::string BasePath;
