@@ -369,7 +369,7 @@ void LoadUnzippedMod(std::string unzippedMod, Mod &globalLooseMod, std::atomic<i
         int32_t resourceContainerIndex = GetResourceContainer(resourceName);
 
         if (resourceContainerIndex == -1) {
-            ResourceContainer resourceContainer(resourceName, PathToResourceContainer(resourceName));
+            ResourceContainer resourceContainer(resourceName, PathToResourceContainer(resourceName + ".resources"));
             ResourceContainerList.push_back(resourceContainer);
 
             resourceContainerIndex = ResourceContainerList.size() - 1;
