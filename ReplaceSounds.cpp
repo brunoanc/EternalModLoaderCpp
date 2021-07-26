@@ -48,7 +48,7 @@ int32_t GetDecodedOpusFileSize(SoundModFile &soundModFile)
 #ifdef _WIN32
     std::string command = BasePath + "opusdec.exe tmp.opus tmp.wav > NUL 2>&1";
 #else
-    std::string command = "opusdec tmp.opus tmp.wav >/dev/null 2>&1";
+    std::string command = BasePath + "opusdec tmp.opus tmp.wav >/dev/null 2>&1";
 #endif
 
     if (system(command.c_str()) != 0)
@@ -93,7 +93,7 @@ bool EncodeSoundMod(SoundModFile &soundModFile)
 #ifdef _WIN32
     std::string command = BasePath + "opusenc.exe tmp.wav tmp.opus > NUL 2>&1";
 #else
-    std::string command = "opusenc tmp.wav tmp.opus >/dev/null 2>&1";
+    std::string command = BasePath + "opusenc tmp.wav tmp.opus >/dev/null 2>&1";
 #endif
 
     if (system(command.c_str()) != 0)
