@@ -110,6 +110,8 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    std::stringstream argsOutput;
+
     // Check arguments passed to program
     if (argc > 2) {
         for (int32_t i = 2; i < argc; i++) {
@@ -118,23 +120,23 @@ int main(int argc, char **argv)
             }
             else if (!strcmp(argv[i], "--verbose")) {
                 Verbose = true;
-                std::cout << YELLOW << "INFO: Verbose logging is enabled." << RESET << std::endl;
+                argsOutput << YELLOW << "INFO: Verbose logging is enabled." << RESET << std::endl;
             }
             else if (!strcmp(argv[i], "--slow")) {
                 SlowMode = true;
-                std::cout << YELLOW << "INFO: Slow mod loading mode is enabled." << RESET << std::endl;
+                argsOutput << YELLOW << "INFO: Slow mod loading mode is enabled." << RESET << std::endl;
             }
             else if (!strcmp(argv[i], "--online-safe")) {
                 LoadOnlineSafeModsOnly = true;
-                std::cout << YELLOW << "INFO: Only online-safe mods will be loaded." << RESET << std::endl;
+                argsOutput << YELLOW << "INFO: Only online-safe mods will be loaded." << RESET << std::endl;
             }
             else if (!strcmp(argv[i], "--compress-textures")) {
                 CompressTextures = true;
-                std::cout << YELLOW << "INFO: Texture compression is enabled." << RESET << std::endl;
+                argsOutput << YELLOW << "INFO: Texture compression is enabled." << RESET << std::endl;
             }
             else if (!strcmp(argv[i], "--disable-multithreading")) {
                 MultiThreading = false;
-                std::cout << YELLOW << "INFO: Multi-threading is disabled." << RESET << std::endl;
+                argsOutput << YELLOW << "INFO: Multi-threading is disabled." << RESET << std::endl;
             }
             else {
                 std::cout << RED << "ERROR: " << RESET << "Unknown argument: " << argv[i] << std::endl;
@@ -143,9 +145,12 @@ int main(int argc, char **argv)
         }
     }
 
+    if (!ListResources)
+        std::cout << argsOutput.rdbuf() << std::flush;
+
     // Reserve enough space for all resource/sound containers
-    ResourceContainerList.reserve(80);
-    SoundContainerList.reserve(40);
+    ResourceContainerList.reserve(100);
+    SoundContainerList.reserve(30);
 
     // Parse rs_data
     if (!ListResources) {
