@@ -120,23 +120,23 @@ int main(int argc, char **argv)
             }
             else if (!strcmp(argv[i], "--verbose")) {
                 Verbose = true;
-                argsOutput << YELLOW << "INFO: Verbose logging is enabled." << RESET << std::endl;
+                argsOutput << YELLOW << "INFO: Verbose logging is enabled." << RESET << '\n';
             }
             else if (!strcmp(argv[i], "--slow")) {
                 SlowMode = true;
-                argsOutput << YELLOW << "INFO: Slow mod loading mode is enabled." << RESET << std::endl;
+                argsOutput << YELLOW << "INFO: Slow mod loading mode is enabled." << RESET << '\n';
             }
             else if (!strcmp(argv[i], "--online-safe")) {
                 LoadOnlineSafeModsOnly = true;
-                argsOutput << YELLOW << "INFO: Only online-safe mods will be loaded." << RESET << std::endl;
+                argsOutput << YELLOW << "INFO: Only online-safe mods will be loaded." << RESET << '\n';
             }
             else if (!strcmp(argv[i], "--compress-textures")) {
                 CompressTextures = true;
-                argsOutput << YELLOW << "INFO: Texture compression is enabled." << RESET << std::endl;
+                argsOutput << YELLOW << "INFO: Texture compression is enabled." << RESET << '\n';
             }
             else if (!strcmp(argv[i], "--disable-multithreading")) {
                 MultiThreading = false;
-                argsOutput << YELLOW << "INFO: Multi-threading is disabled." << RESET << std::endl;
+                argsOutput << YELLOW << "INFO: Multi-threading is disabled." << RESET << '\n';
             }
             else {
                 std::cout << RED << "ERROR: " << RESET << "Unknown argument: " << argv[i] << std::endl;
@@ -145,8 +145,10 @@ int main(int argc, char **argv)
         }
     }
 
-    if (!ListResources)
-        std::cout << argsOutput.rdbuf() << std::flush;
+    if (!ListResources) {
+        std::cout << argsOutput.str();
+        std::cout.flush();
+    }
 
     // Reserve enough space for all resource/sound containers
     ResourceContainerList.reserve(100);
