@@ -25,7 +25,6 @@
 #include "EternalModLoader.hpp"
 
 const std::byte *DivinityMagic = (std::byte*)"DIVINITY";
-const std::string PackageMapSpecJsonFileName = "packagemapspec.json";
 class PackageMapSpecInfo PackageMapSpecInfo;
 
 /**

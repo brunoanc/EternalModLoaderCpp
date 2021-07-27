@@ -352,6 +352,7 @@ extern int64_t BufferSize;
 
 extern std::mutex mtx;
 
+extern const std::string PackageMapSpecJsonFileName;
 extern class PackageMapSpecInfo PackageMapSpecInfo;
 extern const std::byte *DivinityMagic;
 

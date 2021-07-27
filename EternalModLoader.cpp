@@ -31,6 +31,7 @@
 namespace chrono = std::chrono;
 
 const std::string ResourceDataFileName = "rs_data";
+const std::string PackageMapSpecJsonFileName = "packagemapspec.json";
 
 char Separator;
 std::string BasePath;
@@ -276,6 +277,8 @@ int main(int argc, char **argv)
 
     // List resources to be modified and exit
     if (ListResources) {
+        bool printPackageMapSpecJsonPath = false;
+
         for (auto &resourceContainer : ResourceContainerList) {
             if (resourceContainer.Path.empty())
                 continue;
@@ -291,6 +294,9 @@ int main(int argc, char **argv)
                 if (!modFile.AssetsInfo.has_value())
                     continue;
 
+                if (!modFile.AssetsInfo.value().Resources.empty())
+                    printPackageMapSpecJsonPath = true;
+
                 if (modFile.AssetsInfo.value().Assets.empty()
                     && modFile.AssetsInfo.value().Layers.empty()
                     && modFile.AssetsInfo.value().Maps.empty())
@@ -303,6 +309,9 @@ int main(int argc, char **argv)
             if (shouldListResource)
                 std::cout << resourceContainer.Path << '\n';
         }
+
+        if (printPackageMapSpecJsonPath)
+            std::cout << BasePath + PackageMapSpecJsonFileName << '\n';
 
         for (auto &soundContainer : SoundContainerList) {
             if (soundContainer.Path.empty())
