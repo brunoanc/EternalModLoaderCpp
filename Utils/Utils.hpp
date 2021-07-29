@@ -25,6 +25,6 @@ std::vector<std::string> SplitString(std::string stringToSplit, const char delim
 bool EndsWith(const std::string &fullString, const std::string &suffix);
 bool StartsWith(const std::string &fullString, const std::string &prefix);
 std::string NormalizeResourceFilename(std::string filename);
-int32_t GetClusterSize(const std::string driveRootPath);
+int32_t GetClusterSize();
 
 #endif

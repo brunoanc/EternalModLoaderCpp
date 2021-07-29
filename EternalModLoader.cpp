@@ -332,7 +332,7 @@ int main(int argc, char **argv)
 
     // Set buffer for file i/o
     try {
-        BufferSize = GetClusterSize(std::filesystem::current_path().root_path().string());
+        BufferSize = GetClusterSize();
 
         if (BufferSize == -1)
             BufferSize = 4096;

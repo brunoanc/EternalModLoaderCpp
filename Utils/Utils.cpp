@@ -19,13 +19,14 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <filesystem>
 #include <cstring>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #else
-#include <sys/stat.h>
+#include <sys/statvfs.h>
 #endif
 
 /**
@@ -132,21 +133,20 @@ std::string NormalizeResourceFilename(std::string filename)
 /**
  * @brief Get the disk's cluster size
  * 
- * @param driveRootPath Path to the drive root
  * @return Disk's cluster size, or -1 on error
  */
-int32_t GetClusterSize(const std::string driveRootPath)
+int32_t GetClusterSize()
 {
 #ifdef _WIN32
     DWORD sectorsPerCluster;
     DWORD bytesPerSector;
     DWORD numberOfFreeClusters;
     DWORD totalNumberOfClusters;
-    bool result = GetDiskFreeSpaceA(driveRootPath.c_str(), &sectorsPerCluster, &bytesPerSector, &numberOfFreeClusters, &totalNumberOfClusters);
+    bool result = GetDiskFreeSpaceA(nullptr, &sectorsPerCluster, &bytesPerSector, &numberOfFreeClusters, &totalNumberOfClusters);
 
     return result ? sectorsPerCluster * bytesPerSector : -1;
 #else
-    struct stat diskInfo;
-    return stat(driveRootPath.c_str(), &diskInfo) == 0 ? diskInfo.st_blksize : -1;
+    struct statvfs diskInfo;
+    return statvfs(std::filesystem::current_path().c_str(), &diskInfo) == 0 ? diskInfo.f_bsize : -1;
 #endif
 }
