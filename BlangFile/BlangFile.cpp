@@ -94,10 +94,9 @@ std::vector<std::byte> BlangFile::ToByteVector()
 {
     std::vector<std::byte> blangBytes;
 
-    for (int32_t i = 0; i < Strings.size(); i++) {
+    for (int32_t i = Strings.size() - 1; i >= 0; i--) {
         if (RemoveWhitespace(Strings[i].Identifier).empty()) {
             Strings.erase(Strings.begin() + i);
-            i--;
         }
     }
 

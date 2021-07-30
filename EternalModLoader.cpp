@@ -163,8 +163,9 @@ int main(int argc, char **argv)
             try {
                 ResourceDataMap = ParseResourceData(resourceDataFilePath);
 
-                if (ResourceDataMap.empty())
+                if (ResourceDataMap.empty()) {
                     throw std::exception();
+                }
             }
             catch (...) {
                 std::cout << RED << "ERROR: " << RESET << "Failed to parse " << ResourceDataFileName << '\n';
@@ -183,8 +184,9 @@ int main(int argc, char **argv)
     std::vector<std::string> notFoundContainers;
 
     for (const auto &file : std::filesystem::recursive_directory_iterator(std::string(argv[1]) + Separator + "Mods")) {
-        if (!std::filesystem::is_regular_file(file.path()))
+        if (!std::filesystem::is_regular_file(file.path())) {
             continue;
+        }
 
         if (file.path().extension() == ".zip" && file.path() == std::string(argv[1]) + Separator + "Mods" + Separator + file.path().filename().string()) {
             zippedMods.push_back(file.path().string());
@@ -204,15 +206,18 @@ int main(int argc, char **argv)
         std::vector<std::thread> zippedModLoadingThreads;
         zippedModLoadingThreads.reserve(zippedMods.size());
 
-        for (const auto &zippedMod : zippedMods)
+        for (const auto &zippedMod : zippedMods) {
             zippedModLoadingThreads.push_back(std::thread(LoadZippedMod, zippedMod, std::ref(notFoundContainers)));
+        }
 
-        for (auto &thread : zippedModLoadingThreads)
+        for (auto &thread : zippedModLoadingThreads) {
             thread.join();
+        }
     }
     else {
-        for (const auto &zippedMod : zippedMods)
+        for (const auto &zippedMod : zippedMods) {
             LoadZippedMod(zippedMod, notFoundContainers);
+        }
     }
 
     chrono::steady_clock::time_point zippedModsEnd = chrono::steady_clock::now();
@@ -229,15 +234,18 @@ int main(int argc, char **argv)
         std::vector<std::thread> unzippedModLoadingThreads;
         unzippedModLoadingThreads.reserve(unzippedMods.size());
 
-        for (const auto &unzippedMod : unzippedMods)
+        for (const auto &unzippedMod : unzippedMods) {
             unzippedModLoadingThreads.push_back(std::thread(LoadUnzippedMod, unzippedMod, std::ref(globalLooseMod), std::ref(unzippedModCount), std::ref(notFoundContainers)));
+        }
 
-        for (auto &thread : unzippedModLoadingThreads)
+        for (auto &thread : unzippedModLoadingThreads) {
             thread.join();
         }
+    }
     else {
-        for (const auto &unzippedMod : unzippedMods)
+        for (const auto &unzippedMod : unzippedMods) {
             LoadUnzippedMod(unzippedMod, globalLooseMod, unzippedModCount, notFoundContainers);
+        }
     }
 
     if (unzippedModCount > 0 && !ListResources) {
@@ -247,8 +255,9 @@ int main(int argc, char **argv)
         else {
             std::cout << "Found " << BLUE << unzippedModCount << " file(s) " << RESET << "in " << YELLOW << "'Mods' " << RESET << "folder..." << '\n';
 
-            if (!globalLooseMod.IsSafeForOnline)
+            if (!globalLooseMod.IsSafeForOnline) {
                 std::cout << YELLOW << "WARNING: Loose mod files are not safe for online play, multiplayer will be disabled" << RESET << '\n';
+            }
         }
     }
 
@@ -257,8 +266,9 @@ int main(int argc, char **argv)
 
     // Remove resources from the list if they have no mods to load
     for (int32_t i = ResourceContainerList.size() - 1; i >= 0; i--) {
-        if (ResourceContainerList[i].ModFileList.empty())
+        if (ResourceContainerList[i].ModFileList.empty()) {
             ResourceContainerList.erase(ResourceContainerList.begin() + i);
+        }
     }
 
     // Disable multiplayer if needed
@@ -280,8 +290,9 @@ int main(int argc, char **argv)
         bool printPackageMapSpecJsonPath = false;
 
         for (auto &resourceContainer : ResourceContainerList) {
-            if (resourceContainer.Path.empty())
+            if (resourceContainer.Path.empty()) {
                 continue;
+            }
 
             bool shouldListResource = false;
 
@@ -291,31 +302,37 @@ int main(int argc, char **argv)
                     break;
                 }
 
-                if (!modFile.AssetsInfo.has_value())
+                if (!modFile.AssetsInfo.has_value()) {
                     continue;
+                }
 
-                if (!modFile.AssetsInfo.value().Resources.empty())
+                if (!modFile.AssetsInfo.value().Resources.empty()) {
                     printPackageMapSpecJsonPath = true;
+                }
 
                 if (modFile.AssetsInfo.value().Assets.empty()
                     && modFile.AssetsInfo.value().Layers.empty()
-                    && modFile.AssetsInfo.value().Maps.empty())
+                    && modFile.AssetsInfo.value().Maps.empty()) {
                         continue;
+                }
 
                 shouldListResource = true;
                 break;
             }
 
-            if (shouldListResource)
+            if (shouldListResource) {
                 std::cout << resourceContainer.Path << '\n';
+            }
         }
 
-        if (printPackageMapSpecJsonPath)
+        if (printPackageMapSpecJsonPath) {
             std::cout << BasePath + PackageMapSpecJsonFileName << '\n';
+        }
 
         for (auto &soundContainer : SoundContainerList) {
-            if (soundContainer.Path.empty())
+            if (soundContainer.Path.empty()) {
                 continue;
+            }
 
             std::cout << soundContainer.Path << '\n';
         }
@@ -325,8 +342,9 @@ int main(int argc, char **argv)
     }
 
     // Display not found containers
-    for (auto &container : notFoundContainers)
+    for (auto &container : notFoundContainers) {
         std::cout << RED << "WARNING: " << YELLOW << container << RESET << " was not found! Skipping..." << std::endl;
+    }
 
     std::cout.flush();
 
@@ -334,8 +352,9 @@ int main(int argc, char **argv)
     try {
         BufferSize = GetClusterSize();
 
-        if (BufferSize == -1)
+        if (BufferSize == -1) {
             BufferSize = 4096;
+        }
 
         Buffer = new std::byte[BufferSize];
     }
@@ -355,11 +374,13 @@ int main(int argc, char **argv)
         std::vector<std::thread> modLoadingThreads;
         modLoadingThreads.reserve(ResourceContainerList.size() + SoundContainerList.size());
 
-        for (auto &resourceContainer : ResourceContainerList)
+        for (auto &resourceContainer : ResourceContainerList) {
             modLoadingThreads.push_back(std::thread(LoadResourceMods, std::ref(resourceContainer)));
+        }
 
-        for (auto &soundContainer : SoundContainerList)
+        for (auto &soundContainer : SoundContainerList) {
             modLoadingThreads.push_back(std::thread(LoadSoundMods, std::ref(soundContainer)));
+        }
 
         for (int32_t i = 0; i < modLoadingThreads.size(); i++) {
             modLoadingThreads[i].join();
@@ -367,11 +388,13 @@ int main(int argc, char **argv)
         }
     }
     else {
-        for (auto &resourceContainer : ResourceContainerList)
+        for (auto &resourceContainer : ResourceContainerList) {
             LoadResourceMods(resourceContainer);
+        }
 
-        for (auto &soundContainer : SoundContainerList)
+        for (auto &soundContainer : SoundContainerList) {
             LoadSoundMods(soundContainer);
+        }
     }
 
     // Modify PackageMapSpec JSON file in disk

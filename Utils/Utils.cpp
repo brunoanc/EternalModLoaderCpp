@@ -118,14 +118,17 @@ bool StartsWith(const std::string &fullString, const std::string &prefix)
  */
 std::string NormalizeResourceFilename(std::string filename)
 {
-    if (filename.find_first_of('$') != std::string::npos)
+    if (filename.find_first_of('$') != std::string::npos) {
         filename = filename.substr(0, filename.find_first_of('$'));
+    }
 
-    if (filename.find_last_of('#') != std::string::npos)
+    if (filename.find_last_of('#') != std::string::npos) {
         filename = filename.substr(0, filename.find_last_of('#'));
+    }
 
-    if (filename.find_first_of('#') != std::string::npos)
+    if (filename.find_first_of('#') != std::string::npos) {
         filename = filename.substr(filename.find_first_of('#'));
+    }
 
     return filename;
 }

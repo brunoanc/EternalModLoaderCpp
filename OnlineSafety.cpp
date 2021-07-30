@@ -243,25 +243,30 @@ bool IsModSafeForOnline(const ResourceModFile &mod)
 {
     if (mod.IsAssetsInfoJson && mod.AssetsInfo.has_value()) {
         if (!mod.AssetsInfo.value().Assets.empty()) {
-            if (StartsWith(mod.ResourceName, "pvp"))
+            if (StartsWith(mod.ResourceName, "pvp")) {
                 return false;
+            }
 
             for (auto &asset : mod.AssetsInfo.value().Assets) {
-                if (std::find(OnlineSafeMapResourceTypes.begin(), OnlineSafeMapResourceTypes.end(), asset.MapResourceType) == OnlineSafeMapResourceTypes.end())
+                if (std::find(OnlineSafeMapResourceTypes.begin(), OnlineSafeMapResourceTypes.end(), asset.MapResourceType) == OnlineSafeMapResourceTypes.end()) {
                     return false;
+                }
             }
         }
 
-        if (!mod.AssetsInfo.value().Resources.empty() && StartsWith(mod.ResourceName, "pvp"))
+        if (!mod.AssetsInfo.value().Resources.empty() && StartsWith(mod.ResourceName, "pvp")) {
             return false;
+        }
     }
 
-    if (!StartsWith(mod.Name, "generated/decls/"))
+    if (!StartsWith(mod.Name, "generated/decls/")) {
         return true;
+    }
 
     for (auto &keyword : OnlineSafeModNameKeywords) {
-        if (mod.Name.find(keyword) != std::string::npos)
+        if (mod.Name.find(keyword) != std::string::npos) {
             return true;
+        }
     }
 
     return false;

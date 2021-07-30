@@ -41,8 +41,9 @@ bool PackageMapSpecInfo::ModifyPackageMapSpec() const
         try {
             std::string newPackageMapSpecJson = PackageMapSpec->Dump();
 
-            if (fwrite(newPackageMapSpecJson.c_str(), 1, newPackageMapSpecJson.size(), packageMapSpecFile) != newPackageMapSpecJson.size())
+            if (fwrite(newPackageMapSpecJson.c_str(), 1, newPackageMapSpecJson.size(), packageMapSpecFile) != newPackageMapSpecJson.size()) {
                 throw std::exception();
+            }
         }
         catch (...) {
             return false;

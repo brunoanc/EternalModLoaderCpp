@@ -37,8 +37,9 @@ bool SetModDataForChunk(
         int64_t newContainerSize = resourceFileSize + modFile.FileBytes.size() + placement;
         int64_t dataOffset = newContainerSize - modFile.FileBytes.size();
 
-        if (!memoryMappedFile.ResizeFile(newContainerSize))
+        if (!memoryMappedFile.ResizeFile(newContainerSize)) {
             return false;
+        }
 
         std::copy(modFile.FileBytes.begin(), modFile.FileBytes.end(), memoryMappedFile.Mem + dataOffset);
         std::copy((std::byte*)&dataOffset, (std::byte*)&dataOffset + 8, memoryMappedFile.Mem + chunk.FileOffset);
@@ -53,8 +54,9 @@ bool SetModDataForChunk(
         if (sizeDiff > 0) {
             int64_t newContainerSize = resourceFileSize + sizeDiff;
 
-        if (!memoryMappedFile.ResizeFile(resourceFileSize))
-            return false;
+            if (!memoryMappedFile.ResizeFile(newContainerSize)) {
+                return false;
+            }
 
             int32_t toRead;
 
@@ -95,8 +97,9 @@ bool SetModDataForChunk(
     std::copy((std::byte*)&compressedSize, (std::byte*)&compressedSize + 8, memoryMappedFile.Mem + chunk.SizeOffset);
     std::copy((std::byte*)&uncompressedSize, (std::byte*)&uncompressedSize + 8, memoryMappedFile.Mem + chunk.SizeOffset + 8);
 
-    if (compressionMode != nullptr)
+    if (compressionMode != nullptr) {
         memoryMappedFile.Mem[chunk.SizeOffset + 0x30] = *compressionMode;
+    }
 
     return true;
 }

@@ -72,8 +72,9 @@ void ReadResource(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourc
         currentByte = (char)memoryMappedFile.Mem[namesOffsetEnd+ i];
 
         if (currentByte == 0 || i == namesSize - 1) {
-            if (currentNameBytes.empty())
+            if (currentNameBytes.empty()) {
                 continue;
+            }
 
             std::string fullFileName(currentNameBytes.data(), currentNameBytes.size());
             std::string normalizedFileName = NormalizeResourceFilename(fullFileName);

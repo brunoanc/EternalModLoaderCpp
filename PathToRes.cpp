@@ -31,8 +31,9 @@ std::vector<std::string> ResourceContainerPathList;
 void GetResourceContainerPathList()
 {
     for (auto &file : std::filesystem::recursive_directory_iterator(BasePath + "game" + Separator)) {
-        if (file.path().extension().string() == ".resources")
+        if (file.path().extension().string() == ".resources") {
             ResourceContainerPathList.push_back(file.path().string());
+        }
     }
 }
 
@@ -52,14 +53,16 @@ std::string PathToResourceContainer(const std::string name)
         resourcePath = resourcePath.substr(4, name.size() - 4);
         resourcePath = BasePath + "game" + Separator + "dlc" + Separator + "hub" + Separator + resourcePath;
 
-        if (std::filesystem::is_regular_file(searchPath + resourcePath))
+        if (std::filesystem::is_regular_file(searchPath + resourcePath)) {
             return resourcePath;
+        }
     }
     else if (StartsWith(ToLower(name), "hub")) {
         resourcePath = BasePath + "game" + Separator + "hub" + Separator + resourcePath;
 
-        if (std::filesystem::is_regular_file(searchPath + resourcePath))
+        if (std::filesystem::is_regular_file(searchPath + resourcePath)) {
             return resourcePath;
+        }
     }
     else {
         resourcePath = name;
@@ -81,8 +84,9 @@ std::string PathToResourceContainer(const std::string name)
 
     if (recursive) {
         for (auto &file : ResourceContainerPathList) {
-            if (EndsWith(file, resourcePath))
+            if (EndsWith(file, resourcePath)) {
                 return file;
+            }
         }
     }
 
@@ -100,8 +104,9 @@ std::string PathToSoundContainer(const std::string name)
     std::string searchPath = BasePath + "sound" + Separator + "soundbanks" + Separator + "pc" + Separator;
     std::string sndPath = name + ".snd";
 
-    if (std::filesystem::is_regular_file(searchPath + sndPath))
+    if (std::filesystem::is_regular_file(searchPath + sndPath)) {
         return searchPath + sndPath;
+    }
 
     return "";
 }

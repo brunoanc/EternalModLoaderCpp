@@ -218,8 +218,9 @@ public:
     bool ContainsResourceWithName(std::string name) const
     {
         for (auto &resourceName : NamesList) {
-            if (resourceName.FullFileName == name || resourceName.NormalizedFileName == name)
+            if (resourceName.FullFileName == name || resourceName.NormalizedFileName == name) {
                 return true;
+            }
         }
 
         return false;
@@ -234,8 +235,9 @@ public:
     int64_t GetResourceNameId(std::string name) const
     {
         for (int32_t i = 0; i < NamesList.size(); i++) {
-            if (NamesList[i].FullFileName == name || NamesList[i].NormalizedFileName == name)
+            if (NamesList[i].FullFileName == name || NamesList[i].NormalizedFileName == name) {
                 return i;
+            }
         }
 
         return -1;

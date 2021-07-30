@@ -37,11 +37,13 @@ int32_t GetDecodedOpusFileSize(SoundModFile &soundModFile)
 {
     FILE *encFile = fopen("tmp.opus", "wb");
 
-    if (!encFile)
+    if (!encFile) {
         return -1;
+    }
 
-    if (fwrite(soundModFile.FileBytes.data(), 1, soundModFile.FileBytes.size(), encFile) != soundModFile.FileBytes.size())
+    if (fwrite(soundModFile.FileBytes.data(), 1, soundModFile.FileBytes.size(), encFile) != soundModFile.FileBytes.size()) {
         return -1;
+    }
 
     fclose(encFile);
 
@@ -51,16 +53,18 @@ int32_t GetDecodedOpusFileSize(SoundModFile &soundModFile)
     std::string command = BasePath + "opusdec tmp.opus tmp.wav >/dev/null 2>&1";
 #endif
 
-    if (system(command.c_str()) != 0)
+    if (system(command.c_str()) != 0) {
         return -1;
+    }
 
     int64_t decSize = -1;
 
     try {
         decSize = std::filesystem::file_size("tmp.wav");
 
-        if (decSize == 0 || decSize == -1)
+        if (decSize == 0 || decSize == -1) {
             throw std::exception();
+        }
     }
     catch (...) {
         return -1;
@@ -82,11 +86,13 @@ bool EncodeSoundMod(SoundModFile &soundModFile)
 {
     FILE *decFile = fopen("tmp.wav", "wb");
 
-    if (!decFile)
+    if (!decFile) {
         return false;
+    }
 
-    if (fwrite(soundModFile.FileBytes.data(), 1, soundModFile.FileBytes.size(), decFile) != soundModFile.FileBytes.size())
+    if (fwrite(soundModFile.FileBytes.data(), 1, soundModFile.FileBytes.size(), decFile) != soundModFile.FileBytes.size()) {
         return false;
+    }
 
     fclose(decFile);
 
@@ -96,14 +102,16 @@ bool EncodeSoundMod(SoundModFile &soundModFile)
     std::string command = BasePath + "opusenc tmp.wav tmp.opus >/dev/null 2>&1";
 #endif
 
-    if (system(command.c_str()) != 0)
+    if (system(command.c_str()) != 0) {
         return false;
+    }
 
     try {
         soundModFile.FileBytes.resize(std::filesystem::file_size("tmp.opus"));
 
-        if (soundModFile.FileBytes.size() == 0)
+        if (soundModFile.FileBytes.size() == 0) {
             throw std::exception();
+        }
 
     }
     catch (...) {
@@ -112,11 +120,13 @@ bool EncodeSoundMod(SoundModFile &soundModFile)
 
     FILE *encFile = fopen("tmp.opus", "rb");
 
-    if (!encFile)
+    if (!encFile) {
         return false;
+    }
 
-    if (fread(soundModFile.FileBytes.data(), 1, soundModFile.FileBytes.size(), encFile) != soundModFile.FileBytes.size())
+    if (fread(soundModFile.FileBytes.data(), 1, soundModFile.FileBytes.size(), encFile) != soundModFile.FileBytes.size()) {
         return false;
+    }
 
     fclose(encFile);
 
@@ -195,8 +205,9 @@ void ReplaceSounds(MemoryMappedFile &memoryMappedFile, SoundContainer &soundCont
             try {
                 mtx.lock();
 
-                if (!EncodeSoundMod(soundModFile))
+                if (!EncodeSoundMod(soundModFile)) {
                     throw std::exception();
+                }
 
                 mtx.unlock();
                 
@@ -224,8 +235,9 @@ void ReplaceSounds(MemoryMappedFile &memoryMappedFile, SoundContainer &soundCont
                 decodedSize = GetDecodedOpusFileSize(soundModFile);
                 mtx.unlock();
 
-                if (decodedSize == -1)
+                if (decodedSize == -1) {
                     throw std::exception();
+                }
             }
             catch (...) {
                 os << RED << "ERROR: " << RESET << "Failed to get decoded size for " << soundModFile.Name << " - corrupted file?" << '\n';
@@ -277,6 +289,7 @@ void ReplaceSounds(MemoryMappedFile &memoryMappedFile, SoundContainer &soundCont
             << RESET << "in " << YELLOW << soundContainer.Path << RESET << "." << '\n';
     }
 
-    if (SlowMode)
+    if (SlowMode) {
         os.flush();
+    }
 }

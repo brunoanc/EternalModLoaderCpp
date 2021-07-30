@@ -43,8 +43,9 @@ bool OodleInit()
     std::string oo2corePath = BasePath + "..\\oo2core_8_win64.dll";
     HMODULE oodle = LoadLibraryA(oo2corePath.c_str());
     
-    if (!oodle)
+    if (!oodle) {
         return false;
+    }
 
     OodLZ_Compress = (OodLZ_CompressFunc*)GetProcAddress(oodle, "OodleLZ_Compress");
     OodLZ_Decompress = (OodLZ_DecompressFunc*)GetProcAddress(oodle, "OodleLZ_Decompress");
@@ -52,15 +53,17 @@ bool OodleInit()
     std::string linoodlePath = BasePath + "liblinoodle.so";
     void *oodle = dlopen(linoodlePath.c_str(), RTLD_LAZY);
 
-    if (!oodle)
+    if (!oodle) {
         return false;
+    }
 
     OodLZ_Compress = (OodLZ_CompressFunc*)dlsym(oodle, "OodleLZ_Compress");
     OodLZ_Decompress = (OodLZ_DecompressFunc*)dlsym(oodle, "OodleLZ_Decompress");
 #endif
 
-    if (!OodLZ_Compress || !OodLZ_Decompress)
+    if (!OodLZ_Compress || !OodLZ_Decompress) {
         return false;
+    }
 
     return true;
 }
@@ -75,14 +78,16 @@ bool OodleInit()
 std::vector<std::byte> OodleDecompress(const std::vector<std::byte> &compressedData, const size_t decompressedSize)
 {
     if (!OodLZ_Decompress) {
-        if (!OodleInit())
+        if (!OodleInit()) {
             throw std::exception();
+        }
     }
 
     std::vector<std::byte> decompressedData(decompressedSize);
 
-    if (OodLZ_Decompress((uint8_t*)compressedData.data(), compressedData.size(), (uint8_t*)decompressedData.data(), decompressedSize, 1, 1, 0, nullptr, 0, nullptr, nullptr, nullptr, 0, 0) == 0)
+    if (OodLZ_Decompress((uint8_t*)compressedData.data(), compressedData.size(), (uint8_t*)decompressedData.data(), decompressedSize, 1, 1, 0, nullptr, 0, nullptr, nullptr, nullptr, 0, 0) == 0) {
         decompressedData.resize(0);
+    }
 
     return decompressedData;
 }
@@ -98,8 +103,9 @@ std::vector<std::byte> OodleDecompress(const std::vector<std::byte> &compressedD
 std::vector<std::byte> OodleCompress(const std::vector<std::byte> &decompressedData, const OodleFormat format, const OodleCompressionLevel compressionLevel)
 {
     if (!OodLZ_Compress) {
-        if (!OodleInit())
+        if (!OodleInit()) {
             throw std::exception();
+        }
     }
 
     uint32_t compressedBufferSize = decompressedData.size() + 274 * ((decompressedData.size() + 0x3FFFF) / 0x40000);

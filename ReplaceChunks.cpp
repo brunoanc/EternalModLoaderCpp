@@ -239,14 +239,16 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                 mtx.unlock();
             }
 
-            if (modFile.AssetsInfo->Assets.empty() && modFile.AssetsInfo->Maps.empty() && modFile.AssetsInfo->Layers.empty())
+            if (modFile.AssetsInfo->Assets.empty() && modFile.AssetsInfo->Maps.empty() && modFile.AssetsInfo->Layers.empty()) {
                 continue;
+            }
 
             if (mapResourcesFile == nullptr && !invalidMapResources) {
                 for (auto &file : resourceContainer.ChunkList) {
                     if (EndsWith(file.ResourceName.NormalizedFileName, ".mapresources")) {
-                        if (StartsWith(resourceContainer.Name, "gameresources") && EndsWith(file.ResourceName.NormalizedFileName, "init.mapresources"))
+                        if (StartsWith(resourceContainer.Name, "gameresources") && EndsWith(file.ResourceName.NormalizedFileName, "init.mapresources")) {
                             continue;
+                        }
 
                         mapResourcesChunk = &file;
 
@@ -259,8 +261,9 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                         try {
                             originalDecompressedMapResources = OodleDecompress(mapResourcesBytes, mapResourcesChunk->Size);
 
-                            if (originalDecompressedMapResources.empty())
+                            if (originalDecompressedMapResources.empty()) {
                                 throw std::exception();
+                            }
 
                             mapResourcesFile = new MapResourcesFile(originalDecompressedMapResources);
                         }
@@ -315,8 +318,9 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
             if (!modFile.AssetsInfo->Assets.empty()) {
                 for (auto &newAsset : modFile.AssetsInfo->Assets) {
                     if (RemoveWhitespace(newAsset.Name).empty() || RemoveWhitespace(newAsset.MapResourceType).empty()) {
-                        if (Verbose)
+                        if (Verbose) {
                             os << "WARNING: " << "Skipping empty resource declaration in " << modFile.Name << '\n';
+                        }
 
                         continue;
                     }
@@ -428,8 +432,9 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                             if (x != mapResourcesFile->Assets.end()) {
                                 assetPosition = std::distance(mapResourcesFile->Assets.begin(), x);
 
-                                if (!newAsset.PlaceBefore)
+                                if (!newAsset.PlaceBefore) {
                                     assetPosition++;
+                                }
                             }
                         }
                     }
@@ -472,15 +477,17 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
 
                 std::map<uint64_t, ResourceDataEntry>::iterator x = ResourceDataMap.find(CalculateResourceFileNameHash(modFile.Name));
 
-                if (x == ResourceDataMap.end())
+                if (x == ResourceDataMap.end()) {
                     continue;
+                }
 
                 ResourceDataEntry resourceData = x->second;
 
                 if (resourceData.MapResourceName.empty()) {
                     if (RemoveWhitespace(resourceData.MapResourceType).empty()) {
-                        if (Verbose)
+                        if (Verbose) {
                             os << "WARNING: " << "Mapresources data for asset " << modFile.Name << " is null, skipping" << '\n';
+                        }
 
                         continue;
                     }
@@ -492,8 +499,9 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                 if (mapResourcesFile == nullptr && !invalidMapResources) {
                     for (auto &file : resourceContainer.ChunkList) {
                         if (EndsWith(file.ResourceName.NormalizedFileName, ".mapresources")) {
-                            if (StartsWith(resourceContainer.Name, "gameresources") && EndsWith(file.ResourceName.NormalizedFileName, "init.mapresources"))
+                            if (StartsWith(resourceContainer.Name, "gameresources") && EndsWith(file.ResourceName.NormalizedFileName, "init.mapresources")) {
                                 continue;
+                            }
 
                             mapResourcesChunk = &file;
 
@@ -506,8 +514,9 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                             try {
                                 originalDecompressedMapResources = OodleDecompress(mapResourcesBytes, mapResourcesChunk->Size);
 
-                                if (originalDecompressedMapResources.empty())
+                                if (originalDecompressedMapResources.empty()) {
                                     throw std::exception();
+                                }
 
                                 mapResourcesFile = new MapResourcesFile(originalDecompressedMapResources);
                             }
@@ -521,8 +530,9 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                     }
                 }
 
-                if (mapResourcesFile == nullptr || invalidMapResources)
+                if (mapResourcesFile == nullptr || invalidMapResources) {
                     continue;
+                }
 
                 bool alreadyExists = false;
 
@@ -535,9 +545,10 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                 }
 
                 if (alreadyExists) {
-                    if (Verbose)
+                    if (Verbose) {
                         os << RED << "WARNING: " << RESET << "Trying to add asset " << resourceData.MapResourceName
                             << " that has already been added in " << mapResourcesChunk->ResourceName.NormalizedFileName << ", skipping" << '\n';
+                    }
 
                     continue;
                 }
@@ -600,8 +611,9 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                 }
             }
 
-            if (!blangFileEntry.Announce && modFile.Announce)
+            if (!blangFileEntry.Announce && modFile.Announce) {
                 blangFileEntry.Announce = true;
+            }
 
             jsonxx::Object blangJson;
 
@@ -625,24 +637,27 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                         stringFound = true;
                         blangString.Text = blangJsonString.get<jsonxx::String>("text");
 
-                        if (modFile.Announce)
+                        if (modFile.Announce) {
                             os << "\tReplaced " << blangString.Identifier << " in " << modFile.Name << '\n';
+                        }
 
                         blangFileEntries[blangFilePath].WasModified = true;
                         break;
                     }
                 }
 
-                if (stringFound)
+                if (stringFound) {
                     continue;
+                }
 
                 BlangString newBlangString;
                 newBlangString.Identifier = blangJsonString.get<jsonxx::String>("name");
                 newBlangString.Text = blangJsonString.get<jsonxx::String>("text");
                 blangFileEntries[blangFilePath].BlangFile.Strings.push_back(newBlangString);
 
-                if (modFile.Announce)
+                if (modFile.Announce) {
                     os << "\tAdded " << blangJsonString.get<jsonxx::String>("name") << " in " << modFile.Name << '\n';
+                }
 
                 blangFileEntries[blangFilePath].WasModified = true;
             }
@@ -662,8 +677,9 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                 compressedSize = modFile.FileBytes.size();
                 compressionMode = (std::byte)2;
 
-                if (Verbose)
+                if (Verbose) {
                     os << "\tSuccessfully set compressed texture data for file " << modFile.Name << '\n';
+                }
             }
             else if (CompressTextures) {
                 std::vector<std::byte> compressedData;
@@ -671,8 +687,9 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                 try {
                     compressedData = OodleCompress(modFile.FileBytes, OodleFormat::Kraken, OodleCompressionLevel::Normal);
 
-                    if (compressedData.empty())
+                    if (compressedData.empty()) {
                         throw std::exception();
+                    }
                 }
                 catch (...) {
                     os << RED << "ERROR: " << RESET << "Failed to compress " << modFile.Name << '\n';
@@ -683,8 +700,9 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                 compressedSize = compressedData.size();
                 compressionMode = (std::byte)2;
 
-                if (Verbose)
+                if (Verbose) {
                     os << "\tSuccessfully compressed texture file " << modFile.Name << '\n';
+                }
             }
         }
 
@@ -693,15 +711,17 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
             continue;
         }
 
-        if (modFile.Announce)
+        if (modFile.Announce) {
             os << "\tReplaced " << modFile.Name << '\n';
+        }
 
         fileCount++;
     }
 
     for (auto &blangFileEntry : blangFileEntries) {
-        if (!blangFileEntry.second.WasModified)
+        if (!blangFileEntry.second.WasModified) {
             continue;
+        }
 
         std::vector<std::byte> cryptData;
 
@@ -709,8 +729,9 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
             std::vector<std::byte> blangFileBytes = blangFileEntry.second.BlangFile.ToByteVector();
             cryptData = IdCrypt(blangFileBytes, blangFileEntry.first, false);
 
-            if (cryptData.empty())
+            if (cryptData.empty()) {
                 throw std::exception();
+            }
         }
         catch (...) {
             os << RED << "ERROR: " << RESET << "Failed to encrypt " << blangFileEntry.first << '\n';
@@ -726,8 +747,9 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
             continue;
         }
 
-        if (blangFileEntry.second.Announce)
+        if (blangFileEntry.second.Announce) {
             os << "\tModified " << blangFileEntry.first << '\n';
+        }
 
         fileCount++;
     }
@@ -758,9 +780,11 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
         }
     }
     
-    if (fileCount > 0)
+    if (fileCount > 0) {
         os << "Number of files replaced: " << GREEN << fileCount << " file(s) " << RESET << "in " << YELLOW << resourceContainer.Path << RESET << "." << '\n';
+    }
 
-    if (SlowMode)
+    if (SlowMode) {
         os.flush();
+    }
 }

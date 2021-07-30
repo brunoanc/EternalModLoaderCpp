@@ -64,15 +64,17 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
         std::string zipEntryName(zipEntryNameBuffer);
         delete[] zipEntryNameBuffer;
 
-        if (0 == zipEntryName.compare(zipEntryName.length() - 1, 1, "/"))
+        if (0 == zipEntryName.compare(zipEntryName.length() - 1, 1, "/")) {
             continue;
+        }
 
         bool isSoundMod = false;
         std::string modFileName = zipEntryName;
         std::vector<std::string> modFilePathParts = SplitString(modFileName, '/');
 
-        if (modFilePathParts.size() < 2)
+        if (modFilePathParts.size() < 2) {
             continue;
+        }
 
         std::string resourceName = modFilePathParts[0];
 
@@ -94,8 +96,9 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
             else {
                 mtx.lock();
 
-                if (std::find(notFoundContainers.begin(), notFoundContainers.end(), resourceName) == notFoundContainers.end())
+                if (std::find(notFoundContainers.begin(), notFoundContainers.end(), resourceName) == notFoundContainers.end()) {
                     notFoundContainers.push_back(resourceName);
+                }
 
                 mtx.unlock();
                 continue;
@@ -248,8 +251,9 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
         if (!LoadOnlineSafeModsOnly || (LoadOnlineSafeModsOnly && mod.IsSafeForOnline)) {
             std::cout << "Found " << BLUE << zippedModCount << " file(s) " << RESET << "in archive " << YELLOW << zippedMod << RESET << "..." << '\n';
 
-            if (!mod.IsSafeForOnline)
+            if (!mod.IsSafeForOnline) {
                 std::cout << YELLOW << "WARNING: Mod " << zippedMod << " is not safe for online play, multiplayer will be disabled" << RESET << '\n';
+            }
         }
         else {
             std::cout << RED << "WARNING: " << RESET << "Mod " << YELLOW << zippedMod << RESET << " is not safe for online play, skipping" << '\n';
@@ -274,8 +278,9 @@ void LoadUnzippedMod(std::string unzippedMod, Mod &globalLooseMod, std::atomic<i
     std::replace(unzippedMod.begin(), unzippedMod.end(), Separator, '/');
     std::vector<std::string> modFilePathParts = SplitString(unzippedMod, '/');
 
-    if (modFilePathParts.size() < 4)
+    if (modFilePathParts.size() < 4) {
         return;
+    }
 
     bool isSoundMod = false;
     std::string resourceName = modFilePathParts[2];
@@ -300,8 +305,9 @@ void LoadUnzippedMod(std::string unzippedMod, Mod &globalLooseMod, std::atomic<i
         else {
             mtx.lock();
 
-            if (std::find(notFoundContainers.begin(), notFoundContainers.end(), resourceName) == notFoundContainers.end())
+            if (std::find(notFoundContainers.begin(), notFoundContainers.end(), resourceName) == notFoundContainers.end()) {
                 notFoundContainers.push_back(resourceName);
+            }
 
             mtx.unlock();
             return;
@@ -464,8 +470,9 @@ void LoadUnzippedMod(std::string unzippedMod, Mod &globalLooseMod, std::atomic<i
             }
         }
 
-        if (!LoadOnlineSafeModsOnly || (LoadOnlineSafeModsOnly && globalLooseMod.IsSafeForOnline))
+        if (!LoadOnlineSafeModsOnly || (LoadOnlineSafeModsOnly && globalLooseMod.IsSafeForOnline)) {
             ResourceContainerList[resourceContainerIndex].ModFileList.push_back(resourceModFile);
+        }
 
         mtx.unlock();
 

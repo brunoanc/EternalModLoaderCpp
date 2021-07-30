@@ -33,8 +33,9 @@ std::vector<SoundEntry> GetSoundEntriesToModify(SoundContainer &soundContainer, 
     std::vector<SoundEntry> soundEntries;
 
     for (auto &soundEntry : soundContainer.SoundEntries) {
-        if (soundEntry.SoundId == soundModId)
+        if (soundEntry.SoundId == soundModId) {
             soundEntries.push_back(soundEntry);
+        }
     }
 
     return soundEntries;

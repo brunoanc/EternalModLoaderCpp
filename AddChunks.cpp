@@ -34,8 +34,9 @@
  */
 void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceContainer, std::stringstream &os)
 {
-    if (resourceContainer.NewModFileList.empty())
+    if (resourceContainer.NewModFileList.empty()) {
         return;
+    }
 
     std::stable_sort(resourceContainer.NewModFileList.begin(), resourceContainer.NewModFileList.end(),
         [](const ResourceModFile &resource1, const ResourceModFile &resource2) { return resource1.Parent.LoadPriority > resource2.Parent.LoadPriority; });
@@ -73,8 +74,9 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
                     std::string normalPath = assetsInfoAssets.Name;
                     std::string declPath = normalPath;
 
-                    if (!assetsInfoAssets.MapResourceType.empty())
+                    if (!assetsInfoAssets.MapResourceType.empty()) {
                         declPath = "generated/decls/" + ToLower(assetsInfoAssets.MapResourceType) + "/" + assetsInfoAssets.Name + ".decl";
+                    }
 
                     if (newModFile.Name == declPath || newModFile.Name == normalPath) {
                         newModFile.ResourceType = assetsInfoAssets.ResourceType.empty() ? "rs_streamfile" : assetsInfoAssets.ResourceType;
@@ -100,8 +102,9 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
     }
 
     for (auto &modFile : resourceContainer.NewModFileList) {
-        if (modFile.IsAssetsInfoJson || modFile.IsBlangJson)
+        if (modFile.IsAssetsInfoJson || modFile.IsBlangJson) {
             continue;
+        }
 
         if (resourceContainer.ContainsResourceWithName(modFile.Name)) {
             if (Verbose) {
@@ -221,8 +224,9 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
                 compressedSize = modFile.FileBytes.size();
                 compressionMode = (std::byte)2;
 
-                if (Verbose)
+                if (Verbose) {
                     os << "\tSuccessfully set compressed texture data for file " << modFile.Name << '\n';
+                }
             }
             else if (CompressTextures) {
                 std::vector<std::byte> compressedData;
@@ -230,8 +234,9 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
                 try {
                     compressedData = OodleCompress(modFile.FileBytes, OodleFormat::Kraken, OodleCompressionLevel::Normal);
 
-                    if (compressedData.empty())
+                    if (compressedData.empty()) {
                         throw std::exception();
+                    }
                 }
                 catch (...) {
                     os << RED << "ERROR: " << RESET << "Failed to compress " << modFile.Name << '\n';
@@ -242,8 +247,9 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
                 compressedSize = compressedData.size();
                 compressionMode = (std::byte)2;
 
-                if (Verbose)
+                if (Verbose) {
                     os << "\tSuccessfully compressed texture file " << modFile.Name << '\n';
+                }
             }
         }
 
@@ -259,8 +265,9 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
 
         int64_t assetTypeNameId = resourceContainer.GetResourceNameId(modFile.ResourceType);
 
-        if (assetTypeNameId == -1)
+        if (assetTypeNameId == -1) {
             assetTypeNameId = 0;
+        }
 
         std::copy((std::byte*)&assetTypeNameId, (std::byte*)&assetTypeNameId + 8, nameIds.end() - 16);
         std::copy((std::byte*)&nameId, (std::byte*)&nameId + 8, nameIds.end() - 8);
@@ -387,9 +394,11 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
 
     std::copy(data.begin(), data.end(), memoryMappedFile.Mem + pos);
 
-    if (addedCount != 0)
+    if (addedCount != 0) {
         os << "Number of files added: " << GREEN << addedCount << " file(s) " << RESET << "in " << YELLOW << resourceContainer.Path << RESET << "." << '\n';
+    }
 
-    if (SlowMode)
+    if (SlowMode) {
         os.flush();
+    }
 }

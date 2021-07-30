@@ -29,8 +29,9 @@
 int32_t GetResourceContainer(const std::string &resourceContainerName)
 {
     for (int32_t i = 0; i < ResourceContainerList.size(); i++) {
-        if (ResourceContainerList[i].Name == resourceContainerName)
+        if (ResourceContainerList[i].Name == resourceContainerName) {
             return i;
+        }
     }
 
     return -1;
@@ -45,8 +46,9 @@ int32_t GetResourceContainer(const std::string &resourceContainerName)
 int32_t GetSoundContainer(const std::string &soundContainerName)
 {
     for (int32_t i = 0; i < SoundContainerList.size(); i++) {
-        if (SoundContainerList[i].Name == soundContainerName)
+        if (SoundContainerList[i].Name == soundContainerName) {
             return i;
+        }
     }
 
     return -1;

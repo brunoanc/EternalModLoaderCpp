@@ -32,9 +32,11 @@ Mod::Mod(const std::string &json)
     jsonxx::Object modJson;
     modJson.parse(json);
 
-    if (modJson.has<jsonxx::Number>("loadPriority"))
+    if (modJson.has<jsonxx::Number>("loadPriority")) {
         LoadPriority = modJson.get<jsonxx::Number>("loadPriority");
+    }
 
-    if (modJson.has<jsonxx::Number>("requiredVersion"))
+    if (modJson.has<jsonxx::Number>("requiredVersion")) {
         RequiredVersion = modJson.get<jsonxx::Number>("requiredVersion");
+    }
 }

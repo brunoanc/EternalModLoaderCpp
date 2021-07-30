@@ -223,8 +223,9 @@ std::vector<std::byte> IdCrypt(const std::vector<std::byte> &fileData, const std
             return std::vector<std::byte>();
         }
 
-        if (std::memcmp(hmac, fileHmac, 0x20))
+        if (std::memcmp(hmac, fileHmac, 0x20)) {
             return std::vector<std::byte>();
+        }
     }
     else {
         fileText.resize(fileData.size());

@@ -31,14 +31,16 @@ MemoryMappedFile::MemoryMappedFile(const std::string filePath)
     FilePath = filePath;
     Size = std::filesystem::file_size(FilePath);
 
-    if (Size <= 0)
+    if (Size <= 0) {
         throw std::exception();
+    }
 
 #ifdef _WIN32
     FileHandle = CreateFileA(FilePath.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 
-    if (GetLastError() != ERROR_SUCCESS || FileHandle == INVALID_HANDLE_VALUE)
+    if (GetLastError() != ERROR_SUCCESS || FileHandle == INVALID_HANDLE_VALUE) {
         throw std::exception();
+    }
 
     FileMapping = CreateFileMappingA(FileHandle, nullptr, PAGE_READWRITE, *((DWORD*)&Size + 1), *(DWORD*)&Size, nullptr);
 
@@ -57,8 +59,9 @@ MemoryMappedFile::MemoryMappedFile(const std::string filePath)
 #else
     FileDescriptor = open(FilePath.c_str(), O_RDWR);
 
-    if (FileDescriptor == -1)
+    if (FileDescriptor == -1) {
         throw std::exception();
+    }
 
     Mem = (std::byte*)mmap(0, Size, PROT_READ | PROT_WRITE, MAP_SHARED, FileDescriptor, 0);
 
@@ -114,20 +117,23 @@ bool MemoryMappedFile::ResizeFile(const uint64_t newSize)
 
         FileMapping = CreateFileMappingA(FileHandle, nullptr, PAGE_READWRITE, *((DWORD*)&newSize + 1), *(DWORD*)&newSize, nullptr);
 
-        if (GetLastError() != ERROR_SUCCESS || FileMapping == nullptr)
+        if (GetLastError() != ERROR_SUCCESS || FileMapping == nullptr) {
             return false;
+        }
 
         Mem = (std::byte*)MapViewOfFile(FileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
 
-        if (GetLastError() != ERROR_SUCCESS || Mem == nullptr)
+        if (GetLastError() != ERROR_SUCCESS || Mem == nullptr) {
             return false;
+        }
 #else
         munmap(Mem, Size);
         std::filesystem::resize_file(FilePath, newSize);
         Mem = (std::byte*)mmap(0, newSize, PROT_READ | PROT_WRITE, MAP_SHARED, FileDescriptor, 0);
 
-        if (Mem == nullptr)
+        if (Mem == nullptr) {
             return false;
+        }
 
         madvise(Mem, newSize, MADV_WILLNEED);
 #endif

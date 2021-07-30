@@ -39,14 +39,17 @@ std::map<uint64_t, ResourceDataEntry> ParseResourceData(const std::string &fileN
 
     FILE *resourceDataFile = fopen(fileName.c_str(), "rb");
 
-    if (!resourceDataFile)
+    if (!resourceDataFile) {
         return resourceDataMap;
+    }
     
-    if (fread(&decompressedSize, 8, 1, resourceDataFile) != 1)
+    if (fread(&decompressedSize, 8, 1, resourceDataFile) != 1) {
         return resourceDataMap;
+    }
 
-    if (fread(compressedData.data(), 1, compressedData.size(), resourceDataFile) != compressedData.size())
+    if (fread(compressedData.data(), 1, compressedData.size(), resourceDataFile) != compressedData.size()) {
         return resourceDataMap;
+    }
 
     fclose(resourceDataFile);
 
@@ -55,8 +58,9 @@ std::map<uint64_t, ResourceDataEntry> ParseResourceData(const std::string &fileN
     try {
         decompressedData = OodleDecompress(compressedData, decompressedSize);
 
-        if (decompressedData.empty())
+        if (decompressedData.empty()) {
             throw std::exception();
+        }
     }
     catch (...) {
         return resourceDataMap;
