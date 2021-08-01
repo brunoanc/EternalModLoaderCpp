@@ -165,9 +165,20 @@ static const uint8_t DeclPlayOnlineDisabled[] = {
     0x0A, 0x09, 0x7D, 0x0A, 0x7D
 };
 
-static const std::vector<std::string> Languages = {
-    "french", "italian", "german", "spanish", "russian", "polish", "japanese", "latin_spanish",
-    "portuguese", "traditional_chinese", "simplified_chinese", "korean", "english"
+static const std::map<std::string, std::string> Languages = {
+    { "french", "MULTIJOUEUR (DÉSACTIVÉ)" },
+    { "italian", "MULTIGIOCATORE (DISABILITATO)" },
+    { "german", "MULTIPLAYER (DEAKTIVIERT)" },
+    { "spanish", "MULTIJUGADOR (DESHABILITADO)" },
+    { "russian", "СЕТЕВАЯ ИГРА (ОТКЛЮЧЕНА)" },
+    { "polish", "GRA WIELOOSOBOWA (NIEPEŁNOSPRAWNY)" },
+    { "japanese", "マルチプレイヤー(無効)" },
+    { "latin_spanish", "MULTIJUGADOR (DESHABILITADO)" },
+    { "portuguese", "MULTIJOGADOR (DESABILITADO)" },
+    { "traditional_chinese", "多人連線（已禁用）" },
+    { "simplified_chinese", "多人游戏（已禁用）" },
+    { "korean", "멀티 플레이(비활성화됨)" },
+    { "english", "MULTIPLAYER (DISABLED)" }
 };
 
 static const std::vector<std::string> SWFs = {
@@ -224,9 +235,10 @@ std::vector<ResourceModFile> GetMultiplayerDisablerMods()
     }
 
     for (auto &language : Languages) {
-        ResourceModFile multiplayerDisablerBlang(parentMod, "EternalMod/strings/" + language + ".json", "gameresources_patch2", false);
+        ResourceModFile multiplayerDisablerBlang(parentMod, "EternalMod/strings/" + language.first + ".json", "gameresources_patch2", false);
         multiplayerDisablerBlang.IsBlangJson = true;
-        multiplayerDisablerBlang.FileBytes = std::vector<std::byte>((std::byte*)BlangJsonMultiplayerDisabled, (std::byte*)BlangJsonMultiplayerDisabled + sizeof(BlangJsonMultiplayerDisabled));
+        std::string blangJson = "{\"strings\":[{\"name\":\"#str_code_mainmenu_play_online_name\",\"text\":\"^8" + language.second + "\"}]}";
+        multiplayerDisablerBlang.FileBytes = std::vector<std::byte>((std::byte*)blangJson.c_str(), (std::byte*)blangJson.c_str() + blangJson.length());
         multiplayerDisablerMods.push_back(multiplayerDisablerBlang);
     }
 
