@@ -670,7 +670,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
         std::byte compressionMode = (std::byte)0;
 
         if (EndsWith(chunk->ResourceName.NormalizedFileName, ".tga")) {
-            if (!memcmp(modFile.FileBytes.data(), DivinityMagic, 8)) {
+            if (!std::memcmp(modFile.FileBytes.data(), DivinityMagic, 8)) {
                 std::copy(modFile.FileBytes.begin() + 8, modFile.FileBytes.begin() + 16, (std::byte*)&uncompressedSize);
 
                 modFile.FileBytes = std::vector<std::byte>(modFile.FileBytes.begin() + 16, modFile.FileBytes.end());

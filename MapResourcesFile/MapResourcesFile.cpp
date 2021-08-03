@@ -29,7 +29,7 @@
  */
 MapResourcesFile::MapResourcesFile(std::vector<std::byte> &rawData)
 {
-    int64_t pos = 0;
+    size_t pos = 0;
 
     std::copy(rawData.begin() + pos, rawData.begin() + pos + 4, (std::byte*)&Magic);
     pos += 4;

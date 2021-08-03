@@ -20,6 +20,7 @@
 #include <vector>
 #include <algorithm>
 #include <fstream>
+#include <cstring>
 
 #include "Utils/Utils.hpp"
 #include "BlangFile/BlangFile.hpp"
@@ -32,20 +33,18 @@
 BlangFile::BlangFile(const std::vector<std::byte> &blangBytes)
 {
     int32_t pos = 0;
+    std::string str((char*)blangBytes.data() + 12, 5);
 
-    std::vector<std::byte> unknownDataBytes(blangBytes.begin(), blangBytes.begin() + 8);
-    std::reverse(unknownDataBytes.begin(), unknownDataBytes.end());
-    std::copy(unknownDataBytes.begin(), unknownDataBytes.end(), (std::byte*)&UnknownData);
+    if (ToLower(str) != "#str_") {
+        std::copy(blangBytes.begin(), blangBytes.begin() + 8, (std::byte*)&UnknownData);
+        std::reverse((std::byte*)&UnknownData, (std::byte*)&UnknownData + 8);
+        pos += 8;
+    }
 
-    pos += 8;
-
-    std::vector<std::byte> stringAmountBytes(blangBytes.begin() + 8, blangBytes.begin() + 12);
-    std::reverse(stringAmountBytes.begin(), stringAmountBytes.end());
-
+    uint32_t stringAmount;
+    std::copy(blangBytes.begin() + pos, blangBytes.begin() + pos + 4, (std::byte*)&stringAmount);
+    std::reverse((std::byte*)&stringAmount, (std::byte*)&stringAmount + 4);
     pos += 4;
-
-    int32_t stringAmount;
-    std::copy(stringAmountBytes.begin(), stringAmountBytes.end(), (std::byte*)&stringAmount);
 
     std::vector<std::byte> identifierBytes;
     std::vector<std::byte> textBytes;
@@ -53,7 +52,7 @@ BlangFile::BlangFile(const std::vector<std::byte> &blangBytes)
 
     Strings.reserve(stringAmount);
     
-    for (int32_t i = 0; i < stringAmount; i++) {
+    for (uint32_t i = 0; i < stringAmount; i++) {
         uint32_t hash;
         std::copy(blangBytes.begin() + pos, blangBytes.begin() + pos + 4, (std::byte*)&hash);
         pos += 4;
@@ -100,14 +99,12 @@ std::vector<std::byte> BlangFile::ToByteVector()
         }
     }
 
-    std::vector<std::byte> unknownDataBytes((std::byte*)&UnknownData, (std::byte*)&UnknownData + 8);
-    std::reverse(unknownDataBytes.begin(), unknownDataBytes.end());
-    blangBytes.insert(blangBytes.end(), unknownDataBytes.begin(), unknownDataBytes.end());
+    blangBytes.insert(blangBytes.end(), (std::byte*)&UnknownData, (std::byte*)&UnknownData + 8);
+    std::reverse(blangBytes.end() - 8, blangBytes.end());
 
     int32_t stringsAmount = Strings.size();
-    std::vector<std::byte> stringsAmountBytes((std::byte*)&stringsAmount, (std::byte*)&stringsAmount + 4);
-    std::reverse(stringsAmountBytes.begin(), stringsAmountBytes.end());
-    blangBytes.insert(blangBytes.end(), stringsAmountBytes.begin(), stringsAmountBytes.end());
+    blangBytes.insert(blangBytes.end(), (std::byte*)&stringsAmount, (std::byte*)&stringsAmount + 4);
+    std::reverse(blangBytes.end() - 4, blangBytes.end());
 
     std::vector<std::byte> identifierBytes;
     std::vector<std::byte> hashBytes(4);

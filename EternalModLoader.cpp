@@ -25,6 +25,8 @@
 #include <chrono>
 #include <thread>
 #include <sstream>
+#include <functional>
+#include <signal.h>
 
 #include "EternalModLoader.hpp"
 
@@ -287,7 +289,9 @@ int main(int argc, char **argv)
             }
 
             if (!found) {
-                ResourceContainerList.push_back(ResourceContainer(mod.ResourceName, PathToResourceContainer(mod.ResourceName + ".resources")));
+                ResourceContainer resourceContainer(mod.ResourceName, PathToResourceContainer(mod.ResourceName + ".resources"));
+                resourceContainer.ModFileList.push_back(mod);
+                ResourceContainerList.push_back(resourceContainer);
             }
         }
     }

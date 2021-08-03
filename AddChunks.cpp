@@ -217,7 +217,7 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
         std::byte compressionMode = (std::byte)0;
 
         if (modFile.Name.find(".tga") != std::string::npos) {
-            if (!memcmp(modFile.FileBytes.data(), DivinityMagic, 8)) {
+            if (!std::memcmp(modFile.FileBytes.data(), DivinityMagic, 8)) {
                 std::copy(modFile.FileBytes.begin() + 8, modFile.FileBytes.begin() + 16, (std::byte*)&uncompressedSize);
 
                 modFile.FileBytes = std::vector<std::byte>(modFile.FileBytes.begin() + 16, modFile.FileBytes.end());
@@ -358,7 +358,8 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
         std::copy((std::byte*)&newOffsetPlusDataAdd, (std::byte*)&newOffsetPlusDataAdd + 8, info.begin() + fileOffset);
     }
 
-    uint64_t pos = 0;
+    size_t pos = 0;
+
     std::copy(header.begin(), header.end(), memoryMappedFile.Mem + pos);
     pos += header.size();
 

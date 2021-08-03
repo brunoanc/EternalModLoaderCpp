@@ -66,7 +66,7 @@ std::map<uint64_t, ResourceDataEntry> ParseResourceData(const std::string &fileN
         return resourceDataMap;
     }
 
-    int64_t pos = 0;
+    size_t pos = 0;
 
     uint64_t amount;
     std::copy(decompressedData.begin() + pos, decompressedData.begin() + pos + 8, (std::byte*)&amount);
