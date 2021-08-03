@@ -276,11 +276,18 @@ int main(int argc, char **argv)
         std::vector<ResourceModFile> multiplayerDisablerMods = GetMultiplayerDisablerMods();
 
         for (auto &mod : multiplayerDisablerMods) {
+            bool found = false;
+
             for (auto &resourceContainer : ResourceContainerList) {
                 if (mod.ResourceName == resourceContainer.Name) {
+                    found = true;
                     resourceContainer.ModFileList.push_back(mod);
                     break;
                 }
+            }
+
+            if (!found) {
+                ResourceContainerList.push_back(ResourceContainer(mod.ResourceName, PathToResourceContainer(mod.ResourceName + ".resources")));
             }
         }
     }

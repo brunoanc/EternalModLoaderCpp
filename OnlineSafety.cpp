@@ -169,9 +169,11 @@ static const std::map<std::string, std::string> Languages = {
     { "english", "MULTIPLAYER (DISABLED)" }
 };
 
-static const std::vector<std::string> SWFs = {
-    "swf/hud/menus/battle_arena/play_online_screen.swf", "swf/hud/menus/battle_arena/lobby.swf",
-    "swf/main_menu/screens/battle_arena.swf", "swf/main_menu/screens/match_browser.swf"
+static const std::map<std::string, std::string> Swfs = {
+    { "swf/hud/menus/battle_arena/play_online_screen.swf", "gameresources_patch1" },
+    { "swf/hud/menus/battle_arena/lobby.swf", "gameresources_patch1" },
+    { "swf/main_menu/screens/battle_arena.swf", "gameresources_patch2" },
+    { "swf/main_menu/screens/match_browser.swf", "gameresources_patch2" }
 };
 
 static const std::vector<std::string> OnlineSafeMapResourceTypes = {
@@ -206,7 +208,7 @@ std::vector<ResourceModFile> GetMultiplayerDisablerMods()
     parentMod.LoadPriority = INT_MIN;
 
     std::vector<ResourceModFile> multiplayerDisablerMods;
-    multiplayerDisablerMods.reserve(2 + SWFs.size() + Languages.size());
+    multiplayerDisablerMods.reserve(2 + Swfs.size() + Languages.size());
 
     ResourceModFile multiplayerDisablerDecl(parentMod, "generated/decls/menuelement/main_menu/screens/multiplayer.decl", "gameresources_patch2", false);
     multiplayerDisablerDecl.FileBytes = std::vector<std::byte>((std::byte*)DeclMultiplayerDisabled, (std::byte*)DeclMultiplayerDisabled + sizeof(DeclMultiplayerDisabled));
@@ -216,14 +218,14 @@ std::vector<ResourceModFile> GetMultiplayerDisablerMods()
     multiplayerDisablerDecl.FileBytes = std::vector<std::byte>((std::byte*)DeclPlayOnlineDisabled, (std::byte*)DeclPlayOnlineDisabled + sizeof(DeclPlayOnlineDisabled));
     multiplayerDisablerMods.push_back(playOnlineDisablerDecl);
 
-    for (auto &swf : SWFs) {
-        ResourceModFile multiplayerDisablerSwf(parentMod, swf, "gameresources_patch2", false);
+    for (auto &swf : Swfs) {
+        ResourceModFile multiplayerDisablerSwf(parentMod, swf.first, swf.second, false);
         multiplayerDisablerSwf.FileBytes = std::vector<std::byte>((std::byte*)GenericSwfData, (std::byte*)GenericSwfData + sizeof(GenericSwfData));
         multiplayerDisablerMods.push_back(multiplayerDisablerSwf);
     }
 
     for (auto &language : Languages) {
-        ResourceModFile multiplayerDisablerBlang(parentMod, "EternalMod/strings/" + language.first + ".json", "gameresources_patch2", false);
+        ResourceModFile multiplayerDisablerBlang(parentMod, "EternalMod/strings/" + language.first + ".json", "gameresources_patch1", false);
         multiplayerDisablerBlang.IsBlangJson = true;
         std::string blangJson = "{\"strings\":[{\"name\":\"#str_code_mainmenu_play_online_name\",\"text\":\"^8" + language.second + "\"}]}";
         multiplayerDisablerBlang.FileBytes = std::vector<std::byte>((std::byte*)blangJson.c_str(), (std::byte*)blangJson.c_str() + blangJson.length());
