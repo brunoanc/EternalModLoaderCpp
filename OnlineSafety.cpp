@@ -159,7 +159,7 @@ static const std::map<std::string, std::string> Languages = {
     { "german", "MULTIPLAYER (DEAKTIVIERT)" },
     { "spanish", "MULTIJUGADOR (DESHABILITADO)" },
     { "russian", "СЕТЕВАЯ ИГРА (ОТКЛЮЧЕНА)" },
-    { "polish", "GRA WIELOOSOBOWA (NIEPEŁNOSPRAWNY)" },
+    { "polish", "GRA WIELOOSOBOWA (DEZAKTYWOWANY)" },
     { "japanese", "マルチプレイヤー(無効)" },
     { "latin_spanish", "MULTIJUGADOR (DESHABILITADO)" },
     { "portuguese", "MULTIJOGADOR (DESABILITADO)" },
