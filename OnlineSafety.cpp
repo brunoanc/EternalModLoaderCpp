@@ -184,7 +184,7 @@ static const std::vector<std::string> OnlineSafeMapResourceTypes = {
     "model", "modelasset", "modelstream", "particle", "particlestage", "renderlayerdefinition", "renderparm", "renderparmmeta", "renderprogdatabase",
     "renderprogflag", "renderprogresource", "ribbon2", "rumble", "screenviewshake", "soundevent", "soundpack", "soundrtpc", "soundstate", "soundswitch",
     "speaker", "staticimage", "swfresources", "uianchor", "uicolor", "weaponreticle", "weaponreticleswfinfo", "impacteffect", "uiweapon",
-    "globalinitialwarehouse", "globalshell", "warehouseitem", "warehouseofflinecontainer", "tooltip"
+    "globalinitialwarehouse", "globalshell", "warehouseitem", "warehouseofflinecontainer", "tooltip", "livetile", "tutorialevent"
 };
 
 static const std::vector<std::string> OnlineSafeModNameKeywords = {
@@ -194,7 +194,8 @@ static const std::vector<std::string> OnlineSafeModNameKeywords = {
     "/lightrig/", "/lodgroup/", "/material2/", "/md6def/", "/modelasset/", "/particle/", "/particlestage/", "/renderlayerdefinition/", "/renderparm/",
     "/renderparmmeta/", "/renderprogflag/", "/ribbon2/", "/rumble/", "/soundevent/", "/soundpack/", "/soundrtpc/", "/soundstate/", "/soundswitch/",
     "/speaker/", "/staticimage/", "/swfresources/", "/uianchor/", "/uicolor/", "/weaponreticle/", "/weaponreticleswfinfo/", "/entitydef/light/", "/entitydef/fx",
-    "/entitydef/", "/impacteffect/", "/uiweapon/", "/globalinitialwarehouse/", "/globalshell/", "/warehouseitem/", "/warehouseofflinecontainer/", "/tooltip/"
+    "/entitydef/", "/impacteffect/", "/uiweapon/", "/globalinitialwarehouse/", "/globalshell/", "/warehouseitem/", "/warehouseofflinecontainer/", "/tooltip/",
+    "/livetile/", "/tutorialevent/", "/maps/game/dlc/", "/maps/game/dlc2/", "/maps/game/hub/", "/maps/game/shell/", "/maps/game/sp/", "/maps/game/tutorials/"
 };
 
 /**
