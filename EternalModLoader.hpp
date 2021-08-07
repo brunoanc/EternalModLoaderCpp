@@ -329,7 +329,7 @@ inline bool operator==(ResourceChunk& chunk1, const ResourceChunk& chunk2)
 }
 
 // Global variables
-inline constexpr int32_t Version = 10;
+inline constexpr int32_t Version = 11;
 
 extern char Separator;
 extern std::string BasePath;
