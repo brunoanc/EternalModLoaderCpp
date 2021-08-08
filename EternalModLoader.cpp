@@ -227,8 +227,8 @@ int main(int argc, char **argv)
     chrono::steady_clock::time_point unzippedModsBegin = chrono::steady_clock::now();
 
     std::atomic<int32_t> unzippedModCount = 0;
-    std::map<ResourceModFile, int32_t> resourceModFiles;
-    std::map<SoundModFile, int32_t> soundModFiles;
+    std::map<int32_t, std::vector<ResourceModFile>> resourceModFiles;
+    std::map<int32_t, std::vector<SoundModFile>> soundModFiles;
     Mod globalLooseMod;
     globalLooseMod.LoadPriority = INT_MIN;
 
@@ -257,21 +257,25 @@ int main(int argc, char **argv)
 
         if (!LoadOnlineSafeModsOnly) {
             for (auto &resourceMod : resourceModFiles) {
-                ResourceContainerList[resourceMod.second].ModFileList.push_back(resourceMod.first);
+                ResourceContainer &resourceContainer = ResourceContainerList[resourceMod.first];
+                resourceContainer.ModFileList.insert(resourceContainer.ModFileList.end(), resourceMod.second.begin(), resourceMod.second.end());
             }
 
             for (auto &soundMod : soundModFiles) {
-                SoundContainerList[soundMod.second].ModFileList.push_back(soundMod.first);
+                SoundContainer &soundContainer = SoundContainerList[soundMod.first];
+                soundContainer.ModFileList.insert(soundContainer.ModFileList.end(), soundMod.second.begin(), soundMod.second.end());
             }
         }
     }
     else {
         for (auto &resourceMod : resourceModFiles) {
-            ResourceContainerList[resourceMod.second].ModFileList.push_back(resourceMod.first);
+            ResourceContainer &resourceContainer = ResourceContainerList[resourceMod.first];
+            resourceContainer.ModFileList.insert(resourceContainer.ModFileList.end(), resourceMod.second.begin(), resourceMod.second.end());
         }
 
         for (auto &soundMod : soundModFiles) {
-            SoundContainerList[soundMod.second].ModFileList.push_back(soundMod.first);
+            SoundContainer &soundContainer = SoundContainerList[soundMod.first];
+            soundContainer.ModFileList.insert(soundContainer.ModFileList.end(), soundMod.second.begin(), soundMod.second.end());
         }
     }
 

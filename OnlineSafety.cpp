@@ -236,41 +236,41 @@ std::vector<ResourceModFile> GetMultiplayerDisablerMods()
  * @param resourceModFiles Mod's resource mod files
  * @return True if the mod is safe for online, false otherwise 
  */
-bool IsModSafeForOnline(const std::map<ResourceModFile, int32_t> &resourceModFiles)
+bool IsModSafeForOnline(const std::map<int32_t, std::vector<ResourceModFile>> &resourceModFiles)
 {
     bool isSafe = true;
     bool isModifyingUnsafeResource = false;
     std::vector<ResourceModFile> assetsInfoJsons;
 
-    for (const auto &resourceMod : resourceModFiles) {
-        ResourceModFile modFile = resourceMod.first;
-
-        if (modFile.IsAssetsInfoJson) {
-            assetsInfoJsons.push_back(modFile);
-            continue;
-        }
-
-        for (const auto &keyword : UnsafeResourceNameKeywords) {
-            if (StartsWith(modFile.ResourceName, keyword)) {
-                isModifyingUnsafeResource = true;
-                break;
+    for (const auto &resource : resourceModFiles) {
+        for (const auto &modFile : resource.second) {
+            if (modFile.IsAssetsInfoJson) {
+                assetsInfoJsons.push_back(modFile);
+                continue;
             }
-        }
 
-        if (!StartsWith(modFile.Name, "generated/decls/")) {
-            continue;
-        }
-
-        bool found = false;
-
-        for (const auto &keyword : OnlineSafeModNameKeywords) {
-            if (modFile.ResourceName.find(keyword) != std::string::npos) {
-                found = true;
-                break;
+            for (const auto &keyword : UnsafeResourceNameKeywords) {
+                if (StartsWith(modFile.ResourceName, keyword)) {
+                    isModifyingUnsafeResource = true;
+                    break;
+                }
             }
-        }
 
-        isSafe = found;
+            if (!StartsWith(modFile.Name, "generated/decls/")) {
+                continue;
+            }
+
+            bool found = false;
+
+            for (const auto &keyword : OnlineSafeModNameKeywords) {
+                if (modFile.ResourceName.find(keyword) != std::string::npos) {
+                    found = true;
+                    break;
+                }
+            }
+
+            isSafe = found;
+        }
     }
 
     if (isSafe) {

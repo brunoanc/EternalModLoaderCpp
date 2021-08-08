@@ -15,8 +15,8 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
 {
     int32_t zippedModCount = 0;
     std::vector<std::string> modFileNameList;
-    std::map<ResourceModFile, int32_t> resourceModFiles;
-    std::map<SoundModFile, int32_t> soundModFiles;
+    std::map<int32_t, std::vector<ResourceModFile>> resourceModFiles;
+    std::map<int32_t, std::vector<SoundModFile>> soundModFiles;
 
     mz_zip_archive modZip;
     mz_zip_zero_struct(&modZip);
@@ -145,7 +145,7 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
                 soundModFile.FileBytes = std::vector<std::byte>(unzippedEntry, unzippedEntry + unzippedEntrySize);
                 free(unzippedEntry);
 
-                soundModFiles[soundModFile] = soundContainerIndex;
+                soundModFiles[soundContainerIndex].push_back(soundModFile);
                 zippedModCount++;
             }
         }
@@ -223,7 +223,7 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
                 }
             }
 
-            resourceModFiles[resourceModFile] = resourceContainerIndex;
+            resourceModFiles[resourceContainerIndex].push_back(resourceModFile);
             zippedModCount++;
         }
     }
@@ -236,21 +236,25 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
 
         if (!LoadOnlineSafeModsOnly) {
             for (auto &resourceMod : resourceModFiles) {
-                ResourceContainerList[resourceMod.second].ModFileList.push_back(resourceMod.first);
+                ResourceContainer &resourceContainer = ResourceContainerList[resourceMod.first];
+                resourceContainer.ModFileList.insert(resourceContainer.ModFileList.end(), resourceMod.second.begin(), resourceMod.second.end());
             }
 
             for (auto &soundMod : soundModFiles) {
-                SoundContainerList[soundMod.second].ModFileList.push_back(soundMod.first);
-            }
+                SoundContainer &soundContainer = SoundContainerList[soundMod.first];
+                soundContainer.ModFileList.insert(soundContainer.ModFileList.end(), soundMod.second.begin(), soundMod.second.end());
+        }
         }
     }
     else {
         for (auto &resourceMod : resourceModFiles) {
-            ResourceContainerList[resourceMod.second].ModFileList.push_back(resourceMod.first);
+            ResourceContainer &resourceContainer = ResourceContainerList[resourceMod.first];
+            resourceContainer.ModFileList.insert(resourceContainer.ModFileList.end(), resourceMod.second.begin(), resourceMod.second.end());
         }
 
         for (auto &soundMod : soundModFiles) {
-            SoundContainerList[soundMod.second].ModFileList.push_back(soundMod.first);
+            SoundContainer &soundContainer = SoundContainerList[soundMod.first];
+            soundContainer.ModFileList.insert(soundContainer.ModFileList.end(), soundMod.second.begin(), soundMod.second.end());
         }
     }
 
@@ -287,8 +291,8 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
  * @param notFoundContainers Vector to push not found resources to
  */
 void LoadUnzippedMod(std::string unzippedMod, Mod &globalLooseMod, std::atomic<int32_t> &unzippedModCount,
-    std::map<ResourceModFile, int32_t> &resourceModFiles,
-    std::map<SoundModFile, int32_t> &soundModFiles,
+    std::map<int32_t, std::vector<ResourceModFile>> &resourceModFiles,
+    std::map<int32_t, std::vector<SoundModFile>> &soundModFiles,
     std::vector<std::string> &notFoundContainers)
 {
     std::replace(unzippedMod.begin(), unzippedMod.end(), Separator, '/');
@@ -379,7 +383,7 @@ void LoadUnzippedMod(std::string unzippedMod, Mod &globalLooseMod, std::atomic<i
             fclose(unzippedModFile);
 
             mtx.lock();
-            soundModFiles[soundModFile] = soundContainerIndex;
+            soundModFiles[soundContainerIndex].push_back(soundModFile);
             mtx.unlock();
 
             unzippedModCount++;
@@ -478,7 +482,7 @@ void LoadUnzippedMod(std::string unzippedMod, Mod &globalLooseMod, std::atomic<i
         }
 
         mtx.lock();
-        resourceModFiles[resourceModFile] = resourceContainerIndex;
+        resourceModFiles[resourceContainerIndex].push_back(resourceModFile);
         mtx.unlock();
 
         unzippedModCount++;
