@@ -242,7 +242,7 @@ bool IsModSafeForOnline(const std::map<ResourceModFile, int32_t> &resourceModFil
     bool isModifyingUnsafeResource = false;
     std::vector<ResourceModFile> assetsInfoJsons;
 
-    for (auto &resourceMod : resourceModFiles) {
+    for (const auto &resourceMod : resourceModFiles) {
         ResourceModFile modFile = resourceMod.first;
 
         if (modFile.IsAssetsInfoJson) {
@@ -250,7 +250,7 @@ bool IsModSafeForOnline(const std::map<ResourceModFile, int32_t> &resourceModFil
             continue;
         }
 
-        for (auto &keyword : UnsafeResourceNameKeywords) {
+        for (const auto &keyword : UnsafeResourceNameKeywords) {
             if (StartsWith(modFile.ResourceName, keyword)) {
                 isModifyingUnsafeResource = true;
                 break;
@@ -261,12 +261,16 @@ bool IsModSafeForOnline(const std::map<ResourceModFile, int32_t> &resourceModFil
             continue;
         }
 
-        for (auto &keyword : OnlineSafeModNameKeywords) {
+        bool found = false;
+
+        for (const auto &keyword : OnlineSafeModNameKeywords) {
             if (modFile.ResourceName.find(keyword) != std::string::npos) {
-                isSafe = true;
+                found = true;
                 break;
             }
         }
+
+        isSafe = found;
     }
 
     if (isSafe) {
@@ -276,9 +280,9 @@ bool IsModSafeForOnline(const std::map<ResourceModFile, int32_t> &resourceModFil
         return false;
     }
 
-    for (auto &assetsInfo : assetsInfoJsons) {
+    for (const auto &assetsInfo : assetsInfoJsons) {
         if (assetsInfo.AssetsInfo.has_value()) {
-            for (auto &keyword : UnsafeResourceNameKeywords) {
+            for (const auto &keyword : UnsafeResourceNameKeywords) {
                 if (StartsWith(assetsInfo.ResourceName, keyword)) {
                     return false;
                 }

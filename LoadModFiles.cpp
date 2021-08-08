@@ -228,9 +228,9 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
         }
     }
 
-    if (!IsModSafeForOnline(resourceModFiles)) {
-        mtx.lock();
+    mtx.lock();
 
+    if (!IsModSafeForOnline(resourceModFiles)) {
         AreModsSafeForOnline = false;
         mod.IsSafeForOnline = false;
 
@@ -243,8 +243,6 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
                 SoundContainerList[soundMod.second].ModFileList.push_back(soundMod.first);
             }
         }
-
-        mtx.unlock();
     }
     else {
         for (auto &resourceMod : resourceModFiles) {
@@ -255,6 +253,8 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
             SoundContainerList[soundMod.second].ModFileList.push_back(soundMod.first);
         }
     }
+
+    mtx.unlock();
         
     if (zippedModCount > 0 && !ListResources) {
         mtx.lock();
