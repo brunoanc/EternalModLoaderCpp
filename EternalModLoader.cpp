@@ -309,7 +309,7 @@ int main(int argc, char **argv)
         for (auto &resourceContainer : ResourceContainerList) {
             for (int32_t i = resourceContainer.ModFileList.size() - 1; i >= 0; i--) {
                 for (auto &modFile: multiplayerDisablerMods) {
-                    if (modFile.Name == resourceContainer.ModFileList[i].Name) {
+                    if (!modFile.IsBlangJson && !modFile.IsAssetsInfoJson && modFile.Name == resourceContainer.ModFileList[i].Name) {
                         resourceContainer.ModFileList.erase(resourceContainer.ModFileList.begin() + i);
                     }
                 }
