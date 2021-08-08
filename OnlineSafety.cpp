@@ -176,17 +176,6 @@ static const std::map<std::string, std::string> Swfs = {
     { "swf/main_menu/screens/match_browser.swf", "gameresources_patch2" }
 };
 
-static const std::vector<std::string> OnlineSafeMapResourceTypes = {
-    "advancedscreenviewshake", "ambientsh", "audiolog", "audiologstory", "automap", "automapplayerprofile", "automapproperties",
-    "automapsoundprofile", "basemodel", "binarygorecontainer", "binarymd6def", "binaryrig", "colorlut", "cswf", "env", "font", "fontfx",
-    "fx", "gameitem", "globalfonttable", "gorebehavior", "gorecontainer", "gorewounds", "handsbobcycle", "havokragdoll", "havokshape",
-    "highlightlos", "highlights", "hitconfirmationsoundsinfo", "hud", "hudelement", "image", "lightrig", "lodgroup", "material2", "md6def",
-    "model", "modelasset", "modelstream", "particle", "particlestage", "renderlayerdefinition", "renderparm", "renderparmmeta", "renderprogdatabase",
-    "renderprogflag", "renderprogresource", "ribbon2", "rumble", "screenviewshake", "soundevent", "soundpack", "soundrtpc", "soundstate", "soundswitch",
-    "speaker", "staticimage", "swfresources", "uianchor", "uicolor", "weaponreticle", "weaponreticleswfinfo", "impacteffect", "uiweapon",
-    "globalinitialwarehouse", "globalshell", "warehouseitem", "warehouseofflinecontainer", "tooltip", "livetile", "tutorialevent"
-};
-
 static const std::vector<std::string> OnlineSafeModNameKeywords = {
     "/eternalmod/", ".tga", ".png", ".swf", ".bimage", "/advancedscreenviewshake/", "/audiolog/", "/audiologstory/", "/automap/", "/automapplayerprofile/",
     "/automapproperties/", "/automapsoundprofile/", "/env/", "/font/", "/fontfx/", "/fx/", "/gameitem/", "/globalfonttable/", "/gorebehavior/",
@@ -195,7 +184,12 @@ static const std::vector<std::string> OnlineSafeModNameKeywords = {
     "/renderparmmeta/", "/renderprogflag/", "/ribbon2/", "/rumble/", "/soundevent/", "/soundpack/", "/soundrtpc/", "/soundstate/", "/soundswitch/",
     "/speaker/", "/staticimage/", "/swfresources/", "/uianchor/", "/uicolor/", "/weaponreticle/", "/weaponreticleswfinfo/", "/entitydef/light/", "/entitydef/fx",
     "/entitydef/", "/impacteffect/", "/uiweapon/", "/globalinitialwarehouse/", "/globalshell/", "/warehouseitem/", "/warehouseofflinecontainer/", "/tooltip/",
-    "/livetile/", "/tutorialevent/", "/maps/game/dlc/", "/maps/game/dlc2/", "/maps/game/hub/", "/maps/game/shell/", "/maps/game/sp/", "/maps/game/tutorials/"
+    "/livetile/", "/tutorialevent/", "/maps/game/dlc/", "/maps/game/dlc2/", "/maps/game/hub/", "/maps/game/shell/", "/maps/game/sp/", "/maps/game/tutorials/",
+    "/decls/campaign"
+};
+
+static const std::vector<std::string> UnsafeResourceNameKeywords = {
+    "gameresources", "pvp", "shell", "warehouse"
 };
 
 /**
@@ -237,40 +231,60 @@ std::vector<ResourceModFile> GetMultiplayerDisablerMods()
 }
 
 /**
- * @brief Checks wether a given mod is safe for online use
+ * @brief Checks wether a given mod's files is safe for online use
  * 
- * @param mod Mod to check
+ * @param resourceModFiles Mod's resource mod files
  * @return True if the mod is safe for online, false otherwise 
  */
-bool IsModSafeForOnline(const ResourceModFile &mod)
+bool IsModSafeForOnline(const std::map<ResourceModFile, int32_t> &resourceModFiles)
 {
-    if (mod.IsAssetsInfoJson && mod.AssetsInfo.has_value()) {
-        if (!mod.AssetsInfo.value().Assets.empty()) {
-            if (StartsWith(mod.ResourceName, "pvp")) {
-                return false;
-            }
+    bool isSafe = true;
+    bool isModifyingUnsafeResource = false;
+    std::vector<ResourceModFile> assetsInfoJsons;
 
-            for (auto &asset : mod.AssetsInfo.value().Assets) {
-                if (std::find(OnlineSafeMapResourceTypes.begin(), OnlineSafeMapResourceTypes.end(), asset.MapResourceType) == OnlineSafeMapResourceTypes.end()) {
+    for (auto &resourceMod : resourceModFiles) {
+        ResourceModFile modFile = resourceMod.first;
+
+        if (modFile.IsAssetsInfoJson) {
+            assetsInfoJsons.push_back(modFile);
+            continue;
+        }
+
+        for (auto &keyword : UnsafeResourceNameKeywords) {
+            if (StartsWith(modFile.ResourceName, keyword)) {
+                isModifyingUnsafeResource = true;
+                break;
+            }
+        }
+
+        if (!StartsWith(modFile.Name, "generated/decls/")) {
+            continue;
+        }
+
+        for (auto &keyword : OnlineSafeModNameKeywords) {
+            if (modFile.ResourceName.find(keyword) != std::string::npos) {
+                isSafe = true;
+                break;
+            }
+        }
+    }
+
+    if (isSafe) {
+        return true;
+    }
+    else if (isModifyingUnsafeResource) {
+        return false;
+    }
+
+    for (auto &assetsInfo : assetsInfoJsons) {
+        if (assetsInfo.AssetsInfo.has_value()) {
+            for (auto &keyword : UnsafeResourceNameKeywords) {
+                if (StartsWith(assetsInfo.ResourceName, keyword)) {
                     return false;
                 }
             }
         }
-
-        if (!mod.AssetsInfo.value().Resources.empty() && StartsWith(mod.ResourceName, "pvp")) {
-            return false;
-        }
     }
 
-    if (!StartsWith(mod.Name, "generated/decls/")) {
-        return true;
-    }
-
-    for (auto &keyword : OnlineSafeModNameKeywords) {
-        if (mod.Name.find(keyword) != std::string::npos) {
-            return true;
-        }
-    }
-
-    return false;
+    return true;
 }

@@ -25,8 +25,6 @@
 #include <chrono>
 #include <thread>
 #include <sstream>
-#include <functional>
-#include <signal.h>
 
 #include "EternalModLoader.hpp"
 
@@ -229,6 +227,8 @@ int main(int argc, char **argv)
     chrono::steady_clock::time_point unzippedModsBegin = chrono::steady_clock::now();
 
     std::atomic<int32_t> unzippedModCount = 0;
+    std::map<ResourceModFile, int32_t> resourceModFiles;
+    std::map<SoundModFile, int32_t> soundModFiles;
     Mod globalLooseMod;
     globalLooseMod.LoadPriority = INT_MIN;
 
@@ -237,7 +237,8 @@ int main(int argc, char **argv)
         unzippedModLoadingThreads.reserve(unzippedMods.size());
 
         for (const auto &unzippedMod : unzippedMods) {
-            unzippedModLoadingThreads.push_back(std::thread(LoadUnzippedMod, unzippedMod, std::ref(globalLooseMod), std::ref(unzippedModCount), std::ref(notFoundContainers)));
+            unzippedModLoadingThreads.push_back(std::thread(LoadUnzippedMod, unzippedMod, std::ref(globalLooseMod),
+                std::ref(unzippedModCount), std::ref(resourceModFiles), std::ref(soundModFiles), std::ref(notFoundContainers)));
         }
 
         for (auto &thread : unzippedModLoadingThreads) {
@@ -246,7 +247,31 @@ int main(int argc, char **argv)
     }
     else {
         for (const auto &unzippedMod : unzippedMods) {
-            LoadUnzippedMod(unzippedMod, globalLooseMod, unzippedModCount, notFoundContainers);
+            LoadUnzippedMod(unzippedMod, globalLooseMod, unzippedModCount, resourceModFiles, soundModFiles, notFoundContainers);
+        }
+    }
+
+    if (!IsModSafeForOnline(resourceModFiles)) {
+        AreModsSafeForOnline = false;
+        globalLooseMod.IsSafeForOnline = false;
+
+        if (!LoadOnlineSafeModsOnly) {
+            for (auto &resourceMod : resourceModFiles) {
+                ResourceContainerList[resourceMod.second].ModFileList.push_back(resourceMod.first);
+            }
+
+            for (auto &soundMod : soundModFiles) {
+                SoundContainerList[soundMod.second].ModFileList.push_back(soundMod.first);
+            }
+        }
+    }
+    else {
+        for (auto &resourceMod : resourceModFiles) {
+            ResourceContainerList[resourceMod.second].ModFileList.push_back(resourceMod.first);
+        }
+
+        for (auto &soundMod : soundModFiles) {
+            SoundContainerList[soundMod.second].ModFileList.push_back(soundMod.first);
         }
     }
 
@@ -277,20 +302,30 @@ int main(int argc, char **argv)
     if (!AreModsSafeForOnline && !LoadOnlineSafeModsOnly) {
         std::vector<ResourceModFile> multiplayerDisablerMods = GetMultiplayerDisablerMods();
 
-        for (auto &mod : multiplayerDisablerMods) {
+        for (auto &resourceContainer : ResourceContainerList) {
+            for (int32_t i = resourceContainer.ModFileList.size() - 1; i >= 0; i--) {
+                for (auto &modFile: multiplayerDisablerMods) {
+                    if (modFile.Name == resourceContainer.ModFileList[i].Name) {
+                        resourceContainer.ModFileList.erase(resourceContainer.ModFileList.begin() + i);
+                    }
+                }
+            }
+        }
+
+        for (auto &modFile : multiplayerDisablerMods) {
             bool found = false;
 
             for (auto &resourceContainer : ResourceContainerList) {
-                if (mod.ResourceName == resourceContainer.Name) {
+                if (modFile.ResourceName == resourceContainer.Name) {
                     found = true;
-                    resourceContainer.ModFileList.push_back(mod);
+                    resourceContainer.ModFileList.push_back(modFile);
                     break;
                 }
             }
 
             if (!found) {
-                ResourceContainer resourceContainer(mod.ResourceName, PathToResourceContainer(mod.ResourceName + ".resources"));
-                resourceContainer.ModFileList.push_back(mod);
+                ResourceContainer resourceContainer(modFile.ResourceName, PathToResourceContainer(modFile.ResourceName + ".resources"));
+                resourceContainer.ModFileList.push_back(modFile);
                 ResourceContainerList.push_back(resourceContainer);
             }
         }

@@ -91,6 +91,17 @@ public:
         ResourceName = resourceName;
         Announce = announce;
     }
+
+    /**
+     * @brief Comparison operator
+     * 
+     * @param soundModFile ResourceModFile to compare to
+     * @return True if this < other, false otherwise
+     */
+    bool operator<(const ResourceModFile& resourceModFile) const
+    {
+        return Name < resourceModFile.Name;
+    }
 };
 
 /**
@@ -113,6 +124,17 @@ public:
     {
         Parent = parent;
         Name = name;
+    }
+
+    /**
+     * @brief Comparison operator
+     * 
+     * @param soundModFile SoundModFile to compare to
+     * @return True if this < other, false otherwise
+     */
+    bool operator<(const SoundModFile& soundModFile) const
+    {
+        return Name < soundModFile.Name;
     }
 };
 
@@ -391,7 +413,11 @@ ResourceChunk *GetChunk(const std::string name, ResourceContainer &resourceConta
 
 // Load mod files
 void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundContainers);
-void LoadUnzippedMod(std::string unzippedMod, Mod &globalLooseMod, std::atomic<int32_t> &unzippedModCount, std::vector<std::string> &notFoundContainers);
+void LoadUnzippedMod(std::string unzippedMod, Mod &globalLooseMod, std::atomic<int32_t> &unzippedModCount,
+    std::map<ResourceModFile, int32_t> &resourceModFiles,
+    std::map<SoundModFile, int32_t> &soundModFiles,
+    std::vector<std::string> &notFoundContainers
+);
 
 // Misc
 std::vector<std::byte> IdCrypt(const std::vector<std::byte> &fileData, const std::string internalPath, const bool decrypt);
@@ -399,6 +425,6 @@ void GetResourceContainerPathList();
 
 // Online Safety
 std::vector<ResourceModFile> GetMultiplayerDisablerMods();
-bool IsModSafeForOnline(const ResourceModFile &mod);
+bool IsModSafeForOnline(const std::map<ResourceModFile, int32_t> &resourceModFiles);
 
 #endif
