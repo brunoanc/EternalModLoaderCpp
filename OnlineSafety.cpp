@@ -250,26 +250,28 @@ bool IsModSafeForOnline(const std::map<int32_t, std::vector<ResourceModFile>> &r
             }
 
             for (const auto &keyword : UnsafeResourceNameKeywords) {
-                if (StartsWith(modFile.ResourceName, keyword)) {
+                if (StartsWith(ToLower(modFile.ResourceName), keyword)) {
                     isModifyingUnsafeResource = true;
                     break;
                 }
             }
 
-            if (!StartsWith(modFile.Name, "generated/decls/")) {
+            if (!StartsWith(ToLower(modFile.Name), "generated/decls/")) {
                 continue;
             }
 
-            bool found = false;
+            if (isSafe) {
+                bool found = false;
 
-            for (const auto &keyword : OnlineSafeModNameKeywords) {
-                if (modFile.ResourceName.find(keyword) != std::string::npos) {
-                    found = true;
-                    break;
+                for (const auto &keyword : OnlineSafeModNameKeywords) {
+                    if (ToLower(modFile.ResourceName).find(keyword) != std::string::npos) {
+                        found = true;
+                        break;
+                    }
                 }
-            }
 
-            isSafe = found;
+                isSafe = found;
+            }
         }
     }
 
@@ -283,7 +285,7 @@ bool IsModSafeForOnline(const std::map<int32_t, std::vector<ResourceModFile>> &r
     for (const auto &assetsInfo : assetsInfoJsons) {
         if (assetsInfo.AssetsInfo.has_value()) {
             for (const auto &keyword : UnsafeResourceNameKeywords) {
-                if (StartsWith(assetsInfo.ResourceName, keyword)) {
+                if (StartsWith(ToLower(assetsInfo.ResourceName), keyword)) {
                     return false;
                 }
             }
