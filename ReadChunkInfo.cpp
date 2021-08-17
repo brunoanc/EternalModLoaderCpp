@@ -35,15 +35,19 @@ void ReadChunkInfo(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
     ResourceName name;
 
     for (int32_t i = 0; i < resourceContainer.FileCount; i++) {
-        std::copy(memoryMappedFile.Mem + 0x20 + resourceContainer.InfoOffset + (0x90 * i), memoryMappedFile.Mem + 0x20 + resourceContainer.InfoOffset + (0x90 * i) + 8, (std::byte*)&nameId);
+        std::copy(memoryMappedFile.Mem + 0x20 + resourceContainer.InfoOffset + (0x90 * i),
+            memoryMappedFile.Mem + 0x20 + resourceContainer.InfoOffset + (0x90 * i) + 8, (std::byte*)&nameId);
 
-        std::copy(memoryMappedFile.Mem + 0x38 + resourceContainer.InfoOffset + (0x90 * i), memoryMappedFile.Mem + 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 8, (std::byte*)&fileOffset);
+        std::copy(memoryMappedFile.Mem + 0x38 + resourceContainer.InfoOffset + (0x90 * i),
+            memoryMappedFile.Mem + 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 8, (std::byte*)&fileOffset);
 
         sizeOffset = 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 8;
 
-        std::copy(memoryMappedFile.Mem + 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 8, memoryMappedFile.Mem + 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 16, (std::byte*)&sizeZ);
+        std::copy(memoryMappedFile.Mem + 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 8,
+            memoryMappedFile.Mem + 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 16, (std::byte*)&sizeZ);
 
-        std::copy(memoryMappedFile.Mem + 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 16, memoryMappedFile.Mem + 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 24, (std::byte*)&size);
+        std::copy(memoryMappedFile.Mem + 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 16,
+            memoryMappedFile.Mem + 0x38 + resourceContainer.InfoOffset + (0x90 * i) + 24, (std::byte*)&size);
 
         compressionMode = memoryMappedFile.Mem[0x70 + resourceContainer.InfoOffset + 0x90 * i];
 
@@ -52,7 +56,7 @@ void ReadChunkInfo(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
         
         name = resourceContainer.NamesList[nameId];
 
-        ResourceChunk chunk = ResourceChunk(name, fileOffset);
+        ResourceChunk chunk(name, fileOffset);
         chunk.FileOffset = sizeOffset - 8;
         chunk.SizeOffset = sizeOffset;
         chunk.SizeZ = sizeZ;
