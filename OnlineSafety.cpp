@@ -244,7 +244,7 @@ bool IsModSafeForOnline(const std::map<int32_t, std::vector<ResourceModFile>> &r
 
     for (const auto &resource : resourceModFiles) {
         for (const auto &modFile : resource.second) {
-            if (EndsWith(ToLower(modFile.Name), "desktop.ini") || EndsWith(ToLower(modFile.Name), ".DS_Store")) {
+            if (EndsWith(ToLower(modFile.Name), "desktop.ini") || EndsWith(ToLower(modFile.Name), ".ds_store")) {
                 continue;
             }
 
