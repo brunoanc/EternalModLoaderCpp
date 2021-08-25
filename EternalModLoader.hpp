@@ -380,8 +380,8 @@ std::vector<SoundEntry> GetSoundEntriesToModify(SoundContainer &soundContainer, 
 void ReplaceSounds(MemoryMappedFile &memoryMappedFile, SoundContainer &soundContainer, std::stringstream &os);
 
 // Path to containers
-std::string PathToResourceContainer(const std::string name);
-std::string PathToSoundContainer(const std::string name);
+std::string PathToResourceContainer(const std::string &name);
+std::string PathToSoundContainer(const std::string &name);
 
 // Get object
 int32_t GetResourceContainer(const std::string &resourceContainerName);

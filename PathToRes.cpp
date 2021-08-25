@@ -90,14 +90,8 @@ std::string PathToResourceContainer(const std::string &name)
  * @param name Name of the sound container to find
  * @return Path to the sound container, or an empty string if not found
  */
-std::string PathToSoundContainer(const std::string name)
+std::string PathToSoundContainer(const std::string &name)
 {
-    std::string searchPath = BasePath + "sound" + Separator + "soundbanks" + Separator + "pc" + Separator;
-    std::string sndPath = name + ".snd";
-
-    if (std::filesystem::is_regular_file(searchPath + sndPath)) {
-        return searchPath + sndPath;
-    }
-
-    return "";
+    std::string sndPath = BasePath + "sound" + Separator + "soundbanks" + Separator + "pc" + Separator + name + ".snd";
+    return std::filesystem::is_regular_file(sndPath) ? sndPath : "";
 }
