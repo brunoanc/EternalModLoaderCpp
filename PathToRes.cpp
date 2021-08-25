@@ -49,12 +49,12 @@ std::string PathToResourceContainer(const std::string &name)
     bool recursive = true;
 
     if (StartsWith(ToLower(name), "dlc_hub")) {
-        std::string resourcePath = resourcePath.substr(4, name.size() - 4);
+        std::string resourcePath = name.substr(4, name.size() - 4);
         resourcePath = BasePath + "game" + Separator + "dlc" + Separator + "hub" + Separator + resourcePath;
         return std::filesystem::is_regular_file(searchPath + resourcePath) ? resourcePath : "";
     }
     else if (StartsWith(ToLower(name), "hub")) {
-        std::string resourcePath = BasePath + "game" + Separator + "hub" + Separator + resourcePath;
+        std::string resourcePath = BasePath + "game" + Separator + "hub" + Separator + name;
         return std::filesystem::is_regular_file(searchPath + resourcePath) ? resourcePath : "";
     }
     else {
