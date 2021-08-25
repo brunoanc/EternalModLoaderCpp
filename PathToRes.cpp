@@ -76,7 +76,7 @@ std::string PathToResourceContainer(const std::string &name)
     if (recursive) {
         for (auto &file : ResourceContainerPathList) {
             if (file.filename().string() == name) {
-                return file;
+                return file.string();
             }
         }
     }
