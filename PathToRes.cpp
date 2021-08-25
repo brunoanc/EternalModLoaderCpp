@@ -22,7 +22,7 @@
 
 #include "EternalModLoader.hpp"
 
-std::vector<std::string> ResourceContainerPathList;
+std::vector<std::filesystem::path> ResourceContainerPathList;
 
 /**
  * @brief Get the resource container paths
@@ -32,7 +32,7 @@ void GetResourceContainerPathList()
 {
     for (auto &file : std::filesystem::recursive_directory_iterator(BasePath + "game" + Separator)) {
         if (file.path().extension().string() == ".resources") {
-            ResourceContainerPathList.push_back(file.path().string());
+            ResourceContainerPathList.push_back(file.path());
         }
     }
 }
@@ -43,34 +43,25 @@ void GetResourceContainerPathList()
  * @param name Name of the resource container to find
  * @return Path to the resource container, or an empty string if not found
  */
-std::string PathToResourceContainer(const std::string name)
+std::string PathToResourceContainer(const std::string &name)
 {
     std::string searchPath = BasePath;
-    std::string resourcePath = name;
     bool recursive = true;
 
     if (StartsWith(ToLower(name), "dlc_hub")) {
-        resourcePath = resourcePath.substr(4, name.size() - 4);
+        std::string resourcePath = resourcePath.substr(4, name.size() - 4);
         resourcePath = BasePath + "game" + Separator + "dlc" + Separator + "hub" + Separator + resourcePath;
-
-        if (std::filesystem::is_regular_file(searchPath + resourcePath)) {
-            return resourcePath;
-        }
+        return std::filesystem::is_regular_file(searchPath + resourcePath) ? resourcePath : "";
     }
     else if (StartsWith(ToLower(name), "hub")) {
-        resourcePath = BasePath + "game" + Separator + "hub" + Separator + resourcePath;
-
-        if (std::filesystem::is_regular_file(searchPath + resourcePath)) {
-            return resourcePath;
-        }
+        std::string resourcePath = BasePath + "game" + Separator + "hub" + Separator + resourcePath;
+        return std::filesystem::is_regular_file(searchPath + resourcePath) ? resourcePath : "";
     }
     else {
-        resourcePath = name;
-
-        if (resourcePath.find("gameresources") != std::string::npos
-            || resourcePath.find("warehouse") != std::string::npos
-            || resourcePath.find("meta") != std::string::npos
-            || resourcePath.find(".streamdb") != std::string::npos) {
+        if (name.find("gameresources") != std::string::npos
+            || name.find("warehouse") != std::string::npos
+            || name.find("meta") != std::string::npos
+            || name.find(".streamdb") != std::string::npos) {
                 recursive = false;
         }
         else {
@@ -78,13 +69,13 @@ std::string PathToResourceContainer(const std::string name)
         }
     }
 
-    if (std::filesystem::is_regular_file(searchPath + resourcePath)) {
-        return searchPath + resourcePath;
+    if (std::filesystem::is_regular_file(searchPath + name)) {
+        return searchPath + name;
     }
 
     if (recursive) {
         for (auto &file : ResourceContainerPathList) {
-            if (EndsWith(file, resourcePath)) {
+            if (file.filename().string() == name) {
                 return file;
             }
         }
