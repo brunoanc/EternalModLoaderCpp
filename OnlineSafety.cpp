@@ -268,7 +268,7 @@ bool IsModSafeForOnline(const std::map<int32_t, std::vector<ResourceModFile>> &r
                 bool found = false;
 
                 for (const auto &keyword : OnlineSafeModNameKeywords) {
-                    if (ToLower(modFile.ResourceName).find(keyword) != std::string::npos) {
+                    if (ToLower(modFile.Name).find(keyword) != std::string::npos) {
                         found = true;
                         break;
                     }
