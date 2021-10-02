@@ -245,7 +245,6 @@ void ReplaceSounds(MemoryMappedFile &memoryMappedFile, SoundContainer &soundCont
             }
         }
 
-        bool soundFound = false;
         uint32_t soundModOffset = memoryMappedFile.Size;
         int64_t newContainerSize = soundModOffset + soundModFile.FileBytes.size();
 
