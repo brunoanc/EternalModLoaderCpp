@@ -45,39 +45,31 @@ void GetResourceContainerPathList()
  */
 std::string PathToResourceContainer(const std::string &name)
 {
-    std::string searchPath = BasePath;
-    bool recursive = true;
-
-    if (StartsWith(ToLower(name), "dlc_hub")) {
+    if (StartsWith(name, "dlc_hub")) {
         std::string resourcePath = name.substr(4, name.size() - 4);
         resourcePath = BasePath + "game" + Separator + "dlc" + Separator + "hub" + Separator + resourcePath;
-        return std::filesystem::is_regular_file(searchPath + resourcePath) ? resourcePath : "";
+        return std::filesystem::is_regular_file(resourcePath) ? resourcePath : "";
     }
-    else if (StartsWith(ToLower(name), "hub")) {
+    else if (StartsWith(name, "hub")) {
         std::string resourcePath = BasePath + "game" + Separator + "hub" + Separator + name;
-        return std::filesystem::is_regular_file(searchPath + resourcePath) ? resourcePath : "";
+        return std::filesystem::is_regular_file(resourcePath) ? resourcePath : "";
     }
-    else {
-        if (name.find("gameresources") != std::string::npos
-            || name.find("warehouse") != std::string::npos
-            || name.find("meta") != std::string::npos
-            || name.find(".streamdb") != std::string::npos) {
-                recursive = false;
-        }
-        else {
-            searchPath = BasePath + "game" + Separator;
-        }
+    else if (name.find("gameresources") != std::string::npos
+        || name.find("warehouse") != std::string::npos
+        || name.find("meta") != std::string::npos
+        || name.find(".streamdb") != std::string::npos) {
+            return std::filesystem::is_regular_file(BasePath + name) ? (BasePath + name) : "";
     }
+
+    std::string searchPath = BasePath + "game" + Separator;
 
     if (std::filesystem::is_regular_file(searchPath + name)) {
         return searchPath + name;
     }
 
-    if (recursive) {
-        for (auto &file : ResourceContainerPathList) {
-            if (file.filename().string() == name) {
-                return file.string();
-            }
+    for (auto &file : ResourceContainerPathList) {
+        if (file.filename().string() == name) {
+            return file.string();
         }
     }
 
