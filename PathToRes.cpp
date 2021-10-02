@@ -54,10 +54,9 @@ std::string PathToResourceContainer(const std::string &name)
         std::string resourcePath = BasePath + "game" + Separator + "hub" + Separator + name;
         return std::filesystem::is_regular_file(resourcePath) ? resourcePath : "";
     }
-    else if (name.find("gameresources") != std::string::npos
-        || name.find("warehouse") != std::string::npos
-        || name.find("meta") != std::string::npos
-        || name.find(".streamdb") != std::string::npos) {
+    else if (StartsWith(name, "gameresources")
+        || StartsWith(name, "warehouse")
+        || StartsWith(name, "meta")) {
             return std::filesystem::is_regular_file(BasePath + name) ? (BasePath + name) : "";
     }
 
