@@ -99,6 +99,13 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                         int32_t fileIndex = -1;
                         int32_t mapIndex = -1;
 
+                        std::string modFileMapName = std::filesystem::path(modFile.Name).stem().string();
+
+                        if (!PathToResourceContainer(modFileMapName + ".resources").empty()) {
+                            const std::string baseFolder = std::string(2, Separator).insert(1, "base"); // "/base/"
+                            modFileMapName = std::filesystem::path(resourceContainer.Path.substr(resourceContainer.Path.find(baseFolder) + 6)).parent_path().make_preferred().append(modFileMapName).string();
+                        }
+
                         for (int32_t i = 0; i < PackageMapSpecInfo.PackageMapSpec->Files.size(); i++) {
                             if (PackageMapSpecInfo.PackageMapSpec->Files[i].Name.find(extraResource.Name) != std::string::npos) {
                                 fileIndex = i;
@@ -106,17 +113,8 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                             }
                         }
 
-                        std::string modFileMapName = std::filesystem::path(modFile.Name).stem().string();
-
-                        if (StartsWith(resourceContainer.Name, "dlc_hub")) {
-                            modFileMapName = "game/dlc/hub/hub";
-                        }
-                        else if (StartsWith(resourceContainer.Name, "hub")) {
-                            modFileMapName = "game/hub/hub";
-                        }
-
                         for (int32_t i = 0; i < PackageMapSpecInfo.PackageMapSpec->Maps.size(); i++) {
-                            if (EndsWith(PackageMapSpecInfo.PackageMapSpec->Maps[i].Name, modFileMapName)) {
+                            if (PackageMapSpecInfo.PackageMapSpec->Maps[i].Name == modFileMapName) {
                                 mapIndex = i;
                                 break;
                             }
