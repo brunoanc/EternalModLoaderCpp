@@ -170,8 +170,8 @@ static const std::map<std::string, std::string> Languages = {
 };
 
 static const std::map<std::string, std::string> Swfs = {
-    { "swf/hud/menus/battle_arena/play_online_screen.swf", "gameresources_patch1" },
-    { "swf/hud/menus/battle_arena/lobby.swf", "gameresources_patch1" },
+    { "swf/hud/menus/battle_arena/play_online_screen.swf", "gameresources_patch2" },
+    { "swf/hud/menus/battle_arena/lobby.swf", "gameresources_patch2" },
     { "swf/main_menu/screens/battle_arena.swf", "gameresources_patch1" },
     { "swf/main_menu/screens/match_browser.swf", "gameresources_patch1" }
 };
