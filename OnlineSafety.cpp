@@ -206,19 +206,19 @@ constexpr uint8_t DeclPlayOnlineDisabled[] = {
 
 // New strings for battlemode button
 static const std::map<std::string, std::string> Languages = {
-    { "french", "^8BATTLEMODE 2.0 (DÉSACTIVÉ)" },
-    { "italian", "^8BATTLEMODE 2.0 (DISABILITATO)" },
-    { "german", "^8BATTLEMODE 2.0 (DEAKTIVIERT)" },
-    { "spanish", "^8BATTLEMODE 2.0 (DESHABILITADO)" },
-    { "russian", "^8BATTLEMODE 2.0 (ОТКЛЮЧЕН)" },
-    { "polish", "^8BATTLEMODE 2.0 (DEZAKTYWOWANY)" },
-    { "japanese", "^8BATTLEMODE 2.0(無効)" },
-    { "latin_spanish", "^8BATTLEMODE 2.0 (DESHABILITADO)" },
-    { "portuguese", "^8BATTLEMODE 2.0 (DESABILITADO)" },
-    { "traditional_chinese", "^8BATTLEMODE 2.0（已禁用）" },
-    { "simplified_chinese", "^8BATTLEMODE 2.0（已禁用）" },
-    { "korean", "^8BATTLEMODE 2.0(비활성화됨)" },
-    { "english", "^8BATTLEMODE 2.0 (DISABLED)" }
+    { "french", "BATTLEMODE 2.0 (DÉSACTIVÉ)" },
+    { "italian", "BATTLEMODE 2.0 (DISABILITATO)" },
+    { "german", "BATTLEMODE 2.0 (DEAKTIVIERT)" },
+    { "spanish", "BATTLEMODE 2.0 (DESHABILITADO)" },
+    { "russian", "BATTLEMODE 2.0 (ОТКЛЮЧЕН)" },
+    { "polish", "BATTLEMODE 2.0 (DEZAKTYWOWANY)" },
+    { "japanese", "BATTLEMODE 2.0(無効)" },
+    { "latin_spanish", "BATTLEMODE 2.0 (DESHABILITADO)" },
+    { "portuguese", "BATTLEMODE 2.0 (DESABILITADO)" },
+    { "traditional_chinese", "BATTLEMODE 2.0（已禁用）" },
+    { "simplified_chinese", "BATTLEMODE 2.0（已禁用）" },
+    { "korean", "BATTLEMODE 2.0(비활성화됨)" },
+    { "english", "BATTLEMODE 2.0 (DISABLED)" }
 };
 
 // SWF files to replace
