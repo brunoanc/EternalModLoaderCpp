@@ -91,7 +91,7 @@ bool SetModDataForChunk(
 
         // If the file was expanded, update file offsets for every file after the one we replaced
         if (sizeDiff > 0) {
-            std::vector<ResourceChunk>::iterator x = std::find(resourceContainer.ChunkList.begin(), resourceContainer.ChunkList.end(), chunk);
+            auto x = std::find(resourceContainer.ChunkList.begin(), resourceContainer.ChunkList.end(), chunk);
             int32_t index = std::distance(resourceContainer.ChunkList.begin(), x);
 
             for (int32_t i = index + 1; i < resourceContainer.ChunkList.size(); i++) {

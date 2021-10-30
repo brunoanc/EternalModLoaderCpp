@@ -210,7 +210,7 @@ static const std::map<std::string, std::string> Languages = {
     { "italian", "^8BATTLEMODE 2.0 (DISABILITATO)" },
     { "german", "^8BATTLEMODE 2.0 (DEAKTIVIERT)" },
     { "spanish", "^8BATTLEMODE 2.0 (DESHABILITADO)" },
-    { "russian", "^8BATTLEMODE 2.0 (ОТКЛЮЧЕНА)" },
+    { "russian", "^8BATTLEMODE 2.0 (ОТКЛЮЧЕН)" },
     { "polish", "^8BATTLEMODE 2.0 (DEZAKTYWOWANY)" },
     { "japanese", "^8BATTLEMODE 2.0(無効)" },
     { "latin_spanish", "^8BATTLEMODE 2.0 (DESHABILITADO)" },
@@ -286,7 +286,7 @@ std::vector<ResourceModFile> GetMultiplayerDisablerMods()
     for (auto &language : Languages) {
         ResourceModFile multiplayerDisablerBlang(parentMod, "EternalMod/strings/" + language.first + ".json", "gameresources_patch2", false);
         multiplayerDisablerBlang.IsBlangJson = true;
-        std::string blangJson = "{\"strings\":[{\"name\":\"#str_code_mainmenu_play_online_name\",\"text\":\"^8" + language.second + "\"}]}";
+        std::string blangJson = R"({"strings":[{"name":"#str_code_mainmenu_play_online_name","text":"^8)" + language.second + R"("}]})";
         multiplayerDisablerBlang.FileBytes = std::vector<std::byte>((std::byte*)blangJson.c_str(), (std::byte*)blangJson.c_str() + blangJson.length());
         multiplayerDisablerMods.push_back(multiplayerDisablerBlang);
     }

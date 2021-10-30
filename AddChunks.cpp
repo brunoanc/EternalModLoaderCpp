@@ -121,7 +121,7 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
 
         // Retrieve the resource data for this file (if needed & available)
         ResourceDataEntry resourceData;
-        std::map<uint64_t, ResourceDataEntry>::iterator x = ResourceDataMap.find(CalculateResourceFileNameHash(modFile.Name));
+        auto x = ResourceDataMap.find(CalculateResourceFileNameHash(modFile.Name));
 
         if (x != ResourceDataMap.end()) {
             resourceData = x->second;

@@ -357,7 +357,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
 
                     // Remove the asset if specified
                     if (newAsset.Remove) {
-                        std::vector<std::string>::iterator x = std::find(mapResourcesFile->AssetTypes.begin(), mapResourcesFile->AssetTypes.end(), newAsset.MapResourceType);
+                        auto x = std::find(mapResourcesFile->AssetTypes.begin(), mapResourcesFile->AssetTypes.end(), newAsset.MapResourceType);
 
                         if (x == mapResourcesFile->AssetTypes.end()) {
                             if (Verbose) {
@@ -436,7 +436,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
 
                     if (!newAsset.PlaceByName.empty()) {
                         if (!newAsset.PlaceByType.empty()) {
-                            std::vector<std::string>::iterator x = std::find(mapResourcesFile->AssetTypes.begin(), mapResourcesFile->AssetTypes.end(), newAsset.PlaceByType);
+                            auto x = std::find(mapResourcesFile->AssetTypes.begin(), mapResourcesFile->AssetTypes.end(), newAsset.PlaceByType);
 
                             if (x != mapResourcesFile->AssetTypes.end()) {
                                 int32_t placeByTypeIndex = std::distance(mapResourcesFile->AssetTypes.begin(), x);
@@ -461,7 +461,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                         }
 
                         if (found) {
-                            std::vector<MapAsset>::iterator x = std::find(mapResourcesFile->Assets.begin(), mapResourcesFile->Assets.end(), placeByExistingAsset);
+                            auto x = std::find(mapResourcesFile->Assets.begin(), mapResourcesFile->Assets.end(), placeByExistingAsset);
 
                             if (x != mapResourcesFile->Assets.end()) {
                                 assetPosition = std::distance(mapResourcesFile->Assets.begin(), x);
@@ -512,7 +512,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                 resourceContainer.NewModFileList.push_back(modFile);
 
                 // Get the data to add to mapresources from the resource data file, if available
-                std::map<uint64_t, ResourceDataEntry>::iterator x = ResourceDataMap.find(CalculateResourceFileNameHash(modFile.Name));
+                auto x = ResourceDataMap.find(CalculateResourceFileNameHash(modFile.Name));
 
                 if (x == ResourceDataMap.end()) {
                     continue;
@@ -633,7 +633,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
             // Read the .blang file in the container if it hasn't been read yet
             std::string blangFilePath = "strings/" + fs::path(modFile.Name).filename().string();
             BlangFileEntry blangFileEntry;
-            std::map<std::string, BlangFileEntry>::iterator x = blangFileEntries.find(blangFilePath);
+            auto x = blangFileEntries.find(blangFilePath);
             bool exists = x != blangFileEntries.end();
 
             if (!exists) {
