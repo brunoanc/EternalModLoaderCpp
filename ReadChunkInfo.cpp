@@ -17,7 +17,6 @@
 */
 
 #include <iostream>
-
 #include "EternalModLoader.hpp"
 
 /**
@@ -34,6 +33,7 @@ void ReadChunkInfo(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
     std::byte compressionMode;
     ResourceName name;
 
+    // Iterate through files to get all chunks
     for (int32_t i = 0; i < resourceContainer.FileCount; i++) {
         std::copy(memoryMappedFile.Mem + 0x20 + resourceContainer.InfoOffset + (0x90 * i),
             memoryMappedFile.Mem + 0x20 + resourceContainer.InfoOffset + (0x90 * i) + 8, (std::byte*)&nameId);

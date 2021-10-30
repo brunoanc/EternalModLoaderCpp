@@ -17,7 +17,6 @@
 */
 
 #include <iostream>
-
 #include "jsonxx/jsonxx.h"
 #include "AssetsInfo/AssetsInfo.hpp"
 
@@ -28,9 +27,11 @@
  */
 AssetsInfo::AssetsInfo(const std::string &json)
 {
+    // Create JSON object
     jsonxx::Object assetsInfoJson;
     assetsInfoJson.parse(json);
 
+    // Load layers array
     if (assetsInfoJson.has<jsonxx::Array>("layers")) {
         AssetsInfoLayer assetsInfoLayer;
         jsonxx::Array layers = assetsInfoJson.get<jsonxx::Array>("layers");
@@ -47,6 +48,7 @@ AssetsInfo::AssetsInfo(const std::string &json)
         }
     }
 
+    // Load maps array
     if (assetsInfoJson.has<jsonxx::Array>("maps")) {
         AssetsInfoMap assetsInfoMap;
         jsonxx::Array maps = assetsInfoJson.get<jsonxx::Array>("maps");
@@ -63,6 +65,7 @@ AssetsInfo::AssetsInfo(const std::string &json)
         }
     }
 
+    // Load resources array
     if (assetsInfoJson.has<jsonxx::Array>("resources")) {
         AssetsInfoResource assetsInfoResource;
         jsonxx::Array resources = assetsInfoJson.get<jsonxx::Array>("resources");
@@ -91,6 +94,7 @@ AssetsInfo::AssetsInfo(const std::string &json)
         }
     }
 
+    // Load assets array
     if (assetsInfoJson.has<jsonxx::Array>("assets")) {
         AssetsInfoAsset assetsInfoAsset;
         jsonxx::Array assets = assetsInfoJson.get<jsonxx::Array>("assets");

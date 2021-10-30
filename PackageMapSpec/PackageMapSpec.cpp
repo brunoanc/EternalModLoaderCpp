@@ -18,7 +18,6 @@
 
 #include <iostream>
 #include <vector>
-
 #include "jsonxx/jsonxx.h"
 #include "PackageMapSpec/PackageMapSpec.hpp"
 
@@ -29,23 +28,28 @@
  */
 PackageMapSpec::PackageMapSpec(const std::string &json)
 {
+    // PackageMapSpec JSON object
     jsonxx::Object packageMapSpecJson;
     packageMapSpecJson.parse(json);
 
+    // Get files array
     PackageMapSpecFile packageMapSpecFile;
     jsonxx::Array files = packageMapSpecJson.get<jsonxx::Array>("files");
     Files.reserve(files.size());
 
+    // Get each file object inside the array
     for (int32_t i = 0; i < files.size(); i++) {
         jsonxx::Object file = files.get<jsonxx::Object>(i);
         packageMapSpecFile.Name = file.get<jsonxx::String>("name");
         Files.push_back(packageMapSpecFile);
     }
 
+    // Get mapFileRefs array
     PackageMapSpecMapFileRef packageMapSpecMapFileRef;
     jsonxx::Array mapFileRefs = packageMapSpecJson.get<jsonxx::Array>("mapFileRefs");
     MapFileRefs.reserve(mapFileRefs.size());
 
+    // Get each mapFileRef object inside the array
     for (int32_t i = 0; i < mapFileRefs.size(); i++) {
         jsonxx::Object mapFileRef = mapFileRefs.get<jsonxx::Object>(i);
         packageMapSpecMapFileRef.File = mapFileRef.get<jsonxx::Number>("file");
@@ -53,10 +57,12 @@ PackageMapSpec::PackageMapSpec(const std::string &json)
         MapFileRefs.push_back(packageMapSpecMapFileRef);
     }
 
+    // Get maps array
     PackageMapSpecMap packageMapSpecMap;
     jsonxx::Array maps = packageMapSpecJson.get<jsonxx::Array>("maps");
     Maps.reserve(maps.size());
 
+    // Get each map object inside the files array
     for (int32_t i = 0; i < maps.size(); i++) {
         jsonxx::Object map = maps.get<jsonxx::Object>(i);
         packageMapSpecMap.Name = map.get<jsonxx::String>("name");
@@ -71,17 +77,20 @@ PackageMapSpec::PackageMapSpec(const std::string &json)
  */
 std::string PackageMapSpec::Dump() const
 {
+    // JSON objects for serialization
     jsonxx::Object packageMapSpecJson;
     jsonxx::Array files;
     jsonxx::Array mapFileRefs;
     jsonxx::Array maps;
 
+    // Add each file to files array
     for (auto &file : Files) {
         jsonxx::Object jsonFile;
         jsonFile << "name" << file.Name;
         files << jsonFile;
     }
 
+    // Add each mapFileRef to mapFileRefs array
     for (auto &mapFileRef : MapFileRefs) {
         jsonxx::Object jsonMapFileRef;
         jsonMapFileRef << "file" << mapFileRef.File;
@@ -89,15 +98,18 @@ std::string PackageMapSpec::Dump() const
         mapFileRefs << jsonMapFileRef;
     }
 
+    // Add each map to maps array
     for (auto &map : Maps) {
         jsonxx::Object jsonMap;
         jsonMap << "name" << map.Name;
         maps << jsonMap;
     }
 
+    // Add each array to main object
     packageMapSpecJson << "files" << files;
     packageMapSpecJson << "mapFileRefs" << mapFileRefs;
     packageMapSpecJson << "maps" << maps;
 
+    // Return dumped JSON
     return packageMapSpecJson.json();
 }

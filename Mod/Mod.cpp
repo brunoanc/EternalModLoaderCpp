@@ -17,7 +17,6 @@
 */
 
 #include <iostream>
-
 #include "jsonxx/jsonxx.h"
 #include "Mod/Mod.hpp"
 
@@ -29,13 +28,16 @@
  */
 Mod::Mod(const std::string &json)
 {
+    // Mod JSON object
     jsonxx::Object modJson;
     modJson.parse(json);
 
+    // Get loadPriority property
     if (modJson.has<jsonxx::Number>("loadPriority")) {
         LoadPriority = modJson.get<jsonxx::Number>("loadPriority");
     }
 
+    // Get requiredVersion property
     if (modJson.has<jsonxx::Number>("requiredVersion")) {
         RequiredVersion = modJson.get<jsonxx::Number>("requiredVersion");
     }

@@ -20,7 +20,6 @@
 
 #include <iostream>
 #include <vector>
-
 #include "PackageMapSpec/PackageMapSpec.hpp"
 #include "PackageMapSpec/PackageMapSpecInfo.hpp"
 
@@ -30,7 +29,9 @@
  */
 bool PackageMapSpecInfo::ModifyPackageMapSpec() const
 {
+    // Check if PackageMapSpec was modified
     if (PackageMapSpec != nullptr && WasPackageMapSpecModified) {
+        // Open packagemapspec.json for writing
         FILE *packageMapSpecFile = fopen(PackageMapSpecPath.c_str(), "wb");
 
         if (!packageMapSpecFile) {
@@ -39,8 +40,10 @@ bool PackageMapSpecInfo::ModifyPackageMapSpec() const
         }
 
         try {
+            // Convert PackageMapSpec object back to JSON
             std::string newPackageMapSpecJson = PackageMapSpec->Dump();
 
+            // Write new JSON
             if (fwrite(newPackageMapSpecJson.c_str(), 1, newPackageMapSpecJson.size(), packageMapSpecFile) != newPackageMapSpecJson.size()) {
                 throw std::exception();
             }

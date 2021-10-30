@@ -19,13 +19,11 @@
 #include <iostream>
 #include <algorithm>
 #include <string>
-#include <filesystem>
 #include <cstring>
 #include <ctime>
 #include <openssl/sha.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
-
 #include "EternalModLoader.hpp"
 
 
@@ -45,7 +43,9 @@
 std::byte *HashData(const std::byte *data1, const size_t data1Len, const std::byte *data2, const size_t data2Len,
     const std::byte *data3, const size_t data3Len, const std::byte *hmacKey, size_t hmacKeyLen)
 {
+    // Check if hmacKey was passed
     if (hmacKey == nullptr) {
+        // No HMAC key, use regular SHA256
         SHA256_CTX sha256;
         SHA256_Init(&sha256);
 
@@ -59,6 +59,7 @@ std::byte *HashData(const std::byte *data1, const size_t data1Len, const std::by
         return md;
     }
     else {
+        // Use SHA256 HMAC
         uint32_t md_len;
 
         HMAC_CTX *ctx = HMAC_CTX_new();
@@ -149,16 +150,20 @@ size_t DecryptData(const unsigned char *ciphertext, const size_t ciphertextLen, 
  */
 std::vector<std::byte> CryptData(const bool decrypt, const std::byte *inputData, const size_t inputDataLen, const std::byte *key, const std::byte *iv)
 {
+    // Alloc memory for output
     unsigned char *output = new unsigned char[inputDataLen + 16 - (inputDataLen % 16)];
     size_t newSize;
 
     if (decrypt) {
+        // Decrypt the data
         newSize = DecryptData((unsigned char*)inputData, inputDataLen, (unsigned char*)key, (unsigned char*)iv, output);
     }
     else {
+        // Encrypt the data
         newSize = EncryptData((unsigned char*)inputData, inputDataLen, (unsigned char*)key, (unsigned char*)iv, output);
     }
 
+    // Build byte vector from output
     std::vector<std::byte> outputVector((std::byte*)output, (std::byte*)output + newSize);
 
     delete[] output;
@@ -177,8 +182,11 @@ std::vector<std::byte> CryptData(const bool decrypt, const std::byte *inputData,
 std::vector<std::byte> IdCrypt(const std::vector<std::byte> &fileData, const std::string internalPath, const bool decrypt)
 {
     std::string keyDeriveStatic = "swapTeam\n";
+
+    // Init random generator
     srand(time(nullptr));
 
+    // Get salt from file, or create a new one
     std::byte fileSalt[0xC];
 
     if (decrypt) {
@@ -188,6 +196,7 @@ std::vector<std::byte> IdCrypt(const std::vector<std::byte> &fileData, const std
         std::generate((char*)fileSalt, (char*)fileSalt + 0xC, rand);
     }
 
+    // Generate the encryption key for AES using SHA256
     std::byte *encKey;
 
     try {
@@ -197,6 +206,7 @@ std::vector<std::byte> IdCrypt(const std::vector<std::byte> &fileData, const std
         return std::vector<std::byte>();
     }
 
+    // Get IV for AES from the file, or create a new one
     std::byte fileIV[0x10];
 
     if (decrypt) {
@@ -206,6 +216,7 @@ std::vector<std::byte> IdCrypt(const std::vector<std::byte> &fileData, const std
         std::generate((char*)fileIV, (char*)fileIV + 0x10, rand);
     }
 
+    // Get plaintext for AES
     std::vector<std::byte> fileText;
     std::byte *hmac;
 
@@ -216,6 +227,7 @@ std::vector<std::byte> IdCrypt(const std::vector<std::byte> &fileData, const std
         std::byte fileHmac[0x20];
         std::copy(fileData.end() - 0x20, fileData.end(), fileHmac);
 
+        // Get HMAC from file data
         try {
             hmac = HashData(fileSalt, 0xC, fileIV, 0x10, fileText.data(), fileText.size(), encKey, 0x20);
         }
@@ -223,6 +235,7 @@ std::vector<std::byte> IdCrypt(const std::vector<std::byte> &fileData, const std
             return std::vector<std::byte>();
         }
 
+        // Make sure the file HMAC and the new HMAC are the same
         if (std::memcmp(hmac, fileHmac, 0x20)) {
             return std::vector<std::byte>();
         }
@@ -232,6 +245,7 @@ std::vector<std::byte> IdCrypt(const std::vector<std::byte> &fileData, const std
         std::copy(fileData.begin(), fileData.end(), fileText.begin());
     }
 
+    // Encrypt or decrypt data using AES
     std::vector<std::byte> cryptedText;
 
     try {
@@ -244,6 +258,7 @@ std::vector<std::byte> IdCrypt(const std::vector<std::byte> &fileData, const std
         return std::vector<std::byte>();
     }
 
+    // Create and return the new file
     if (decrypt) {
         delete[] encKey;
         delete[] hmac;

@@ -18,6 +18,7 @@
 
 #include <iostream>
 #include <vector>
+#include "Oodle/Oodle.hpp"
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -26,10 +27,11 @@
 #include <dlfcn.h>
 #endif
 
-#include "Oodle/Oodle.hpp"
-
+// Oodle compression function pointers
 static OodLZ_CompressFunc* OodLZ_Compress;
 static OodLZ_DecompressFunc* OodLZ_Decompress;
+
+// Path to get oodle dll from
 extern std::string BasePath;
 
 /**
@@ -40,6 +42,7 @@ extern std::string BasePath;
 bool OodleInit()
 {
 #ifdef _WIN32
+    // Load oodle dll
     std::string oo2corePath = BasePath + "..\\oo2core_8_win64.dll";
     HMODULE oodle = LoadLibraryA(oo2corePath.c_str());
     
@@ -47,9 +50,11 @@ bool OodleInit()
         return false;
     }
 
+    // Get oodle compression functions
     OodLZ_Compress = (OodLZ_CompressFunc*)GetProcAddress(oodle, "OodleLZ_Compress");
     OodLZ_Decompress = (OodLZ_DecompressFunc*)GetProcAddress(oodle, "OodleLZ_Decompress");
 #else
+    // Load linoodle library
     std::string linoodlePath = BasePath + "liblinoodle.so";
     void *oodle = dlopen(linoodlePath.c_str(), RTLD_LAZY);
 
@@ -57,6 +62,7 @@ bool OodleInit()
         return false;
     }
 
+    // Get oodle compression functions
     OodLZ_Compress = (OodLZ_CompressFunc*)dlsym(oodle, "OodleLZ_Compress");
     OodLZ_Decompress = (OodLZ_DecompressFunc*)dlsym(oodle, "OodleLZ_Decompress");
 #endif
@@ -77,12 +83,14 @@ bool OodleInit()
  */
 std::vector<std::byte> OodleDecompress(const std::vector<std::byte> &compressedData, const size_t decompressedSize)
 {
+    // Init oodle if needed
     if (!OodLZ_Decompress) {
         if (!OodleInit()) {
             throw std::exception();
         }
     }
 
+    // Decompress data with oodle
     std::vector<std::byte> decompressedData(decompressedSize);
 
     if (OodLZ_Decompress((uint8_t*)compressedData.data(), compressedData.size(), (uint8_t*)decompressedData.data(), decompressedSize, 1, 1, 0, nullptr, 0, nullptr, nullptr, nullptr, 0, 0) == 0) {
@@ -102,15 +110,18 @@ std::vector<std::byte> OodleDecompress(const std::vector<std::byte> &compressedD
  */
 std::vector<std::byte> OodleCompress(const std::vector<std::byte> &decompressedData, const OodleFormat format, const OodleCompressionLevel compressionLevel)
 {
+    // Init oodle if needed
     if (!OodLZ_Compress) {
         if (!OodleInit()) {
             throw std::exception();
         }
     }
 
+    // Get compressed buffer using formula to get size
     uint32_t compressedBufferSize = decompressedData.size() + 274 * ((decompressedData.size() + 0x3FFFF) / 0x40000);
     std::vector<std::byte> compressedData(compressedBufferSize);
 
+    // Compress data with oodle
     int32_t compressedSize = OodLZ_Compress(std::underlying_type<OodleFormat>::type(format), (uint8_t*)decompressedData.data(), decompressedData.size(),
         (uint8_t*)compressedData.data(), std::underlying_type<OodleCompressionLevel>::type(compressionLevel), nullptr, 0, 0, nullptr, 0);
 

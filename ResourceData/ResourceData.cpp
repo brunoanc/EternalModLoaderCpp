@@ -21,9 +21,10 @@
 #include <filesystem>
 #include <algorithm>
 #include <map>
-
 #include "Oodle/Oodle.hpp"
 #include "ResourceData/ResourceData.hpp"
+
+namespace fs = std::filesystem;
 
 /**
  * @brief Parse the resource data file from disk
@@ -34,7 +35,10 @@
 std::map<uint64_t, ResourceDataEntry> ParseResourceData(const std::string &fileName)
 {
     std::map<uint64_t, ResourceDataEntry> resourceDataMap;
-    int64_t filesize = std::filesystem::file_size(fileName);
+
+    // The data should be compressed, read the whole file into memory first and decompress it
+    // Compressed with Oodle Kraken, level 4
+    int64_t filesize = fs::file_size(fileName);
     int64_t decompressedSize;
     std::vector<std::byte> compressedData(filesize - 8);
 
@@ -54,6 +58,7 @@ std::map<uint64_t, ResourceDataEntry> ParseResourceData(const std::string &fileN
 
     fclose(resourceDataFile);
 
+    // Decompress data
     std::vector<std::byte> decompressedData;
 
     try {
@@ -67,12 +72,15 @@ std::map<uint64_t, ResourceDataEntry> ParseResourceData(const std::string &fileN
         return resourceDataMap;
     }
 
+    // Parse the binary data now
     size_t pos = 0;
 
+    // Amount of entries
     uint64_t amount;
     std::copy(decompressedData.begin() + pos, decompressedData.begin() + pos + 8, (std::byte*)&amount);
     pos += 8;
 
+    // Read each entry
     for (uint64_t i = 0; i < amount; i++) {
         ResourceDataEntry resourceDataEntry;
         

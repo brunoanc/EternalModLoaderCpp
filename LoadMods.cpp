@@ -1,7 +1,5 @@
 #include <iostream>
-#include <filesystem>
 #include <sstream>
-
 #include "EternalModLoader.hpp"
 
 /**
@@ -11,14 +9,17 @@
  */
 void LoadResourceMods(ResourceContainer &resourceContainer)
 {
+    // Get stringstream to store output
     mtx.lock();
     std::stringstream &os = stringStreams[streamIndex++];
     mtx.unlock();
 
     if (!MultiThreading) {
+        // Redirect output to stdout directly
         ((std::ostream&)os).rdbuf(std::cout.rdbuf());
     }
 
+    // Load resource into memory as mmap
     MemoryMappedFile *memoryMappedFile;
 
     try {
@@ -29,6 +30,7 @@ void LoadResourceMods(ResourceContainer &resourceContainer)
         return;
     }
 
+    // Load mods
     ReadResource(*memoryMappedFile, resourceContainer);
     ReplaceChunks(*memoryMappedFile, resourceContainer, os);
     AddChunks(*memoryMappedFile, resourceContainer, os);
@@ -43,14 +45,17 @@ void LoadResourceMods(ResourceContainer &resourceContainer)
  */
 void LoadSoundMods(SoundContainer &soundContainer)
 {
+    // Get stringstream to store output
     mtx.lock();
     std::stringstream &os = stringStreams[streamIndex++];
     mtx.unlock();
 
     if (!MultiThreading) {
+        // Redirect output to stdout directly
         ((std::ostream&)os).rdbuf(std::cout.rdbuf());
     }
 
+    // Load snd into memory as mmap
     MemoryMappedFile *memoryMappedFile;
 
     try {
@@ -61,6 +66,7 @@ void LoadSoundMods(SoundContainer &soundContainer)
         return;
     }
 
+    // Load sound mods
     ReadSoundEntries(*memoryMappedFile, soundContainer);
     ReplaceSounds(*memoryMappedFile, soundContainer, os);
 

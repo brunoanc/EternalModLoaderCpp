@@ -1,8 +1,8 @@
 #include <algorithm>
 #include <climits>
-
 #include "EternalModLoader.hpp"
 
+// Horde Mode coin scoringItem decl with zero score
 constexpr uint8_t HordeCoinScoreNullifier[] = {
     0x7B, 0x65, 0x64, 0x69, 0x74, 0x3D, 0x7B, 0x69, 0x63, 0x6F, 0x6E, 0x3D, 0x22, 0x61, 0x72, 0x74,
     0x2F, 0x75, 0x69, 0x2F, 0x69, 0x63, 0x6F, 0x6E, 0x73, 0x2F, 0x68, 0x6F, 0x72, 0x64, 0x65, 0x2F,
@@ -15,6 +15,7 @@ constexpr uint8_t HordeCoinScoreNullifier[] = {
     0x7D
 };
 
+// Horde Mode challenge complete scoringItem decl with zero score
 constexpr uint8_t ChallengeCompleteScoreNullifier[] = {
     0x7B, 0x65, 0x64, 0x69, 0x74, 0x3D, 0x7B, 0x73, 0x63, 0x6F, 0x72, 0x65, 0x3D, 0x30, 0x3B, 0x69,
     0x63, 0x6F, 0x6E, 0x3D, 0x22, 0x61, 0x72, 0x74, 0x2F, 0x75, 0x69, 0x2F, 0x69, 0x63, 0x6F, 0x6E,
@@ -24,6 +25,7 @@ constexpr uint8_t ChallengeCompleteScoreNullifier[] = {
     0x47, 0x45, 0x22, 0x3B, 0x7D, 0x7D
 };
 
+// Nullified Horde scoringRubric decl
 constexpr uint8_t NullifiedScoringRubric[] = {
     0x7B, 0x65, 0x64, 0x69, 0x74, 0x3D, 0x7B, 0x64, 0x69, 0x66, 0x66, 0x69, 0x63, 0x75, 0x6C, 0x74,
     0x79, 0x53, 0x63, 0x6F, 0x72, 0x65, 0x42, 0x6F, 0x6E, 0x75, 0x73, 0x3D, 0x7B, 0x70, 0x74, 0x72,
@@ -50,6 +52,7 @@ constexpr uint8_t NullifiedScoringRubric[] = {
     0x3D, 0x30, 0x3B, 0x7D, 0x7D, 0x7D
 };
 
+// Generic SWF data
 constexpr uint8_t GenericSwfData[] = {
     0x25, 0x45, 0x70, 0x00, 0x00, 0x45, 0x07, 0x00, 0x00, 0x3C, 0x00, 0x40, 0x40, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x2B, 0x00, 0x00, 0x00, 0x2C, 0x00,
@@ -156,6 +159,7 @@ constexpr uint8_t GenericSwfData[] = {
     0x02, 0x58, 0x00, 0x1D, 0x1D, 0x1D, 0x1D, 0x1D, 0x1D, 0x1D, 0x68, 0x01, 0x47, 0x00, 0x00
 };
 
+// Multiplayer disabler decls
 constexpr uint8_t DeclMultiplayerDisabled[] = {
     0x7B, 0x0D, 0x0A, 0x09, 0x69, 0x6E, 0x68, 0x65, 0x72, 0x69, 0x74, 0x20, 0x3D, 0x20, 0x22, 0x64,
     0x65, 0x66, 0x61, 0x75, 0x6C, 0x74, 0x5F, 0x74, 0x72, 0x61, 0x6E, 0x73, 0x69, 0x74, 0x69, 0x6F,
@@ -200,6 +204,7 @@ constexpr uint8_t DeclPlayOnlineDisabled[] = {
     0x0A, 0x09, 0x7D, 0x0A, 0x7D
 };
 
+// New strings for battlemode button
 static const std::map<std::string, std::string> Languages = {
     { "french", "^8BATTLEMODE 2.0 (DÉSACTIVÉ)" },
     { "italian", "^8BATTLEMODE 2.0 (DISABILITATO)" },
@@ -216,6 +221,7 @@ static const std::map<std::string, std::string> Languages = {
     { "english", "^8BATTLEMODE 2.0 (DISABLED)" }
 };
 
+// SWF files to replace
 static const std::map<std::string, std::string> Swfs = {
     { "swf/hud/menus/battle_arena/play_online_screen.swf", "gameresources_patch2" },
     { "swf/hud/menus/battle_arena/lobby.swf", "gameresources_patch2" },
@@ -223,12 +229,14 @@ static const std::map<std::string, std::string> Swfs = {
     { "swf/main_menu/screens/match_browser.swf", "gameresources_patch1" }
 };
 
+// Horde Mode coin files to replace
 static const std::map<std::string, std::string> HordeModeCoinDecls = {
     { "generated/decls/propitem/propitem/horde/point_coin.decl", "e6m1_cult_horde" },
     { "generated/decls/propitem/propitem/horde/point_coin.decl", "e6m2_earth_horde" },
     { "generated/decls/propitem/propitem/horde/point_coin.decl", "e6m3_mcity_horde" }
 };
 
+// Online safe keywords
 static const std::vector<std::string> OnlineSafeModNameKeywords = {
     "/eternalmod/", ".tga", ".png", ".swf", ".bimage", "/advancedscreenviewshake/", "/audiolog/", "/audiologstory/", "/automap/", "/automapplayerprofile/",
     "/automapproperties/", "/automapsoundprofile/", "/env/", "/font/", "/fontfx/", "/fx/", "/gameitem/", "/globalfonttable/", "/gorebehavior/",
@@ -241,6 +249,7 @@ static const std::vector<std::string> OnlineSafeModNameKeywords = {
     "/decls/campaign"
 };
 
+// Online unsafe resource names
 static const std::vector<std::string> UnsafeResourceNameKeywords = {
     "gameresources", "pvp", "shell", "warehouse", "e6"
 };
@@ -318,6 +327,7 @@ bool IsModSafeForOnline(const std::map<int32_t, std::vector<ResourceModFile>> &r
                 continue;
             }
 
+            // Check assets info files last
             if (modFile.IsAssetsInfoJson) {
                 assetsInfoJsons.push_back(modFile);
                 continue;
@@ -330,6 +340,7 @@ bool IsModSafeForOnline(const std::map<int32_t, std::vector<ResourceModFile>> &r
                 }
             }
 
+            // Allow modification of anything outside of "generated/decls/"
             if (!StartsWith(ToLower(modFile.Name), "generated/decls/")) {
                 continue;
             }
@@ -356,6 +367,9 @@ bool IsModSafeForOnline(const std::map<int32_t, std::vector<ResourceModFile>> &r
         return false;
     }
 
+    // Don't allow adding unsafe mods in safe resource files into unsafe resources files
+    // Otherwise, don't mark the mod as unsafe, it should be fine for single-player if
+    // the mod is not modifying a critical resource
     for (const auto &assetsInfo : assetsInfoJsons) {
         if (assetsInfo.AssetsInfo.has_value()) {
             for (const auto &keyword : UnsafeResourceNameKeywords) {

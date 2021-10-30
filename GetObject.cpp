@@ -17,7 +17,6 @@
 */
 
 #include <iostream>
-
 #include "EternalModLoader.hpp"
 
 /**

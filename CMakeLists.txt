@@ -1,8 +1,9 @@
+# Project metadata
 cmake_minimum_required(VERSION 3.10)
 project(EternalModLoader)
-
 set(CMAKE_CXX_STANDARD 17)
 
+# Project sources
 file(GLOB SOURCES
         ./AssetsInfo/AssetsInfo.cpp
         ./AssetsInfo/AssetsInfo.hpp
@@ -45,6 +46,7 @@ file(GLOB SOURCES
         ./jsonxx/jsonxx.h
         )
 
+# Compiler arguments
 if(MSVC)
         if(DEFINED ENV{ETERNALMODLOADERCPP_STATIC})
                 set(OPENSSL_USE_STATIC_LIBS TRUE)
@@ -60,8 +62,10 @@ else()
         endif()
 endif(MSVC)
 
+# Add executable to build
 add_executable(DEternal_loadMods ${SOURCES})
 
+# Link to OpenSSL
 find_package(OpenSSL REQUIRED)
 
 if(MSVC)

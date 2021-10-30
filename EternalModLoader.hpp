@@ -24,6 +24,7 @@
 #include <optional>
 #include <mutex>
 #include <atomic>
+#include <filesystem>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -51,6 +52,8 @@
 #define GREEN "\033[32m"
 #define YELLOW "\033[33m"
 #define BLUE "\033[34m"
+
+namespace fs = std::filesystem;
 
 /**
  * @brief ResourceModFile class

@@ -18,8 +18,9 @@
 
 #include <iostream>
 #include <filesystem>
-
 #include "MemoryMappedFile/MemoryMappedFile.hpp"
+
+namespace fs = std::filesystem;
 
 /**
  * @brief Construct a new MemoryMappedFile object
@@ -28,20 +29,23 @@
  */
 MemoryMappedFile::MemoryMappedFile(const std::string filePath)
 {
+    // Get filepath and size
     FilePath = filePath;
-    Size = std::filesystem::file_size(FilePath);
+    Size = fs::file_size(FilePath);
 
     if (Size <= 0) {
         throw std::exception();
     }
 
 #ifdef _WIN32
+    // Get file handle
     FileHandle = CreateFileA(FilePath.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 
     if (GetLastError() != ERROR_SUCCESS || FileHandle == INVALID_HANDLE_VALUE) {
         throw std::exception();
     }
 
+    // Map file into memory
     FileMapping = CreateFileMappingA(FileHandle, nullptr, PAGE_READWRITE, *((DWORD*)&Size + 1), *(DWORD*)&Size, nullptr);
 
     if (GetLastError() != ERROR_SUCCESS || FileMapping == nullptr) {
@@ -49,6 +53,7 @@ MemoryMappedFile::MemoryMappedFile(const std::string filePath)
         throw std::exception();
     }
 
+    // Get memory view of file
     Mem = (std::byte*)MapViewOfFile(FileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
 
     if (GetLastError() != ERROR_SUCCESS || Mem == nullptr) {
@@ -57,12 +62,14 @@ MemoryMappedFile::MemoryMappedFile(const std::string filePath)
         throw std::exception();
     }
 #else
+    // Get file descriptor
     FileDescriptor = open(FilePath.c_str(), O_RDWR);
 
     if (FileDescriptor == -1) {
         throw std::exception();
     }
 
+    // Map file into memory
     Mem = (std::byte*)mmap(0, Size, PROT_READ | PROT_WRITE, MAP_SHARED, FileDescriptor, 0);
 
     if (Mem == nullptr) {
@@ -70,6 +77,7 @@ MemoryMappedFile::MemoryMappedFile(const std::string filePath)
         throw std::exception();
     }
 
+    // Prepare memory for usage
     madvise(Mem, Size, MADV_WILLNEED);
 #endif
 }
@@ -80,6 +88,7 @@ MemoryMappedFile::MemoryMappedFile(const std::string filePath)
  */
 MemoryMappedFile::~MemoryMappedFile()
 {
+    // Unmap the file
     UnmapFile();
 }
 
@@ -90,14 +99,18 @@ MemoryMappedFile::~MemoryMappedFile()
 void MemoryMappedFile::UnmapFile()
 {
 #ifdef _WIN32
+    // Unmap memory view and close handles
     UnmapViewOfFile(Mem);
     CloseHandle(FileMapping);
     CloseHandle(FileHandle);
 #else
-    munmap(Mem, std::filesystem::file_size(FilePath));
+    // Unmap file and close handle
+    munmap(Mem, fs::file_size(FilePath));
     close(FileDescriptor);
 #endif
 
+    // Reset object data
+    FilePath = "";
     Size = 0;
     Mem = nullptr;
 }
@@ -112,29 +125,38 @@ bool MemoryMappedFile::ResizeFile(const uint64_t newSize)
 {
     try {
 #ifdef _WIN32
+        // Unmap memory view and close mapping handle
         UnmapViewOfFile(Mem);
         CloseHandle(FileMapping);
 
+        // Create new file mapping with bigger size
         FileMapping = CreateFileMappingA(FileHandle, nullptr, PAGE_READWRITE, *((DWORD*)&newSize + 1), *(DWORD*)&newSize, nullptr);
 
         if (GetLastError() != ERROR_SUCCESS || FileMapping == nullptr) {
             return false;
         }
 
+        // Get new memory view of file
         Mem = (std::byte*)MapViewOfFile(FileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 0);
 
         if (GetLastError() != ERROR_SUCCESS || Mem == nullptr) {
             return false;
         }
 #else
+        // Unmap file
         munmap(Mem, Size);
-        std::filesystem::resize_file(FilePath, newSize);
+
+        // Resize file
+        fs::resize_file(FilePath, newSize);
+
+        // Remap file
         Mem = (std::byte*)mmap(0, newSize, PROT_READ | PROT_WRITE, MAP_SHARED, FileDescriptor, 0);
 
         if (Mem == nullptr) {
             return false;
         }
 
+        // Prepare memory for usage
         madvise(Mem, newSize, MADV_WILLNEED);
 #endif
     }
@@ -142,6 +164,7 @@ bool MemoryMappedFile::ResizeFile(const uint64_t newSize)
         return false;
     }
 
+    // Set size attribute to new size
     Size = newSize;
 
     return true;

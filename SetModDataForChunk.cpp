@@ -1,8 +1,6 @@
 #include <iostream>
 #include <algorithm>
 #include <cstring>
-#include <filesystem>
-
 #include "EternalModLoader.hpp"
 
 /**
@@ -27,11 +25,13 @@ bool SetModDataForChunk(
     const std::byte *compressionMode
 )
 {
+    // Update chunk sizes
     chunk.Size = uncompressedSize;
     chunk.SizeZ = compressedSize;
     int64_t resourceFileSize = memoryMappedFile.Size;
 
     if (!SlowMode) {
+        // Add the data at the end of the container
         int64_t dataSectionLength = resourceFileSize - resourceContainer.DataOffset;
         int64_t placement = 0x10 - (dataSectionLength % 0x10) + 0x30;
         int64_t newContainerSize = resourceFileSize + modFile.FileBytes.size() + placement;
@@ -42,6 +42,8 @@ bool SetModDataForChunk(
         }
 
         std::copy(modFile.FileBytes.begin(), modFile.FileBytes.end(), memoryMappedFile.Mem + dataOffset);
+
+        // Set the new data offset
         std::copy((std::byte*)&dataOffset, (std::byte*)&dataOffset + 8, memoryMappedFile.Mem + chunk.FileOffset);
     }
     else {
@@ -51,7 +53,10 @@ bool SetModDataForChunk(
 
         int64_t sizeDiff = modFile.FileBytes.size() - size;
 
+        // We will need to expand the file if the new size is greater than the old one
+        // If its shorter, we will replace all the bytes and zero out the remaining bytes
         if (sizeDiff > 0) {
+            // Expand the memory stream so the new file fits
             int64_t newContainerSize = resourceFileSize + sizeDiff;
 
             if (!memoryMappedFile.ResizeFile(newContainerSize)) {
@@ -68,11 +73,13 @@ bool SetModDataForChunk(
                 std::copy(Buffer, Buffer + toRead, memoryMappedFile.Mem + resourceFileSize + sizeDiff);
             }
 
+            // Write the new file bytes now that the file has been expanded and there's enough space
             std::copy(modFile.FileBytes.begin(), modFile.FileBytes.end(), memoryMappedFile.Mem + fileOffset);
         }
         else {
             std::copy(modFile.FileBytes.begin(), modFile.FileBytes.end(), memoryMappedFile.Mem + fileOffset);
 
+            // Zero out the remaining bytes if the file is shorter
             if (sizeDiff < 0) {
                 std::byte *emptyArray = new std::byte[-sizeDiff];
                 std::memset(emptyArray, 0, -sizeDiff);
@@ -82,6 +89,7 @@ bool SetModDataForChunk(
             }
         }
 
+        // If the file was expanded, update file offsets for every file after the one we replaced
         if (sizeDiff > 0) {
             std::vector<ResourceChunk>::iterator x = std::find(resourceContainer.ChunkList.begin(), resourceContainer.ChunkList.end(), chunk);
             int32_t index = std::distance(resourceContainer.ChunkList.begin(), x);
@@ -94,9 +102,11 @@ bool SetModDataForChunk(
         }
     }
 
+     // Replace the file size data
     std::copy((std::byte*)&compressedSize, (std::byte*)&compressedSize + 8, memoryMappedFile.Mem + chunk.SizeOffset);
     std::copy((std::byte*)&uncompressedSize, (std::byte*)&uncompressedSize + 8, memoryMappedFile.Mem + chunk.SizeOffset + 8);
 
+    // Clear the compression flag
     if (compressionMode != nullptr) {
         memoryMappedFile.Mem[chunk.SizeOffset + 0x30] = *compressionMode;
     }

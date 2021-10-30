@@ -1,7 +1,5 @@
 #include <iostream>
-#include <filesystem>
 #include <algorithm>
-
 #include "miniz/miniz.h"
 #include "EternalModLoader.hpp"
 
@@ -18,6 +16,7 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
     std::map<int32_t, std::vector<ResourceModFile>> resourceModFiles;
     std::map<int32_t, std::vector<SoundModFile>> soundModFiles;
 
+    // Load zipped mod
     mz_zip_archive modZip;
     mz_zip_zero_struct(&modZip);
     mz_zip_reader_init_file(&modZip, zippedMod.c_str(), 0);
@@ -25,6 +24,7 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
     Mod mod;
 
     if (!ListResources) {
+        // Read the mod info from the EternalMod JSON if it exists
         char *unzippedModJson;
         size_t unzippedModJsonSize;
 
@@ -33,11 +33,13 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
             free(unzippedModJson);
 
             try {
+                // Try to parse the JSON
                 mod = Mod(modJson);
 
+                // If the mod requires a higher mod loader version, print a warning and don't load the mod
                 if (mod.RequiredVersion > Version) {
                     mtx.lock();
-                    std::cout << RED << "WARNING: " << RESET << "Mod " << std::filesystem::path(zippedMod).filename().string() << " requires mod loader version "
+                    std::cout << RED << "WARNING: " << RESET << "Mod " << fs::path(zippedMod).filename().string() << " requires mod loader version "
                         << mod.RequiredVersion << " but the current mod loader version is " << Version << ", skipping" << '\n';
                     mtx.unlock();
                     return;
@@ -51,7 +53,9 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
         }
     }
 
+    // Iterate through the zip's files
     for (int32_t i = 0; i < modZip.m_total_files; i++) {
+        // Get the mod file's name
         int32_t zipEntryNameSize = mz_zip_reader_get_filename(&modZip, i, nullptr, 0);
         char *zipEntryNameBuffer = new char[zipEntryNameSize];
 
@@ -66,10 +70,12 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
         std::string zipEntryName(zipEntryNameBuffer);
         delete[] zipEntryNameBuffer;
 
+        // Skip directories
         if (0 == zipEntryName.compare(zipEntryName.length() - 1, 1, "/")) {
             continue;
         }
 
+        // Determine the game container for each mod file
         bool isSoundMod = false;
         std::string modFileName = zipEntryName;
         std::vector<std::string> modFilePathParts = SplitString(modFileName, '/');
@@ -80,13 +86,16 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
 
         std::string resourceName = modFilePathParts[0];
 
+        // Old mods compatibility
         if (ToLower(resourceName) == "generated") {
             resourceName = "gameresources";
         }
         else {
+            // Remove the resource name from the name
             modFileName = modFileName.substr(resourceName.size() + 1, modFileName.size() - resourceName.size() - 1);
         }
 
+        // Check if this is a sound mod or not
         std::string resourcePath = PathToResourceContainer(resourceName + ".resources");
 
         if (resourcePath.empty()) {
@@ -108,6 +117,7 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
         }
 
         if (isSoundMod) {
+            // Get the sound container info object, create it if it doesn't exist
             mtx.lock();
 
             int32_t soundContainerIndex = GetSoundContainer(resourceName);
@@ -121,8 +131,10 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
 
             mtx.unlock();
 
+            // Create the mod object and read the unzipped files
             if (!ListResources) {
-                std::string soundExtension = std::filesystem::path(modFileName).extension().string();
+                // Skip unsupported formats
+                std::string soundExtension = fs::path(modFileName).extension().string();
 
                 if (std::find(SupportedFileFormats.begin(), SupportedFileFormats.end(), soundExtension) == SupportedFileFormats.end()) {
                     mtx.lock();
@@ -131,6 +143,7 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
                     continue;
                 }
 
+                // Load the sound mod
                 std::byte *unzippedEntry;
                 size_t unzippedEntrySize;
 
@@ -141,7 +154,7 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
                     continue;
                 }
 
-                SoundModFile soundModFile(mod, std::filesystem::path(modFileName).filename().string());
+                SoundModFile soundModFile(mod, fs::path(modFileName).filename().string());
                 soundModFile.FileBytes = std::vector<std::byte>(unzippedEntry, unzippedEntry + unzippedEntrySize);
                 free(unzippedEntry);
 
@@ -152,6 +165,7 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
         else {
             mtx.lock();
 
+            // Get the resource object
             int32_t resourceContainerIndex = GetResourceContainer(resourceName);
 
             if (resourceContainerIndex == -1) {
@@ -163,9 +177,11 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
 
             mtx.unlock();
 
+            // Create the mod object and read the unzipped files
             ResourceModFile resourceModFile(mod, modFileName, resourceName);
 
             if (!ListResources) {
+                // Read the mod file to memory
                 std::byte *unzippedEntry;
                 size_t unzippedEntrySize;
 
@@ -180,11 +196,13 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
                 free(unzippedEntry);
             }
 
+            // Read the JSON files in 'assetsinfo' under 'EternalMod'
             if (ToLower(modFilePathParts[1]) == "eternalmod") {
                 if (modFilePathParts.size() == 4
                 && ToLower(modFilePathParts[2]) == "assetsinfo"
-                && std::filesystem::path(modFilePathParts[3]).extension() == ".json") {
+                && fs::path(modFilePathParts[3]).extension() == ".json") {
                     try {
+                        // Read this JSON only if we are listing resources
                         if (ListResources) {
                             std::byte *unzippedEntry;
                             size_t unzippedEntrySize;
@@ -208,14 +226,15 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
                     catch (...) {
                         mtx.lock();
                         std::cout << RED << "ERROR: " << RESET << "Failed to parse EternalMod/assetsinfo/"
-                            << std::filesystem::path(resourceModFile.Name).stem().string() << ".json" << '\n';
+                            << fs::path(resourceModFile.Name).stem().string() << ".json" << '\n';
                         mtx.unlock();
                         continue;
                     }
                 }
                 else if (modFilePathParts.size() == 4
                 && ToLower(modFilePathParts[2]) == "strings"
-                && std::filesystem::path(modFilePathParts[3]).extension() == ".json") {
+                && fs::path(modFilePathParts[3]).extension() == ".json") {
+                    // Detect custom language files
                     resourceModFile.IsBlangJson = true;
                 }
                 else {
@@ -230,10 +249,12 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
 
     mtx.lock();
 
+    // Check if the mod is safe for online play
     if (!IsModSafeForOnline(resourceModFiles)) {
         AreModsSafeForOnline = false;
         mod.IsSafeForOnline = false;
 
+        // Unload the mod files if necessary
         if (!LoadOnlineSafeModsOnly) {
             for (auto &resourceMod : resourceModFiles) {
                 ResourceContainer &resourceContainer = ResourceContainerList[resourceMod.first];
@@ -259,7 +280,7 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
     }
 
     mtx.unlock();
-        
+
     if (zippedModCount > 0 && !ListResources) {
         mtx.lock();
 
@@ -302,18 +323,22 @@ void LoadUnzippedMod(std::string unzippedMod, Mod &globalLooseMod, std::atomic<i
         return;
     }
 
+    // Determine the game container for each mod file
     bool isSoundMod = false;
     std::string resourceName = modFilePathParts[2];
     std::string fileName;
 
+    // Old mods compatibility
     if (ToLower(resourceName) == "generated") {
         resourceName = "gameresources";
         fileName = unzippedMod.substr(modFilePathParts[1].size() + 3, unzippedMod.size() - modFilePathParts[1].size() - 3);
     }
     else {
+        // Remove the resource name from the path
         fileName = unzippedMod.substr(modFilePathParts[1].size() + resourceName.size() + 4, unzippedMod.size() - resourceName.size() - 4);
     }
 
+    // Check if this is a sound mod or not
     std::string resourcePath = PathToResourceContainer(resourceName + ".resources");
 
     if (resourcePath.empty()) {
@@ -337,6 +362,7 @@ void LoadUnzippedMod(std::string unzippedMod, Mod &globalLooseMod, std::atomic<i
     if (isSoundMod) {
         mtx.lock();
 
+        // Get the sound container info object, create it if it doesn't exist
         int32_t soundContainerIndex = GetSoundContainer(resourceName);
 
         if (soundContainerIndex == -1) {
@@ -348,8 +374,10 @@ void LoadUnzippedMod(std::string unzippedMod, Mod &globalLooseMod, std::atomic<i
 
         mtx.unlock();
 
+        // Create the mod object and read the unzipped files
         if (!ListResources) {
-            std::string soundExtension = std::filesystem::path(fileName).extension().string();
+            // Skip unsupported formats
+            std::string soundExtension = fs::path(fileName).extension().string();
 
             if (std::find(SupportedFileFormats.begin(), SupportedFileFormats.end(), soundExtension) == SupportedFileFormats.end()) {
                 mtx.lock();
@@ -358,9 +386,10 @@ void LoadUnzippedMod(std::string unzippedMod, Mod &globalLooseMod, std::atomic<i
                 return;
             }
 
-            int64_t unzippedModSize = std::filesystem::file_size(unzippedMod);
+            // Load the sound mod
+            int64_t unzippedModSize = fs::file_size(unzippedMod);
             
-            SoundModFile soundModFile(globalLooseMod, std::filesystem::path(fileName).filename().string());
+            SoundModFile soundModFile(globalLooseMod, fs::path(fileName).filename().string());
             
             FILE *unzippedModFile = fopen(unzippedMod.c_str(), "rb");
 
@@ -392,6 +421,7 @@ void LoadUnzippedMod(std::string unzippedMod, Mod &globalLooseMod, std::atomic<i
     else {
         mtx.lock();
 
+        // Get the resource object
         int32_t resourceContainerIndex = GetResourceContainer(resourceName);
 
         if (resourceContainerIndex == -1) {
@@ -403,10 +433,11 @@ void LoadUnzippedMod(std::string unzippedMod, Mod &globalLooseMod, std::atomic<i
 
         mtx.unlock();
 
+        // Create the mod object and read the files
         ResourceModFile resourceModFile(globalLooseMod, fileName, resourceName);
 
         if (!ListResources) {
-            int64_t unzippedModSize = std::filesystem::file_size(unzippedMod);
+            int64_t unzippedModSize = fs::file_size(unzippedMod);
 
             FILE *unzippedModFile = fopen(unzippedMod.c_str(), "rb");
 
@@ -429,13 +460,15 @@ void LoadUnzippedMod(std::string unzippedMod, Mod &globalLooseMod, std::atomic<i
             fclose(unzippedModFile);
         }
 
+        // Read the JSON files in 'assetsinfo' under 'EternalMod'
         if (ToLower(modFilePathParts[3]) == "eternalmod") {
             if (modFilePathParts.size() == 6
             && ToLower(modFilePathParts[4]) == "assetsinfo"
-            && std::filesystem::path(modFilePathParts[5]).extension() == ".json") {
+            && fs::path(modFilePathParts[5]).extension() == ".json") {
                 try {
+                    // Read this JSON only if we are listing resources
                     if (ListResources) {
-                        int64_t unzippedModSize = std::filesystem::file_size(unzippedMod);
+                        int64_t unzippedModSize = fs::file_size(unzippedMod);
 
                         FILE *unzippedModFile = fopen(unzippedMod.c_str(), "rb");
 
@@ -466,14 +499,15 @@ void LoadUnzippedMod(std::string unzippedMod, Mod &globalLooseMod, std::atomic<i
                 catch (...) {
                     mtx.lock();
                     std::cout << RED << "ERROR: " << RESET << "Failed to parse EternalMod/assetsinfo/"
-                        << std::filesystem::path(resourceModFile.Name).stem().string() << ".json" << '\n';
+                        << fs::path(resourceModFile.Name).stem().string() << ".json" << '\n';
                     mtx.unlock();
                     return;
                 }
             }
             else if (modFilePathParts.size() == 6
             && ToLower(modFilePathParts[4]) == "strings"
-            && std::filesystem::path(modFilePathParts[5]).extension() == ".json") {
+            && fs::path(modFilePathParts[5]).extension() == ".json") {
+                // Detect custom language files
                 resourceModFile.IsBlangJson = true;
             }
             else {

@@ -17,10 +17,8 @@
 */
 
 #include <iostream>
-#include <filesystem>
 #include <algorithm>
 #include <cstring>
-
 #include "jsonxx/jsonxx.h"
 #include "EternalModLoader.hpp"
 
@@ -36,24 +34,31 @@ class PackageMapSpecInfo PackageMapSpecInfo;
  */
 void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceContainer, std::stringstream &os)
 {
+    // For map resources modifications
     ResourceChunk *mapResourcesChunk = nullptr;
     MapResourcesFile *mapResourcesFile = nullptr;
     std::vector<std::byte> originalDecompressedMapResources;
     bool invalidMapResources = false;
     int32_t fileCount = 0;
+
+    // For .blang file modifications
     std::map<std::string, BlangFileEntry> blangFileEntries;
 
+    // Sort mod file list by priority
     std::stable_sort(resourceContainer.ModFileList.begin(), resourceContainer.ModFileList.end(),
         [](const ResourceModFile &resource1, const ResourceModFile &resource2) { return resource1.Parent.LoadPriority > resource2.Parent.LoadPriority; });
 
+    // Load mod files now
     for (auto &modFile : resourceContainer.ModFileList) {
         ResourceChunk *chunk = nullptr;
 
+        // Handle AssetsInfo JSON files
         if (modFile.IsAssetsInfoJson && modFile.AssetsInfo.has_value()) {
-
+            // Add the extra resources to packagemapspec.json if specified
             if (!modFile.AssetsInfo->Resources.empty()) {
                 mtx.lock();
 
+                // Deserialize the packagemapspec JSON if it hasn't been deserialized yet
                 if (PackageMapSpecInfo.PackageMapSpec == nullptr && !PackageMapSpecInfo.invalidPackageMapSpec) {
                     PackageMapSpecInfo.PackageMapSpecPath = BasePath + PackageMapSpecJsonFileName;
                     FILE *packageMapSpecFile = fopen(PackageMapSpecInfo.PackageMapSpecPath.c_str(), "rb");
@@ -64,7 +69,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                         PackageMapSpecInfo.invalidPackageMapSpec = true;
                     }
                     else {
-                        int64_t filesize = std::filesystem::file_size(PackageMapSpecInfo.PackageMapSpecPath);
+                        int64_t filesize = fs::file_size(PackageMapSpecInfo.PackageMapSpecPath);
                         std::vector<std::byte> packageMapSpecBytes(filesize);
 
                         if (fread(packageMapSpecBytes.data(), 1, filesize, packageMapSpecFile) != filesize) {
@@ -86,8 +91,10 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                     }
                 }
 
+                // Add the extra resources, then rewrite the JSON
                 if (PackageMapSpecInfo.PackageMapSpec != nullptr && !PackageMapSpecInfo.invalidPackageMapSpec) {
                     for (auto &extraResource : modFile.AssetsInfo->Resources) {
+                        // First check that the resource trying to be added actually exists
                         std::string extraResourcePath = PathToResourceContainer(extraResource.Name);
 
                         if (extraResourcePath.empty()) {
@@ -96,14 +103,18 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                             continue;
                         }
 
+                        // Add the extra resources before all the original resources the level loads
+                        // Find the necessary map and file indexes
                         int32_t fileIndex = -1;
                         int32_t mapIndex = -1;
 
-                        std::string modFileMapName = std::filesystem::path(modFile.Name).stem().string();
+                        // Get the map name of the resource container
+                        std::string modFileMapName = fs::path(modFile.Name).stem().string();
 
+                        // Check if there is a resource with the map's name, if so, build the map name using the path of the resource container
                         if (!PathToResourceContainer(modFileMapName + ".resources").empty()) {
                             const std::string baseFolder = std::string(2, Separator).insert(1, "base"); // "/base/"
-                            modFileMapName = std::filesystem::path(resourceContainer.Path.substr(resourceContainer.Path.find(baseFolder) + 6)).parent_path().make_preferred().append(modFileMapName).string();
+                            modFileMapName = fs::path(resourceContainer.Path.substr(resourceContainer.Path.find(baseFolder) + 6)).parent_path().make_preferred().append(modFileMapName).string();
                         }
 
                         for (int32_t i = 0; i < PackageMapSpecInfo.PackageMapSpec->Files.size(); i++) {
@@ -130,9 +141,11 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                             continue;
                         }
 
+                        // Remove the extra resource, if specified
                         if (extraResource.Remove) {
                             bool mapFileRefRemoved = false;
 
+                            // Find the map file reference to remove
                             for (int32_t i = PackageMapSpecInfo.PackageMapSpec->MapFileRefs.size() - 1; i >= 0; i--) {
                                 if (PackageMapSpecInfo.PackageMapSpec->MapFileRefs[i].File == fileIndex && PackageMapSpecInfo.PackageMapSpec->MapFileRefs[i].Map == mapIndex) {
                                     PackageMapSpecInfo.PackageMapSpec->MapFileRefs.erase(PackageMapSpecInfo.PackageMapSpec->MapFileRefs.begin() + i);
@@ -155,6 +168,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                             continue;
                         }
 
+                         // If the resource is already referenced to be loaded in the map, delete it first to allow us to move it wherever we want
                         for (int32_t i = PackageMapSpecInfo.PackageMapSpec->MapFileRefs.size() - 1; i >= 0; i--) {
                             if (PackageMapSpecInfo.PackageMapSpec->MapFileRefs[i].File == fileIndex
                                 && PackageMapSpecInfo.PackageMapSpec->MapFileRefs[i].Map == mapIndex) {
@@ -169,10 +183,13 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                             }
                         }
 
+                        // Add the extra resource now to the map/file references
+                        // before the resource that normally appears last in the list for the map
                         int32_t insertIndex = -1;
 
                         for (int32_t i = 0; i < PackageMapSpecInfo.PackageMapSpec->MapFileRefs.size(); i++) {
                             if (PackageMapSpecInfo.PackageMapSpec->MapFileRefs[i].Map == mapIndex) {
+                                // If specified, place the resource as the first resource for the map (highest priority)
                                 if (extraResource.PlaceFirst) {
                                     insertIndex = i;
                                     break;
@@ -182,7 +199,9 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                             }
                         }
 
+                        // Place the extra resource before or after another (if specified)
                         if (!extraResource.PlaceByName.empty() && !extraResource.PlaceFirst) {
+                            // First check that the placeByName resource actually exists
                             std::string placeBeforeResourcePath = PathToResourceContainer(extraResource.PlaceByName);
 
                             if (placeBeforeResourcePath.empty()) {
@@ -190,6 +209,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                                     << " not found for extra resource entry " << extraResource.Name << ", using normal placement" << '\n';
                             }
                             else {
+                                // Find placement resource index
                                 int32_t placeBeforeFileIndex = -1;
 
                                 for (int32_t i = 0; i < PackageMapSpecInfo.PackageMapSpec->Files.size(); i++) {
@@ -199,6 +219,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                                     }
                                 }
 
+                                // Find placement resource map-file reference
                                 for (int32_t i = 0; i < PackageMapSpecInfo.PackageMapSpec->MapFileRefs.size(); i++) {
                                     if (PackageMapSpecInfo.PackageMapSpec->MapFileRefs[i].Map == mapIndex && PackageMapSpecInfo.PackageMapSpec->MapFileRefs[i].File == placeBeforeFileIndex) {
                                         insertIndex = i + (!extraResource.PlaceBefore ? 1 : 0);
@@ -208,6 +229,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                             }
                         }
 
+                        // Create the map-file reference and add it in the proper position
                         PackageMapSpecMapFileRef mapFileRef(fileIndex, mapIndex);
 
                         if (insertIndex == -1 || insertIndex >= PackageMapSpecInfo.PackageMapSpec->MapFileRefs.size()) {
@@ -241,6 +263,9 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                 continue;
             }
 
+            // Add new assets to .mapresources
+            // First, find, read and deserialize the .mapresources file in this container
+            // If this is a "gameresources" container, only search for "common.mapresources"
             if (mapResourcesFile == nullptr && !invalidMapResources) {
                 for (auto &file : resourceContainer.ChunkList) {
                     if (EndsWith(file.ResourceName.NormalizedFileName, ".mapresources")) {
@@ -250,12 +275,14 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
 
                         mapResourcesChunk = &file;
 
+                        // Read the mapresources file data (it should be compressed)
                         std::vector<std::byte> mapResourcesBytes(mapResourcesChunk->SizeZ);
                         uint64_t mapResourcesFileOffset;
 
                         std::copy(memoryMappedFile.Mem + mapResourcesChunk->FileOffset, memoryMappedFile.Mem + mapResourcesChunk->FileOffset + 8, (std::byte*)&mapResourcesFileOffset);
                         std::copy(memoryMappedFile.Mem + mapResourcesFileOffset, memoryMappedFile.Mem + mapResourcesFileOffset + mapResourcesBytes.size(), mapResourcesBytes.begin());
 
+                        // Decompress the data
                         try {
                             originalDecompressedMapResources = OodleDecompress(mapResourcesBytes, mapResourcesChunk->Size);
 
@@ -263,6 +290,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                                 throw std::exception();
                             }
 
+                            // Deserialize the decompressed data
                             mapResourcesFile = new MapResourcesFile(originalDecompressedMapResources);
                         }
                         catch (...) {
@@ -275,11 +303,13 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                 }
             }
 
+            // Don't add anything if the file was not found or couldn't be decompressed
             if (mapResourcesFile == nullptr || invalidMapResources) {
                 modFile.FileBytes.resize(0);
                 continue;
             }
 
+            // Add layers
             if (!modFile.AssetsInfo->Layers.empty()) {
                 for (auto &newLayers : modFile.AssetsInfo->Layers) {
                     if (std::find(mapResourcesFile->Layers.begin(), mapResourcesFile->Layers.end(), newLayers.Name) != mapResourcesFile->Layers.end()) {
@@ -297,6 +327,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                 }
             }
 
+            // Add maps
             if (!modFile.AssetsInfo->Maps.empty()) {
                 for (auto &newMaps : modFile.AssetsInfo->Maps) {
                     if (std::find(mapResourcesFile->Maps.begin(), mapResourcesFile->Maps.end(), newMaps.Name) != mapResourcesFile->Maps.end()) {
@@ -313,6 +344,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                 }
             }
 
+            // Add assets
             if (!modFile.AssetsInfo->Assets.empty()) {
                 for (auto &newAsset : modFile.AssetsInfo->Assets) {
                     if (RemoveWhitespace(newAsset.Name).empty() || RemoveWhitespace(newAsset.MapResourceType).empty()) {
@@ -323,6 +355,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                         continue;
                     }
 
+                    // Remove the asset if specified
                     if (newAsset.Remove) {
                         std::vector<std::string>::iterator x = std::find(mapResourcesFile->AssetTypes.begin(), mapResourcesFile->AssetTypes.end(), newAsset.MapResourceType);
 
@@ -377,6 +410,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                         continue;
                     }
 
+                    // Find the asset type index
                     int32_t assetTypeIndex = -1;
 
                     for (int32_t i = 0; i < mapResourcesFile->AssetTypes.size(); i++) {
@@ -386,6 +420,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                         }
                     }
 
+                    // If not found, add the asset type at the end
                     if (assetTypeIndex == -1) {
                         mapResourcesFile->AssetTypes.push_back(newAsset.MapResourceType);
                         assetTypeIndex = mapResourcesFile->AssetTypes.size() - 1;
@@ -394,6 +429,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                             mapResourcesChunk->ResourceName.NormalizedFileName << " in " << resourceContainer.Name << '\n';
                     }
 
+                     // Determine where to place this new asset in map resources
                     MapAsset placeByExistingAsset;
                     bool found = false;
                     int32_t assetPosition = mapResourcesFile->Assets.size();
@@ -457,8 +493,9 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
             continue;
         }
         else if (modFile.IsBlangJson) {
+            // Handle custom .blang JSON files
             modFile.Name = modFile.Name.substr(modFile.Name.find('/') + 1);
-            modFile.Name = std::filesystem::path(modFile.Name).replace_extension(".blang").string();
+            modFile.Name = fs::path(modFile.Name).replace_extension(".blang").string();
 
             chunk = GetChunk(modFile.Name, resourceContainer);
 
@@ -471,8 +508,10 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
             chunk = GetChunk(modFile.Name, resourceContainer);
 
             if (chunk == nullptr) {
+                // This is a new mod, add it to the new mods list
                 resourceContainer.NewModFileList.push_back(modFile);
 
+                // Get the data to add to mapresources from the resource data file, if available
                 std::map<uint64_t, ResourceDataEntry>::iterator x = ResourceDataMap.find(CalculateResourceFileNameHash(modFile.Name));
 
                 if (x == ResourceDataMap.end()) {
@@ -494,6 +533,8 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                     }
                 }
 
+                // First, find, read and deserialize the .mapresources file in this container
+                // If this is a "gameresources" container, only search for "common.mapresources"
                 if (mapResourcesFile == nullptr && !invalidMapResources) {
                     for (auto &file : resourceContainer.ChunkList) {
                         if (EndsWith(file.ResourceName.NormalizedFileName, ".mapresources")) {
@@ -503,12 +544,14 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
 
                             mapResourcesChunk = &file;
 
+                            // Read the mapresources file data (it should be compressed)
                             std::vector<std::byte> mapResourcesBytes(mapResourcesChunk->SizeZ);
                             uint64_t mapResourcesFileOffset;
 
                             std::copy(memoryMappedFile.Mem + mapResourcesChunk->FileOffset, memoryMappedFile.Mem + mapResourcesChunk->FileOffset + 8, (std::byte*)&mapResourcesFileOffset);
                             std::copy(memoryMappedFile.Mem + mapResourcesFileOffset, memoryMappedFile.Mem + mapResourcesFileOffset + mapResourcesBytes.size(), mapResourcesBytes.begin());
 
+                            // Decompress the data
                             try {
                                 originalDecompressedMapResources = OodleDecompress(mapResourcesBytes, mapResourcesChunk->Size);
 
@@ -516,6 +559,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                                     throw std::exception();
                                 }
 
+                                // Deserialize the decompressed data
                                 mapResourcesFile = new MapResourcesFile(originalDecompressedMapResources);
                             }
                             catch (...) {
@@ -528,10 +572,12 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                     }
                 }
 
+                // Don't add anything if the file was not found or couldn't be decompressed
                 if (mapResourcesFile == nullptr || invalidMapResources) {
                     continue;
                 }
 
+                // Add the asset info
                 bool alreadyExists = false;
 
                 for (auto &existingAsset : mapResourcesFile->Assets) {
@@ -551,6 +597,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                     continue;
                 }
 
+                // Find the asset type index
                 int32_t assetTypeIndex = -1;
 
                 for (int32_t i = 0; i < mapResourcesFile->AssetTypes.size(); i++) {
@@ -560,6 +607,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                     }
                 }
 
+                // If not found, add the asset type at the end
                 if (assetTypeIndex == -1) {
                     mapResourcesFile->AssetTypes.push_back(resourceData.MapResourceType);
                     assetTypeIndex = mapResourcesFile->AssetTypes.size() - 1;
@@ -580,8 +628,10 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
             }
         }
 
+        // Parse blang JSON files
         if (modFile.IsBlangJson) {
-            std::string blangFilePath = "strings/" + std::filesystem::path(modFile.Name).filename().string();
+            // Read the .blang file in the container if it hasn't been read yet
+            std::string blangFilePath = "strings/" + fs::path(modFile.Name).filename().string();
             BlangFileEntry blangFileEntry;
             std::map<std::string, BlangFileEntry>::iterator x = blangFileEntries.find(blangFilePath);
             bool exists = x != blangFileEntries.end();
@@ -613,6 +663,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                 blangFileEntry.Announce = true;
             }
 
+            // Read the blang JSON and add the strings to the .blang file
             jsonxx::Object blangJson;
 
             try {
@@ -620,7 +671,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                 blangJson.parse(blangJsonString);
             }
             catch (...) {
-                os << RED << "ERROR: " << RESET << "Failed to parse EternalMod/strings/" << std::filesystem::path(modFile.Name).replace_extension(".json").string() << '\n';
+                os << RED << "ERROR: " << RESET << "Failed to parse EternalMod/strings/" << fs::path(modFile.Name).replace_extension(".json").string() << '\n';
                 continue;
             }
 
@@ -663,14 +714,19 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
             continue;
         }
 
+        // Replace the mod file data now
         uint64_t compressedSize = modFile.FileBytes.size();
         uint64_t uncompressedSize = compressedSize;
         std::byte compressionMode = (std::byte)0;
 
+        // If this is a texture, check if it's compressed, or compress it if necessary
         if (EndsWith(chunk->ResourceName.NormalizedFileName, ".tga")) {
+            // Check if it's a DIVINITY compressed texture
             if (!std::memcmp(modFile.FileBytes.data(), DivinityMagic, 8)) {
+                // This is a compressed texture, read the uncompressed size
                 std::copy(modFile.FileBytes.begin() + 8, modFile.FileBytes.begin() + 16, (std::byte*)&uncompressedSize);
 
+                // Set the compressed texture data, skipping the DIVINITY header (16 bytes)
                 modFile.FileBytes = std::vector<std::byte>(modFile.FileBytes.begin() + 16, modFile.FileBytes.end());
                 compressedSize = modFile.FileBytes.size();
                 compressionMode = (std::byte)2;
@@ -680,6 +736,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                 }
             }
             else if (CompressTextures) {
+                // Compress the texture
                 std::vector<std::byte> compressedData;
 
                 try {
@@ -716,6 +773,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
         fileCount++;
     }
 
+     // Modify the necessary .blang files
     for (auto &blangFileEntry : blangFileEntries) {
         if (!blangFileEntry.second.WasModified) {
             continue;
@@ -752,10 +810,14 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
         fileCount++;
     }
 
+    // Modify the map resources file if needed
     if (mapResourcesFile != nullptr && mapResourcesChunk != nullptr && !originalDecompressedMapResources.empty()) {
+        // Serialize the map resources data
         std::vector<std::byte> decompressedMapResourcesData = mapResourcesFile->ToByteVector();
 
+        // Only modify the .mapresources file if it has changed
         if (decompressedMapResourcesData != originalDecompressedMapResources) {
+            // Compress the data
             std::vector<std::byte> compressedMapResourcesData = OodleCompress(decompressedMapResourcesData, OodleFormat::Kraken, OodleCompressionLevel::Normal);
 
             if (compressedMapResourcesData.empty()) {

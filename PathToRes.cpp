@@ -18,11 +18,9 @@
 
 #include <iostream>
 #include <algorithm>
-#include <filesystem>
-
 #include "EternalModLoader.hpp"
 
-std::vector<std::filesystem::path> ResourceContainerPathList;
+std::vector<fs::path> ResourceContainerPathList;
 
 /**
  * @brief Get the resource container paths
@@ -30,7 +28,7 @@ std::vector<std::filesystem::path> ResourceContainerPathList;
  */
 void GetResourceContainerPathList()
 {
-    for (auto &file : std::filesystem::recursive_directory_iterator(BasePath + "game" + Separator)) {
+    for (auto &file : fs::recursive_directory_iterator(BasePath + "game" + Separator)) {
         if (file.path().extension().string() == ".resources") {
             ResourceContainerPathList.push_back(file.path());
         }
@@ -45,24 +43,29 @@ void GetResourceContainerPathList()
  */
 std::string PathToResourceContainer(const std::string &name)
 {
+    // Check resource filename
     if (StartsWith(name, "dlc_hub")) {
+        // dlc hub, remove the "dlc_" prefix, build the path and return it
         std::string resourcePath = name.substr(4, name.size() - 4);
         resourcePath = BasePath + "game" + Separator + "dlc" + Separator + "hub" + Separator + resourcePath;
-        return std::filesystem::is_regular_file(resourcePath) ? resourcePath : "";
+        return fs::is_regular_file(resourcePath) ? resourcePath : "";
     }
     else if (StartsWith(name, "hub")) {
+        // Regular hub, build the path and return it
         std::string resourcePath = BasePath + "game" + Separator + "hub" + Separator + name;
-        return std::filesystem::is_regular_file(resourcePath) ? resourcePath : "";
+        return fs::is_regular_file(resourcePath) ? resourcePath : "";
     }
     else if (StartsWith(name, "gameresources")
         || StartsWith(name, "warehouse")
         || StartsWith(name, "meta")) {
-            return std::filesystem::is_regular_file(BasePath + name) ? (BasePath + name) : "";
+            // Resource located in /base/, build path and return it
+            return fs::is_regular_file(BasePath + name) ? (BasePath + name) : "";
     }
 
+    // Find resource iterating through directories
     std::string searchPath = BasePath + "game" + Separator;
 
-    if (std::filesystem::is_regular_file(searchPath + name)) {
+    if (fs::is_regular_file(searchPath + name)) {
         return searchPath + name;
     }
 
@@ -83,6 +86,7 @@ std::string PathToResourceContainer(const std::string &name)
  */
 std::string PathToSoundContainer(const std::string &name)
 {
+    // Assemble snd path and return it
     std::string sndPath = BasePath + "sound" + Separator + "soundbanks" + Separator + "pc" + Separator + name + ".snd";
-    return std::filesystem::is_regular_file(sndPath) ? sndPath : "";
+    return fs::is_regular_file(sndPath) ? sndPath : "";
 }

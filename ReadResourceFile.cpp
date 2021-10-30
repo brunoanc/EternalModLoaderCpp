@@ -17,7 +17,6 @@
 */
 
 #include <iostream>
-
 #include "EternalModLoader.hpp"
 
 /**
@@ -34,10 +33,10 @@ void ReadResource(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourc
     int32_t unknownCount;
     std::copy(memoryMappedFile.Mem + 0x24, memoryMappedFile.Mem + 0x28, (std::byte*)&unknownCount);
 
-    int32_t dummy2Num;
+    int32_t dummy2Num; // Number of TypeIds
     std::copy(memoryMappedFile.Mem + 0x28, memoryMappedFile.Mem + 0x2C, (std::byte*)&dummy2Num);
 
-    int32_t stringsSize;
+    int32_t stringsSize; // Total size of nameOffsets and names
     std::copy(memoryMappedFile.Mem + 0x38, memoryMappedFile.Mem + 0x3C, (std::byte*)&stringsSize);
 
     int64_t namesOffset;
@@ -49,7 +48,7 @@ void ReadResource(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourc
     int64_t infoOffset;
     std::copy(memoryMappedFile.Mem + 0x50, memoryMappedFile.Mem + 0x58, (std::byte*)&infoOffset);
 
-    int64_t dummy7OffOrg;
+    int64_t dummy7OffOrg; // Offset of TypeIds, needs addition to get offset of nameIds
     std::copy(memoryMappedFile.Mem + 0x60, memoryMappedFile.Mem + 0x68, (std::byte*)&dummy7OffOrg);
 
     int64_t dataOff;
@@ -58,6 +57,7 @@ void ReadResource(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourc
     int64_t idclOff;
     std::copy(memoryMappedFile.Mem + 0x74, memoryMappedFile.Mem + 0x7C, (std::byte*)&idclOff);
 
+    // Read all the file names now
     int64_t namesNum;
     std::copy(memoryMappedFile.Mem + namesOffset, memoryMappedFile.Mem + namesOffset + 8, (std::byte*)&namesNum);
 
@@ -67,7 +67,7 @@ void ReadResource(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourc
     std::vector<ResourceName> namesList;
     std::vector<char> currentNameBytes;
     char currentByte;
-    
+
     for (int32_t i = 0; i < namesSize; i++) {
         currentByte = (char)memoryMappedFile.Mem[namesOffsetEnd+ i];
 
@@ -76,6 +76,7 @@ void ReadResource(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourc
                 continue;
             }
 
+            // Support full filenames and "normalized" filenames (backwards compatibility)
             std::string fullFileName(currentNameBytes.data(), currentNameBytes.size());
             std::string normalizedFileName = NormalizeResourceFilename(fullFileName);
 
@@ -89,6 +90,7 @@ void ReadResource(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourc
         currentNameBytes.push_back(currentByte);
     }
 
+    // Assign all values to resource
     resourceContainer.FileCount = fileCount;
     resourceContainer.TypeCount = dummy2Num;
     resourceContainer.StringsSize = stringsSize;
@@ -104,5 +106,6 @@ void ReadResource(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourc
     resourceContainer.UnknownOffset2 = namesEnd;
     resourceContainer.NamesList = namesList;
 
+    // Get resource chunks
     ReadChunkInfo(memoryMappedFile, resourceContainer);
 }

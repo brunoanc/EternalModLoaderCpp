@@ -18,11 +18,9 @@
 
 #include <iostream>
 #include <iterator>
-#include <filesystem>
 #include <algorithm>
 #include <cstring>
 #include <sstream>
-
 #include "EternalModLoader.hpp"
 
 /**
@@ -38,9 +36,11 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
         return;
     }
 
+    // Sort mod file list by priority
     std::stable_sort(resourceContainer.NewModFileList.begin(), resourceContainer.NewModFileList.end(),
         [](const ResourceModFile &resource1, const ResourceModFile &resource2) { return resource1.Parent.LoadPriority > resource2.Parent.LoadPriority; });
 
+    // Get individual sections
     std::vector<std::byte> header(memoryMappedFile.Mem, memoryMappedFile.Mem + resourceContainer.InfoOffset);
 
     std::vector<std::byte> info(memoryMappedFile.Mem + resourceContainer.InfoOffset, memoryMappedFile.Mem + resourceContainer.NamesOffset);
@@ -67,6 +67,7 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
     int32_t newChunksCount = 0;
     int32_t addedCount = 0;
 
+    // Find the resource data for the new mod files and set them
     for (auto &modFile : resourceContainer.ModFileList) {
         if (modFile.IsAssetsInfoJson && modFile.AssetsInfo.has_value() && !modFile.AssetsInfo.value().Assets.empty()) {
             for (auto &newModFile : resourceContainer.NewModFileList) {
@@ -101,7 +102,9 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
         }
     }
 
+    // Add the new mod files now
     for (auto &modFile : resourceContainer.NewModFileList) {
+        // Skip custom files
         if (modFile.IsAssetsInfoJson || modFile.IsBlangJson) {
             continue;
         }
@@ -116,6 +119,7 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
             continue;
         }
 
+        // Retrieve the resource data for this file (if needed & available)
         ResourceDataEntry resourceData;
         std::map<uint64_t, ResourceDataEntry>::iterator x = ResourceDataMap.find(CalculateResourceFileNameHash(modFile.Name));
 
@@ -130,6 +134,7 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
             modFile.SpecialByte3 = !modFile.SpecialByte3.has_value() ? resourceData.SpecialByte3 : modFile.SpecialByte3;
         }
 
+        // Use rs_streamfile by default if no data was found or specified
         if (modFile.ResourceType.empty() && !modFile.Version.has_value() && !modFile.StreamDbHash.has_value()) {
             modFile.ResourceType = "rs_streamfile";
             modFile.Version = 0;
@@ -143,6 +148,7 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
             }
         }
 
+        // Check if the resource type name exists in the current container, and add it if it doesn't
         if (!modFile.ResourceType.empty()) {
             bool found = false;
 
@@ -154,6 +160,7 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
             }
 
             if (!found) {
+                // Add type name
                 int64_t typeLastOffset;
                 std::copy(nameOffsets.end() - 8, nameOffsets.end(), (std::byte*)&typeLastOffset);
 
@@ -169,6 +176,7 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
                 names.resize(names.size() + modFile.ResourceType.size() + 1);
                 std::copy((std::byte*)modFile.ResourceType.c_str(), (std::byte*)modFile.ResourceType.c_str() + modFile.ResourceType.size() + 1, names.begin() + typeLastNameOffset);
 
+                // Add type name offset
                 int64_t typeNewCount;
                 std::copy(nameOffsets.begin(), nameOffsets.begin() + 8, (std::byte*)&typeNewCount);
                 typeNewCount += 1;
@@ -177,6 +185,7 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
                 nameOffsets.resize(nameOffsets.size() + 8);
                 std::copy((std::byte*)&typeLastNameOffset, (std::byte*)&typeLastNameOffset + 8, nameOffsets.end() - 8);
 
+                // Add the type name to the list to keep the indexes in the proper order
                 ResourceName newResourceName(modFile.ResourceType, modFile.ResourceType);
                 resourceContainer.NamesList.push_back(newResourceName);
 
@@ -184,6 +193,7 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
             }
         }
 
+        // Add file name
         int64_t lastOffset;
         std::copy(nameOffsets.end() - 8, nameOffsets.end(), (std::byte*)&lastOffset);
 
@@ -200,6 +210,7 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
         names.resize(names.size() + modFile.Name.size() + 1);
         std::copy(nameChars, nameChars + modFile.Name.size() + 1, names.begin() + lastNameOffset);
 
+        // Add name offset
         int64_t newCount;
         std::copy(nameOffsets.begin(), nameOffsets.begin() + 8, (std::byte*)&newCount);
         newCount += 1;
@@ -209,17 +220,22 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
 
         std::copy((std::byte*)&lastNameOffset, (std::byte*)&lastNameOffset + 8, nameOffsets.end() - 8);
 
+        // Add the name to the list to keep the indexes in the proper order
         ResourceName newResourceName(modFile.Name, modFile.Name);
         resourceContainer.NamesList.push_back(newResourceName);
 
+        // If this is a texture, check if it's compressed, or compress if necessary
         uint64_t compressedSize = modFile.FileBytes.size();
         uint64_t uncompressedSize = compressedSize;
         std::byte compressionMode = (std::byte)0;
 
         if (modFile.Name.find(".tga") != std::string::npos) {
+            // Check if it's a DIVINITY compressed texture
             if (!std::memcmp(modFile.FileBytes.data(), DivinityMagic, 8)) {
+                // This is a compressed texture, read the uncompressed size
                 std::copy(modFile.FileBytes.begin() + 8, modFile.FileBytes.begin() + 16, (std::byte*)&uncompressedSize);
 
+                // Set the compressed texture data, skipping the DIVINITY header (16 bytes)
                 modFile.FileBytes = std::vector<std::byte>(modFile.FileBytes.begin() + 16, modFile.FileBytes.end());
                 compressedSize = modFile.FileBytes.size();
                 compressionMode = (std::byte)2;
@@ -229,6 +245,7 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
                 }
             }
             else if (CompressTextures) {
+                // Compress the texture
                 std::vector<std::byte> compressedData;
 
                 try {
@@ -253,12 +270,14 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
             }
         }
 
+        // Add the mode file data at the end of the data vector
         int64_t resourceFileSize = memoryMappedFile.Size;
         int64_t placement = 0x10 - (data.size() % 0x10) + 0x30;
         int64_t fileOffset = resourceFileSize + (data.size() - originalDataSize) + placement;
         data.resize(data.size() + placement + modFile.FileBytes.size());
         std::copy(modFile.FileBytes.begin(), modFile.FileBytes.end(), data.end() - modFile.FileBytes.size());
 
+        // Add the asset type name id, if it's not found, use zero
         int64_t nameId = resourceContainer.GetResourceNameId(modFile.Name);
         nameIds.resize(nameIds.size() + 16);
         int64_t nameIdOffset = ((nameIds.size() - 8) / 8) - 1;
@@ -269,24 +288,32 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
             assetTypeNameId = 0;
         }
 
+        // Add the asset type name id
         std::copy((std::byte*)&assetTypeNameId, (std::byte*)&assetTypeNameId + 8, nameIds.end() - 16);
+
+        // Add the asset filename name id
         std::copy((std::byte*)&nameId, (std::byte*)&nameId + 8, nameIds.end() - 8);
 
+        // Create the file info section
         std::byte newFileInfo[0x90];
         std::copy(info.end() - 0x90, info.end(), newFileInfo);
 
         std::copy((std::byte*)&nameIdOffset, (std::byte*)&nameIdOffset + 8, newFileInfo + sizeof(newFileInfo) - 0x70);
         std::copy((std::byte*)&fileOffset, (std::byte*)&fileOffset + 8, newFileInfo + sizeof(newFileInfo) - 0x58);
-
         std::copy((std::byte*)&compressedSize, (std::byte*)&compressedSize + 8, newFileInfo + sizeof(newFileInfo) - 0x50);
         std::copy((std::byte*)&uncompressedSize, (std::byte*)&uncompressedSize + 8, newFileInfo + sizeof(newFileInfo) - 0x48);
 
+        // Set the DataMurmurHash
         std::copy((std::byte*)&modFile.StreamDbHash.value(), (std::byte*)&modFile.StreamDbHash.value() + 8, newFileInfo + sizeof(newFileInfo) - 0x40);
+
+        // Set the StreamDB resource hash
         std::copy((std::byte*)&modFile.StreamDbHash.value(), (std::byte*)&modFile.StreamDbHash.value() + 8, newFileInfo + sizeof(newFileInfo) - 0x30);
 
+        // Set the correct asset version
         int32_t version = modFile.Version.value();
         std::copy((std::byte*)&version, (std::byte*)&version + 4, newFileInfo + sizeof(newFileInfo) - 0x28);
 
+        // Set the special byte values
         int32_t SpecialByte1Int = (int32_t)modFile.SpecialByte1.value();
         int32_t SpecialByte2Int = (int32_t)modFile.SpecialByte2.value();
         int32_t SpecialByte3Int = (int32_t)modFile.SpecialByte3.value();
@@ -295,11 +322,14 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
         std::copy((std::byte*)&SpecialByte2Int, (std::byte*)&SpecialByte2Int + 4, newFileInfo + sizeof(newFileInfo) - 0x1E);
         std::copy((std::byte*)&SpecialByte3Int, (std::byte*)&SpecialByte3Int + 4, newFileInfo + sizeof(newFileInfo) - 0x1D);
 
+        // Clear the compression mode
         newFileInfo[sizeof(newFileInfo) - 0x20] = compressionMode;
 
+        // Set meta entries to use to 0
         uint16_t metaEntries = 0;
         std::copy((std::byte*)&metaEntries, (std::byte*)&metaEntries + 2, newFileInfo + sizeof(newFileInfo) - 0x10);
 
+        // Add the new file info section at the end
         info.resize(info.size() + 0x90);
         std::copy(newFileInfo, newFileInfo + sizeof(newFileInfo), info.end() - 0x90);
 
@@ -312,6 +342,7 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
         newChunksCount++;
     }
 
+    // Rebuild the entire container now
     int64_t namesOffsetAdd = info.size() - infoOldLength;
     int64_t newSize = nameOffsets.size() + names.size();
     int64_t unknownAdd = namesOffsetAdd + (newSize - resourceContainer.StringsSize);
@@ -358,6 +389,7 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
         std::copy((std::byte*)&newOffsetPlusDataAdd, (std::byte*)&newOffsetPlusDataAdd + 8, info.begin() + fileOffset);
     }
 
+    // Rebuild the container now
     size_t pos = 0;
 
     std::copy(header.begin(), header.end(), memoryMappedFile.Mem + pos);

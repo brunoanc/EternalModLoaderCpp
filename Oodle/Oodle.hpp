@@ -19,14 +19,18 @@
 #ifndef OODLE_HPP
 #define OODLE_HPP
 
+// Oodle compress function type
 typedef int32_t OodLZ_CompressFunc(
     int32_t codec, uint8_t *src_buf, size_t src_len, uint8_t *dst_buf, int32_t level,
     void *opts, size_t offs, size_t unused, void *scratch, size_t scratch_size);
- 
+
+
+// Oodle decompress function type
 typedef int32_t OodLZ_DecompressFunc(uint8_t *src_buf, int32_t src_len, uint8_t *dst, size_t dst_size,
     int32_t fuzz, int32_t crc, int32_t verbose,
     uint8_t *dst_base, size_t e, void *cb, void *cb_ctx, void *scratch, size_t scratch_size, int32_t threadPhase);
 
+// Oodle compression levels enum
 enum class OodleCompressionLevel
 {
     None,
@@ -41,6 +45,7 @@ enum class OodleCompressionLevel
     Optimal5
 };
 
+// Oodle formats enum
 enum class OodleFormat
 {
     LZH,

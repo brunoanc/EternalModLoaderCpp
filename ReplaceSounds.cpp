@@ -19,12 +19,11 @@
 #include <iostream>
 #include <algorithm>
 #include <string>
-#include <filesystem>
 #include <cstdlib>
 #include <sstream>
-
 #include "EternalModLoader.hpp"
 
+// Supported sound file formats
 const std::vector<std::string> SupportedFileFormats = { ".ogg", ".opus", ".wav", ".wem", ".flac", ".aiff", ".pcm" };
 
 /**
@@ -35,6 +34,7 @@ const std::vector<std::string> SupportedFileFormats = { ".ogg", ".opus", ".wav",
  */
 int32_t GetDecodedOpusFileSize(SoundModFile &soundModFile)
 {
+    // Write sound bytes to temp file
     FILE *encFile = fopen("tmp.opus", "wb");
 
     if (!encFile) {
@@ -47,6 +47,7 @@ int32_t GetDecodedOpusFileSize(SoundModFile &soundModFile)
 
     fclose(encFile);
 
+    // Use opusdec to convert sound to wav
 #ifdef _WIN32
     std::string command = BasePath + "opusdec.exe tmp.opus tmp.wav > NUL 2>&1";
 #else
@@ -57,10 +58,11 @@ int32_t GetDecodedOpusFileSize(SoundModFile &soundModFile)
         return -1;
     }
 
+    // Load new wav sound into memory
     int64_t decSize = -1;
 
     try {
-        decSize = std::filesystem::file_size("tmp.wav");
+        decSize = fs::file_size("tmp.wav");
 
         if (decSize == 0 || decSize == -1) {
             throw std::exception();
@@ -70,8 +72,9 @@ int32_t GetDecodedOpusFileSize(SoundModFile &soundModFile)
         return -1;
     }
 
-    std::filesystem::remove("tmp.opus");
-    std::filesystem::remove("tmp.wav");
+    // Remove temp files
+    fs::remove("tmp.opus");
+    fs::remove("tmp.wav");
 
     return decSize + 20;
 }
@@ -84,6 +87,7 @@ int32_t GetDecodedOpusFileSize(SoundModFile &soundModFile)
  */
 bool EncodeSoundMod(SoundModFile &soundModFile)
 {
+    // Write sound bytes to temp file
     FILE *decFile = fopen("tmp.wav", "wb");
 
     if (!decFile) {
@@ -96,6 +100,7 @@ bool EncodeSoundMod(SoundModFile &soundModFile)
 
     fclose(decFile);
 
+    // Use opusenc to convert sound to opus
 #ifdef _WIN32
     std::string command = BasePath + "opusenc.exe tmp.wav tmp.opus > NUL 2>&1";
 #else
@@ -107,7 +112,7 @@ bool EncodeSoundMod(SoundModFile &soundModFile)
     }
 
     try {
-        soundModFile.FileBytes.resize(std::filesystem::file_size("tmp.opus"));
+        soundModFile.FileBytes.resize(fs::file_size("tmp.opus"));
 
         if (soundModFile.FileBytes.size() == 0) {
             throw std::exception();
@@ -118,6 +123,7 @@ bool EncodeSoundMod(SoundModFile &soundModFile)
         return false;
     }
 
+    // Load new opus sound into memory
     FILE *encFile = fopen("tmp.opus", "rb");
 
     if (!encFile) {
@@ -130,8 +136,9 @@ bool EncodeSoundMod(SoundModFile &soundModFile)
 
     fclose(encFile);
 
-    std::filesystem::remove("tmp.wav");
-    std::filesystem::remove("tmp.ogg");
+    // Remove temp files
+    fs::remove("tmp.wav");
+    fs::remove("tmp.ogg");
 
     return true;
 }
@@ -145,19 +152,25 @@ bool EncodeSoundMod(SoundModFile &soundModFile)
  */
 void ReplaceSounds(MemoryMappedFile &memoryMappedFile, SoundContainer &soundContainer, std::stringstream &os)
 {
+    // Sort sound mod file list by priority
     std::stable_sort(soundContainer.ModFileList.begin(), soundContainer.ModFileList.end(),
                      [](const SoundModFile &sound1, const SoundModFile &sound2) { return sound1.Parent.LoadPriority > sound2.Parent.LoadPriority; });
 
     int32_t fileCount = 0;
 
+    // Load the sound mods
     for (auto &soundModFile : soundContainer.ModFileList) {
-        std::string soundFileNameStem = std::filesystem::path(soundModFile.Name).stem().string();
+        // Parse the identifier of the sound we want to replace
+        std::string soundFileNameStem = fs::path(soundModFile.Name).stem().string();
         int32_t soundModId = -1;
 
+        // First, assume that the file name (without extension) is the sound id
         try {
             soundModId = std::stoul(soundFileNameStem, nullptr, 10);
         }
         catch (...) {
+            // If this is not the case, try to find the id at the end of the filename
+            // Format: _#id{id here}
             std::vector<std::string> splitName = SplitString(soundFileNameStem, '_');
             std::string idString = splitName[splitName.size() - 1];
             std::vector<std::string> idStringData = SplitString(idString, '#');
@@ -178,7 +191,8 @@ void ReplaceSounds(MemoryMappedFile &memoryMappedFile, SoundContainer &soundCont
             continue;
         }
 
-        std::string soundExtension = std::filesystem::path(soundModFile.Name).extension().string();
+        // Determine the sound format by extension
+        std::string soundExtension = fs::path(soundModFile.Name).extension().string();
         int32_t encodedSize = soundModFile.FileBytes.size();
         int32_t decodedSize = encodedSize;
         bool needsEncoding = false;
@@ -201,6 +215,7 @@ void ReplaceSounds(MemoryMappedFile &memoryMappedFile, SoundContainer &soundCont
             needsEncoding = true;
         }
 
+        // If the file needs to be encoded, encode it using opusenc first
         if (needsEncoding) {
             try {
                 mtx.lock();
@@ -231,6 +246,8 @@ void ReplaceSounds(MemoryMappedFile &memoryMappedFile, SoundContainer &soundCont
         }
         else if (format == 2 && needsDecoding) {
             try {
+                // Determine the decoded size of the sound file
+                // if the format is .ogg or .opus
                 mtx.lock();
                 decodedSize = GetDecodedOpusFileSize(soundModFile);
                 mtx.unlock();
@@ -245,6 +262,8 @@ void ReplaceSounds(MemoryMappedFile &memoryMappedFile, SoundContainer &soundCont
             }
         }
 
+        // Load the sound mod into the sound container now
+        // Write the sound replacement data at the end of the sound container
         uint32_t soundModOffset = memoryMappedFile.Size;
         int64_t newContainerSize = soundModOffset + soundModFile.FileBytes.size();
 
@@ -255,6 +274,7 @@ void ReplaceSounds(MemoryMappedFile &memoryMappedFile, SoundContainer &soundCont
         
         std::copy(soundModFile.FileBytes.begin(), soundModFile.FileBytes.end(), memoryMappedFile.Mem + soundModOffset);
 
+        // Replace the sound info for this sound id
         std::vector<SoundEntry> soundEntriesToModify = GetSoundEntriesToModify(soundContainer, soundModId);
 
         if (soundEntriesToModify.empty()) {
@@ -264,6 +284,7 @@ void ReplaceSounds(MemoryMappedFile &memoryMappedFile, SoundContainer &soundCont
         }
 
         for (auto &soundEntry : soundEntriesToModify) {
+            // Replace the sound data offset and sizes
             std::copy((std::byte*)&encodedSize, (std::byte*)&encodedSize + 4, memoryMappedFile.Mem + soundEntry.InfoOffset);
             std::copy((std::byte*)&soundModOffset, (std::byte*)&soundModOffset + 4, memoryMappedFile.Mem + soundEntry.InfoOffset + 4);
             std::copy((std::byte*)&decodedSize, (std::byte*)&decodedSize + 4, memoryMappedFile.Mem + soundEntry.InfoOffset + 8);

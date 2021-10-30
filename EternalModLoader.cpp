@@ -17,7 +17,6 @@
 */
 
 #include <iostream>
-#include <filesystem>
 #include <algorithm>
 #include <cstring>
 #include <cstdlib>
@@ -25,7 +24,6 @@
 #include <chrono>
 #include <thread>
 #include <sstream>
-
 #include "EternalModLoader.hpp"
 
 namespace chrono = std::chrono;
@@ -71,7 +69,7 @@ int main(int argc, char **argv)
     char coutBuf[8192];
     std::cout.rdbuf()->pubsetbuf(coutBuf, 8192);
 
-    Separator = std::filesystem::path::preferred_separator;
+    Separator = fs::path::preferred_separator;
 
     // Enable colored output
 #ifdef _WIN32
@@ -106,7 +104,7 @@ int main(int argc, char **argv)
 
     BasePath = std::string(argv[1]) + Separator + "base" + Separator;
 
-    if (!std::filesystem::exists(BasePath)) {
+    if (!fs::exists(BasePath)) {
         std::cout << RED << "ERROR: " << RESET << "Game directory does not exist!" << std::endl;
         return 1;
     }
@@ -159,7 +157,7 @@ int main(int argc, char **argv)
     if (!ListResources) {
         std::string resourceDataFilePath = BasePath + ResourceDataFileName;
 
-        if (std::filesystem::exists(resourceDataFilePath)) {
+        if (fs::exists(resourceDataFilePath)) {
             try {
                 ResourceDataMap = ParseResourceData(resourceDataFilePath);
 
@@ -183,8 +181,8 @@ int main(int argc, char **argv)
     std::vector<std::string> unzippedMods;
     std::vector<std::string> notFoundContainers;
 
-    for (const auto &file : std::filesystem::recursive_directory_iterator(std::string(argv[1]) + Separator + "Mods")) {
-        if (!std::filesystem::is_regular_file(file.path())) {
+    for (const auto &file : fs::recursive_directory_iterator(std::string(argv[1]) + Separator + "Mods")) {
+        if (!fs::is_regular_file(file.path())) {
             continue;
         }
 
@@ -251,11 +249,15 @@ int main(int argc, char **argv)
         }
     }
 
+    // Check if the unzipped mods are safe for online play
     if (!IsModSafeForOnline(resourceModFiles)) {
+        // Mods are not safe for online
+        // Check if they should be loaded
         AreModsSafeForOnline = false;
         globalLooseMod.IsSafeForOnline = false;
 
         if (!LoadOnlineSafeModsOnly) {
+            // Inject online disabler mods
             for (auto &resourceMod : resourceModFiles) {
                 ResourceContainer &resourceContainer = ResourceContainerList[resourceMod.first];
                 resourceContainer.ModFileList.insert(resourceContainer.ModFileList.end(), resourceMod.second.begin(), resourceMod.second.end());
@@ -268,6 +270,7 @@ int main(int argc, char **argv)
         }
     }
     else {
+        // Inject mods
         for (auto &resourceMod : resourceModFiles) {
             ResourceContainer &resourceContainer = ResourceContainerList[resourceMod.first];
             resourceContainer.ModFileList.insert(resourceContainer.ModFileList.end(), resourceMod.second.begin(), resourceMod.second.end());

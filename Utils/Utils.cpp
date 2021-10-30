@@ -29,6 +29,8 @@
 #include <sys/statvfs.h>
 #endif
 
+namespace fs = std::filesystem;
+
 /**
  * @brief Remove all whitespace from a string
  * 
@@ -150,6 +152,6 @@ int32_t GetClusterSize()
     return result ? sectorsPerCluster * bytesPerSector : -1;
 #else
     struct statvfs diskInfo;
-    return statvfs(std::filesystem::current_path().c_str(), &diskInfo) == 0 ? diskInfo.f_bsize : -1;
+    return statvfs(fs::current_path().c_str(), &diskInfo) == 0 ? diskInfo.f_bsize : -1;
 #endif
 }
