@@ -69,13 +69,13 @@ void ReadResource(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourc
     char currentByte;
 
     for (int32_t i = 0; i < namesSize; i++) {
+        if (namesList.size() == namesNum) {
+            break;
+        }
+
         currentByte = (char)memoryMappedFile.Mem[namesOffsetEnd+ i];
 
         if (currentByte == 0 || i == namesSize - 1) {
-            if (currentNameBytes.empty()) {
-                continue;
-            }
-
             // Support full filenames and "normalized" filenames (backwards compatibility)
             std::string fullFileName(currentNameBytes.data(), currentNameBytes.size());
             std::string normalizedFileName = NormalizeResourceFilename(fullFileName);
