@@ -94,15 +94,6 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                 // Add the extra resources, then rewrite the JSON
                 if (PackageMapSpecInfo.PackageMapSpec != nullptr && !PackageMapSpecInfo.invalidPackageMapSpec) {
                     for (auto &extraResource : modFile.AssetsInfo->Resources) {
-                        // First check that the resource trying to be added actually exists
-                        std::string extraResourcePath = PathToResourceContainer(extraResource.Name);
-
-                        if (extraResourcePath.empty()) {
-                            os << RED << "WARNING: " << RESET << "Trying to add non-existing extra resource " << extraResource.Name
-                                << " to " << resourceContainer.Name << ", skipping" << '\n';
-                            continue;
-                        }
-
                         // Add the extra resources before all the original resources the level loads
                         // Find the necessary map and file indexes
                         int32_t fileIndex = -1;
