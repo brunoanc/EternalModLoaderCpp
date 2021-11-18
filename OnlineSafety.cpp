@@ -284,7 +284,7 @@ std::vector<ResourceModFile> GetMultiplayerDisablerMods()
     }
 
     for (auto &language : Languages) {
-        ResourceModFile multiplayerDisablerBlang(parentMod, "EternalMod/strings/" + language.first + ".json", "gameresources_patch2", false);
+        ResourceModFile multiplayerDisablerBlang(parentMod, "EternalMod/strings/" + language.first + ".json", "gameresources_patch1", false);
         multiplayerDisablerBlang.IsBlangJson = true;
         std::string blangJson = R"({"strings":[{"name":"#str_code_mainmenu_play_online_name","text":"^8)" + language.second + R"("}]})";
         multiplayerDisablerBlang.FileBytes = std::vector<std::byte>((std::byte*)blangJson.c_str(), (std::byte*)blangJson.c_str() + blangJson.length());
