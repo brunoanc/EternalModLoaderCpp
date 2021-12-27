@@ -352,25 +352,36 @@ int main(int argc, char **argv)
             for (auto &modFile : resourceContainer.ModFileList) {
                 if (!modFile.IsAssetsInfoJson) {
                     shouldListResource = true;
-                    break;
+
+                    if (printPackageMapSpecJsonPath) {
+                        break;
+                    }
+                    else {
+                        continue;
+                    }
                 }
 
                 if (!modFile.AssetsInfo.has_value()) {
                     continue;
                 }
 
-                if (!modFile.AssetsInfo.value().Resources.empty()) {
-                    printPackageMapSpecJsonPath = true;
+                if (!shouldListResource) {
+                    if (!modFile.AssetsInfo.value().Assets.empty()
+                        || !modFile.AssetsInfo.value().Layers.empty()
+                        || !modFile.AssetsInfo.value().Maps.empty()) {
+                            shouldListResource = true;
+                    }
                 }
 
-                if (modFile.AssetsInfo.value().Assets.empty()
-                    && modFile.AssetsInfo.value().Layers.empty()
-                    && modFile.AssetsInfo.value().Maps.empty()) {
-                        continue;
+                if (!printPackageMapSpecJsonPath) {
+                    if (!modFile.AssetsInfo.value().Resources.empty()) {
+                        printPackageMapSpecJsonPath = true;
+                    }
                 }
 
-                shouldListResource = true;
-                break;
+                if (shouldListResource && printPackageMapSpecJsonPath) {
+                    break;
+                }
             }
 
             if (shouldListResource) {

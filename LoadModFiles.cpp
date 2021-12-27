@@ -200,7 +200,7 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
             if (ToLower(modFilePathParts[1]) == "eternalmod") {
                 if (modFilePathParts.size() == 4
                 && ToLower(modFilePathParts[2]) == "assetsinfo"
-                && fs::path(modFilePathParts[3]).extension() == ".json") {
+                && fs::path(modFilePathParts[3]).extension().string() == ".json") {
                     try {
                         // Read this JSON only if we are listing resources
                         if (ListResources) {
@@ -233,7 +233,7 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
                 }
                 else if (modFilePathParts.size() == 4
                 && ToLower(modFilePathParts[2]) == "strings"
-                && fs::path(modFilePathParts[3]).extension() == ".json") {
+                && fs::path(modFilePathParts[3]).extension().string() == ".json") {
                     // Detect custom language files
                     resourceModFile.IsBlangJson = true;
                 }
@@ -464,7 +464,7 @@ void LoadUnzippedMod(std::string unzippedMod, Mod &globalLooseMod, std::atomic<i
         if (ToLower(modFilePathParts[3]) == "eternalmod") {
             if (modFilePathParts.size() == 6
             && ToLower(modFilePathParts[4]) == "assetsinfo"
-            && fs::path(modFilePathParts[5]).extension() == ".json") {
+            && fs::path(modFilePathParts[5]).extension().string() == ".json") {
                 try {
                     // Read this JSON only if we are listing resources
                     if (ListResources) {
@@ -506,7 +506,7 @@ void LoadUnzippedMod(std::string unzippedMod, Mod &globalLooseMod, std::atomic<i
             }
             else if (modFilePathParts.size() == 6
             && ToLower(modFilePathParts[4]) == "strings"
-            && fs::path(modFilePathParts[5]).extension() == ".json") {
+            && fs::path(modFilePathParts[5]).extension().string() == ".json") {
                 // Detect custom language files
                 resourceModFile.IsBlangJson = true;
             }
