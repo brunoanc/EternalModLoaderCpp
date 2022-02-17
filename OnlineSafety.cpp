@@ -268,6 +268,11 @@ bool IsModSafeForOnline(const std::map<int32_t, std::vector<ResourceModFile>> &r
                 }
             }
 
+            // Files with .lwo extension are unsafe
+            if (fs::path(modFile.Name).string().find(".lwo") != std::string::npos) {
+                isSafe = false;
+            }
+
             // Allow modification of anything outside of "generated/decls/"
             if (!StartsWith(ToLower(modFile.Name), "generated/decls/")) {
                 continue;
