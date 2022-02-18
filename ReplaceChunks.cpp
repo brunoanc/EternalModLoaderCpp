@@ -59,40 +59,14 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                 mtx.lock();
 
                 // Deserialize the packagemapspec JSON if it hasn't been deserialized yet
-                if (PackageMapSpecInfo.PackageMapSpec == nullptr && !PackageMapSpecInfo.invalidPackageMapSpec) {
-                    PackageMapSpecInfo.PackageMapSpecPath = BasePath + PackageMapSpecJsonFileName;
-                    FILE *packageMapSpecFile = fopen(PackageMapSpecInfo.PackageMapSpecPath.c_str(), "rb");
-
-                    if (!packageMapSpecFile) {
-                        os << RED << "ERROR: " << RESET << PackageMapSpecInfo.PackageMapSpecPath << " not found while trying to add extra resources for level "
-                            << resourceContainer.Name << '\n';
-                        PackageMapSpecInfo.invalidPackageMapSpec = true;
-                    }
-                    else {
-                        int64_t filesize = fs::file_size(PackageMapSpecInfo.PackageMapSpecPath);
-                        std::vector<std::byte> packageMapSpecBytes(filesize);
-
-                        if (fread(packageMapSpecBytes.data(), 1, filesize, packageMapSpecFile) != filesize) {
-                            os << RED << "ERROR: " << RESET << "Failed to read data from " << PackageMapSpecInfo.PackageMapSpecPath
-                                << " while trying to add extra resources for level " << resourceContainer.Name << '\n';
-                            PackageMapSpecInfo.invalidPackageMapSpec = true;
-                        }
-
-                        fclose(packageMapSpecFile);
-
-                        try {
-                            std::string packageMapSpecJson((char*)packageMapSpecBytes.data(), packageMapSpecBytes.size());
-                            PackageMapSpecInfo.PackageMapSpec = new PackageMapSpec(packageMapSpecJson);
-                        }
-                        catch (...) {
-                            os << RED << "ERROR: " << RESET << "Failed to parse " << PackageMapSpecInfo.PackageMapSpecPath << '\n';
-                            PackageMapSpecInfo.invalidPackageMapSpec = true;
-                        }
+                if (PackageMapSpecInfo.PackageMapSpec == nullptr && !PackageMapSpecInfo.InvalidPackageMapSpec) {
+                    if (!PackageMapSpecInfo.ReadPackageMapSpec()) {
+                        os << RED << "ERROR: " << RESET << "Failed to parse " << PackageMapSpecInfo.PackageMapSpecPath << " - malformed JSON?\n";
                     }
                 }
 
                 // Add the extra resources, then rewrite the JSON
-                if (PackageMapSpecInfo.PackageMapSpec != nullptr && !PackageMapSpecInfo.invalidPackageMapSpec) {
+                if (PackageMapSpecInfo.PackageMapSpec != nullptr && !PackageMapSpecInfo.InvalidPackageMapSpec) {
                     for (auto &extraResource : modFile.AssetsInfo->Resources) {
                         // Add the extra resources before all the original resources the level loads
                         // Find the necessary map and file indexes
@@ -713,7 +687,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
         // If this is a texture, check if it's compressed, or compress it if necessary
         if (EndsWith(chunk->ResourceName.NormalizedFileName, ".tga") || EndsWith(chunk->ResourceName.NormalizedFileName, ".png")) {
             // Check if it's a DIVINITY compressed texture
-            if (!std::memcmp(modFile.FileBytes.data(), DivinityMagic, 8)) {
+            if (std::memcmp(modFile.FileBytes.data(), DivinityMagic, 8) == 0) {
                 // This is a compressed texture, read the uncompressed size
                 std::copy(modFile.FileBytes.begin() + 8, modFile.FileBytes.begin() + 16, (std::byte*)&uncompressedSize);
 
@@ -830,7 +804,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
             }
         }
     }
-    
+
     if (fileCount > 0) {
         os << "Number of files replaced: " << GREEN << fileCount << " file(s) " << RESET << "in " << YELLOW << resourceContainer.Path << RESET << "." << '\n';
     }

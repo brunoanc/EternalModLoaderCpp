@@ -294,6 +294,120 @@ public:
 };
 
 /**
+ * @brief StreamDBHeader class
+ *
+ */
+class StreamDBHeader {
+public:
+    uint64_t Magic = 7045867521639097680;
+    int32_t DataStartOffset = 0;
+    int32_t Padding0 = 0;
+    int32_t Padding1 = 0;
+    int32_t Padding2 = 0;
+    int32_t NumEntries = 0;
+    int32_t Flags = 3;
+
+    /**
+     * @brief Construct a new StreamDBHeader object
+     *
+     * @param dataStartOffset Data start offset
+     * @param numEntries Number of entries in this .streamdb file
+     */
+    StreamDBHeader(int32_t dataStartOffset, int32_t numEntries)
+    {
+        DataStartOffset = dataStartOffset;
+        NumEntries = numEntries;
+    }
+
+    StreamDBHeader() {}
+};
+
+/**
+ * @brief StreamDBEntry class
+ *
+ */
+class StreamDBEntry {
+public:
+    uint64_t FileId = 0;
+    uint32_t DataOffset16 = 0;
+    uint32_t DataLength = 0;
+    std::string Name;
+    std::vector<std::byte> FileData;
+
+    /**
+     * @brief Construct a new StreamDBEntry object
+     *
+     * @param fileId File id
+     * @param dataOffset16 Data offset for this entry, divided by 16
+     * @param dataLength Data length
+     * @param name Entry name
+     * @param fileData Entry data bytes
+     */
+    StreamDBEntry(uint64_t fileId, uint32_t dataOffset16, uint32_t dataLength, std::string name, std::vector<std::byte> fileData)
+    {
+        FileId = fileId;
+        DataOffset16 = dataOffset16;
+        DataLength = dataLength;
+        Name = name;
+        FileData = fileData;
+    }
+};
+
+/**
+ * @brief StreamDBModFile class
+ *
+ */
+class StreamDBModFile {
+public:
+    Mod Parent;
+    std::string Name;
+    uint64_t FileId = 0;
+    std::vector<std::byte> FileData;
+    int32_t LODcount = 0;
+    std::vector<int32_t> LODDataOffset;
+    std::vector<int32_t> LODDataLength;
+    std::vector<std::vector<std::byte>> LODFileData;
+
+    /**
+     * @brief Construct a new StreamDBModFile object
+     *
+     * @param parent Parent mod
+     * @param name Mod name
+     */
+    StreamDBModFile(Mod parent, std::string name)
+    {
+        Parent = parent;
+        Name = name;
+        LODcount = 0;
+    }
+};
+
+/**
+ * @brief StreamDBContainer class
+ *
+ */
+class StreamDBContainer {
+public:
+    std::string Name;
+    std::string Path;
+    StreamDBHeader Header;
+    std::vector<StreamDBModFile> ModFiles;
+    std::vector<StreamDBEntry> StreamDBEntries;
+
+    /**
+     * @brief Construct a new StreamDBModFile object
+     *
+     * @param name StreamDB container name
+     * @param name StreamDB container path
+     */
+    StreamDBContainer(std::string name, std::string path)
+    {
+        Name = name;
+        Path = path;
+    }
+};
+
+/**
  * @brief BlangFileEntry class
  * 
  */
@@ -346,6 +460,7 @@ extern bool AreModsSafeForOnline;
 
 extern std::vector<ResourceContainer> ResourceContainerList;
 extern std::vector<SoundContainer> SoundContainerList;
+extern std::vector<StreamDBContainer> StreamDBContainerList;
 extern std::map<uint64_t, ResourceDataEntry> ResourceDataMap;
 extern const std::vector<std::string> SupportedFileFormats;
 
@@ -382,6 +497,11 @@ void ReadSoundEntries(MemoryMappedFile &memoryMappedFile, SoundContainer &soundC
 std::vector<SoundEntry> GetSoundEntriesToModify(SoundContainer &soundContainer, uint32_t soundModId);
 void ReplaceSounds(MemoryMappedFile &memoryMappedFile, SoundContainer &soundContainer, std::stringstream &os);
 
+// StreamDB mods
+void LoadStreamDBMods(StreamDBContainer &streamDBContainer);
+void BuildStreamDBIndex(StreamDBContainer &streamDBContainer, std::stringstream &os);
+void WriteStreamDBFile(FILE *&streamDBFile, const StreamDBContainer &streamDBContainer, std::stringstream &os);
+
 // Path to containers
 std::string PathToResourceContainer(const std::string &name);
 std::string PathToSoundContainer(const std::string &name);
@@ -396,6 +516,7 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
 void LoadUnzippedMod(std::string unzippedMod, Mod &globalLooseMod, std::atomic<int32_t> &unzippedModCount,
     std::map<int32_t, std::vector<ResourceModFile>> &resourceModFiles,
     std::map<int32_t, std::vector<SoundModFile>> &soundModFiles,
+    std::map<int32_t, std::vector<StreamDBModFile>> &streamDBModFiles,
     std::vector<std::string> &notFoundContainers);
 
 // Misc

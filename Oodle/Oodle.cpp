@@ -45,7 +45,7 @@ bool OodleInit()
     // Load oodle dll
     std::string oo2corePath = BasePath + "..\\oo2core_8_win64.dll";
     HMODULE oodle = LoadLibraryA(oo2corePath.c_str());
-    
+
     if (!oodle) {
         return false;
     }

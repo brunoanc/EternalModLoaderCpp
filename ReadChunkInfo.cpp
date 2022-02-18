@@ -53,7 +53,7 @@ void ReadChunkInfo(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
 
         nameId = ((nameId + 1) * 8) + dummy7Off;
         std::copy(memoryMappedFile.Mem + nameId, memoryMappedFile.Mem + nameId + 8, (std::byte*)&nameId);
-        
+
         name = resourceContainer.NamesList[nameId];
 
         ResourceChunk chunk(name, fileOffset);

@@ -40,6 +40,7 @@ file(GLOB SOURCES
         ./ReplaceChunks.cpp
         ./ReplaceSounds.cpp
         ./SetModDataForChunk.cpp
+        ./WriteStreamDB.cpp
         ./miniz/miniz.c
         ./miniz/miniz.h
         ./jsonxx/jsonxx.cc

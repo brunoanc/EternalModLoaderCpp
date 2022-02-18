@@ -15,6 +15,7 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
     std::vector<std::string> modFileNameList;
     std::map<int32_t, std::vector<ResourceModFile>> resourceModFiles;
     std::map<int32_t, std::vector<SoundModFile>> soundModFiles;
+    std::map<int32_t, std::vector<StreamDBModFile>> streamDBModFiles;
 
     // Load zipped mod
     mz_zip_archive modZip;
@@ -77,6 +78,7 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
 
         // Determine the game container for each mod file
         bool isSoundMod = false;
+        bool isStreamDBMod = false;
         std::string modFileName = zipEntryName;
         std::vector<std::string> modFilePathParts = SplitString(modFileName, '/');
 
@@ -95,10 +97,17 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
             modFileName = modFileName.substr(resourceName.size() + 1, modFileName.size() - resourceName.size() - 1);
         }
 
-        // Check if this is a sound mod or not
+        // Get path to resource file
         std::string resourcePath = PathToResourceContainer(resourceName + ".resources");
 
-        if (resourcePath.empty()) {
+        // Check if this is a streamdb mod
+        if (resourceName == "streamdb") {
+            isStreamDBMod = true;
+            resourcePath = BasePath + "EternalMod.streamdb";
+        }
+
+        // Check if this is a sound mod
+        if (resourcePath.empty() && !isStreamDBMod) {
             resourcePath = PathToSoundContainer(resourceName);
 
             if (!resourcePath.empty()) {
@@ -116,7 +125,43 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
             }
         }
 
-        if (isSoundMod) {
+        if (isStreamDBMod) {
+            // Get the streamdb container info object, create it if it doesn't exist
+            mtx.lock();
+
+            auto x = std::find_if(StreamDBContainerList.begin(), StreamDBContainerList.end(),
+                [](const StreamDBContainer &streamDbContainer) { return streamDbContainer.Name == "EternalMod.streamdb"; });
+
+            if (x == StreamDBContainerList.end()) {
+                StreamDBContainerList.push_back(StreamDBContainer("EternalMod.streamdb", resourcePath));
+                x = StreamDBContainerList.end() - 1;
+            }
+
+            auto streamDBContainerIndex = std::distance(StreamDBContainerList.begin(), x);
+
+            mtx.unlock();
+
+            if (!ListResources) {
+                // Load the streamdb mod
+                std::byte *unzippedEntry;
+                size_t unzippedEntrySize;
+
+                if ((unzippedEntry = (std::byte*)mz_zip_reader_extract_to_heap(&modZip, i, &unzippedEntrySize, 0)) == nullptr) {
+                    mtx.lock();
+                    std::cout << RED << "ERROR: " << "Failed to extract zip entry from " << zippedMod << '\n';
+                    mtx.unlock();
+                    continue;
+                }
+
+                StreamDBModFile streamDBModFile(mod, fs::path(modFileName).filename().string());
+                streamDBModFile.FileData = std::vector<std::byte>(unzippedEntry, unzippedEntry + unzippedEntrySize);
+                free(unzippedEntry);
+
+                streamDBModFiles[streamDBContainerIndex].push_back(streamDBModFile);
+                zippedModCount++;
+            }
+        }
+        else if (isSoundMod) {
             // Get the sound container info object, create it if it doesn't exist
             mtx.lock();
 
@@ -256,26 +301,36 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
 
         // Unload the mod files if necessary
         if (!LoadOnlineSafeModsOnly) {
-            for (auto &resourceMod : resourceModFiles) {
-                ResourceContainer &resourceContainer = ResourceContainerList[resourceMod.first];
+            for (const auto &resourceMod : resourceModFiles) {
+                auto &resourceContainer = ResourceContainerList[resourceMod.first];
                 resourceContainer.ModFileList.insert(resourceContainer.ModFileList.end(), resourceMod.second.begin(), resourceMod.second.end());
             }
 
-            for (auto &soundMod : soundModFiles) {
-                SoundContainer &soundContainer = SoundContainerList[soundMod.first];
+            for (const auto &soundMod : soundModFiles) {
+                auto &soundContainer = SoundContainerList[soundMod.first];
                 soundContainer.ModFileList.insert(soundContainer.ModFileList.end(), soundMod.second.begin(), soundMod.second.end());
-        }
+            }
+
+            for (const auto &streamDBMod : streamDBModFiles) {
+                auto &streamDBContainer = StreamDBContainerList[streamDBMod.first];
+                streamDBContainer.ModFiles.insert(streamDBContainer.ModFiles.end(), streamDBMod.second.begin(), streamDBMod.second.end());
+            }
         }
     }
     else {
-        for (auto &resourceMod : resourceModFiles) {
-            ResourceContainer &resourceContainer = ResourceContainerList[resourceMod.first];
+        for (const auto &resourceMod : resourceModFiles) {
+            auto &resourceContainer = ResourceContainerList[resourceMod.first];
             resourceContainer.ModFileList.insert(resourceContainer.ModFileList.end(), resourceMod.second.begin(), resourceMod.second.end());
         }
 
-        for (auto &soundMod : soundModFiles) {
-            SoundContainer &soundContainer = SoundContainerList[soundMod.first];
+        for (const auto &soundMod : soundModFiles) {
+            auto &soundContainer = SoundContainerList[soundMod.first];
             soundContainer.ModFileList.insert(soundContainer.ModFileList.end(), soundMod.second.begin(), soundMod.second.end());
+        }
+
+        for (const auto &streamDBMod : streamDBModFiles) {
+            auto &streamDBContainer = StreamDBContainerList[streamDBMod.first];
+            streamDBContainer.ModFiles.insert(streamDBContainer.ModFiles.end(), streamDBMod.second.begin(), streamDBMod.second.end());
         }
     }
 
@@ -294,7 +349,7 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
         else {
             std::cout << RED << "WARNING: " << RESET << "Mod " << YELLOW << zippedMod << RESET << " is not safe for online play, skipping" << '\n';
         }
-        
+
         mtx.unlock();
     }
 
@@ -314,6 +369,7 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
 void LoadUnzippedMod(std::string unzippedMod, Mod &globalLooseMod, std::atomic<int32_t> &unzippedModCount,
     std::map<int32_t, std::vector<ResourceModFile>> &resourceModFiles,
     std::map<int32_t, std::vector<SoundModFile>> &soundModFiles,
+    std::map<int32_t, std::vector<StreamDBModFile>> &streamDBModFiles,
     std::vector<std::string> &notFoundContainers)
 {
     std::replace(unzippedMod.begin(), unzippedMod.end(), Separator, '/');
@@ -325,6 +381,7 @@ void LoadUnzippedMod(std::string unzippedMod, Mod &globalLooseMod, std::atomic<i
 
     // Determine the game container for each mod file
     bool isSoundMod = false;
+    bool isStreamDBMod = false;
     std::string resourceName = modFilePathParts[2];
     std::string fileName;
 
@@ -338,10 +395,17 @@ void LoadUnzippedMod(std::string unzippedMod, Mod &globalLooseMod, std::atomic<i
         fileName = unzippedMod.substr(modFilePathParts[1].size() + resourceName.size() + 4, unzippedMod.size() - resourceName.size() - 4);
     }
 
-    // Check if this is a sound mod or not
+    // Get path to resource file
     std::string resourcePath = PathToResourceContainer(resourceName + ".resources");
 
-    if (resourcePath.empty()) {
+    // Check if this is a streamdb mod
+    if (resourceName == "streamdb") {
+        isStreamDBMod = true;
+        resourcePath = BasePath + "EternalMod.streamdb";
+    }
+
+    // Check if this is a sound mod
+    if (resourcePath.empty() && !isStreamDBMod) {
         resourcePath = PathToSoundContainer(resourceName);
 
         if (!resourcePath.empty()) {
@@ -359,7 +423,56 @@ void LoadUnzippedMod(std::string unzippedMod, Mod &globalLooseMod, std::atomic<i
         }
     }
 
-    if (isSoundMod) {
+    if (isStreamDBMod) {
+        // Get the streamdb container info object, create it if it doesn't exist
+        mtx.lock();
+
+        auto x = std::find_if(StreamDBContainerList.begin(), StreamDBContainerList.end(),
+            [](const StreamDBContainer &streamDbContainer) { return streamDbContainer.Name == "EternalMod.streamdb"; });
+
+        if (x == StreamDBContainerList.end()) {
+            StreamDBContainerList.push_back(StreamDBContainer("EternalMod.streamdb", resourcePath));
+            x = StreamDBContainerList.end() - 1;
+        }
+
+        auto streamDBContainerIndex = std::distance(StreamDBContainerList.begin(), x);
+
+        mtx.unlock();
+
+        if (!ListResources) {
+            // Load the streamdb mod
+            int64_t unzippedModSize = fs::file_size(unzippedMod);
+
+            StreamDBModFile streamDBModFile(globalLooseMod, fs::path(fileName).filename().string());
+
+            FILE *unzippedModFile = fopen(unzippedMod.c_str(), "rb");
+
+            if (!unzippedModFile) {
+                mtx.lock();
+                std::cout << RED << "ERROR: " << RESET << "Failed to open " << unzippedMod << " for reading." << '\n';
+                mtx.unlock();
+                return;
+            }
+
+            streamDBModFile.FileData.resize(unzippedModSize);
+
+            if (fread(streamDBModFile.FileData.data(), 1, unzippedModSize, unzippedModFile) != unzippedModSize) {
+                mtx.lock();
+                std::cout << RESET << "ERROR: " << RESET << "Failed to read from " << unzippedMod << "." << '\n';
+                mtx.unlock();
+                return;
+            }
+
+            fclose(unzippedModFile);
+
+            mtx.lock();
+            streamDBModFiles[streamDBContainerIndex].push_back(streamDBModFile);
+            mtx.unlock();
+
+            unzippedModCount++;
+        }
+    }
+    else if (isSoundMod) {
         mtx.lock();
 
         // Get the sound container info object, create it if it doesn't exist
@@ -388,9 +501,9 @@ void LoadUnzippedMod(std::string unzippedMod, Mod &globalLooseMod, std::atomic<i
 
             // Load the sound mod
             int64_t unzippedModSize = fs::file_size(unzippedMod);
-            
+
             SoundModFile soundModFile(globalLooseMod, fs::path(fileName).filename().string());
-            
+
             FILE *unzippedModFile = fopen(unzippedMod.c_str(), "rb");
 
             if (!unzippedModFile) {

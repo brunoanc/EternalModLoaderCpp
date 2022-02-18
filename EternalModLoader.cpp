@@ -43,6 +43,7 @@ bool AreModsSafeForOnline = true;
 
 std::vector<ResourceContainer> ResourceContainerList;
 std::vector<SoundContainer> SoundContainerList;
+std::vector<StreamDBContainer> StreamDBContainerList;
 std::map<uint64_t, ResourceDataEntry> ResourceDataMap;
 
 std::vector<std::stringstream> stringStreams;
@@ -227,6 +228,7 @@ int main(int argc, char **argv)
     std::atomic<int32_t> unzippedModCount = 0;
     std::map<int32_t, std::vector<ResourceModFile>> resourceModFiles;
     std::map<int32_t, std::vector<SoundModFile>> soundModFiles;
+    std::map<int32_t, std::vector<StreamDBModFile>> streamDBModFiles;
     Mod globalLooseMod;
     globalLooseMod.LoadPriority = INT_MIN;
 
@@ -235,8 +237,8 @@ int main(int argc, char **argv)
         unzippedModLoadingThreads.reserve(unzippedMods.size());
 
         for (const auto &unzippedMod : unzippedMods) {
-            unzippedModLoadingThreads.push_back(std::thread(LoadUnzippedMod, unzippedMod, std::ref(globalLooseMod),
-                std::ref(unzippedModCount), std::ref(resourceModFiles), std::ref(soundModFiles), std::ref(notFoundContainers)));
+            unzippedModLoadingThreads.push_back(std::thread(LoadUnzippedMod, unzippedMod, std::ref(globalLooseMod), std::ref(unzippedModCount),
+                std::ref(resourceModFiles), std::ref(soundModFiles), std::ref(streamDBModFiles), std::ref(notFoundContainers)));
         }
 
         for (auto &thread : unzippedModLoadingThreads) {
@@ -245,7 +247,7 @@ int main(int argc, char **argv)
     }
     else {
         for (const auto &unzippedMod : unzippedMods) {
-            LoadUnzippedMod(unzippedMod, globalLooseMod, unzippedModCount, resourceModFiles, soundModFiles, notFoundContainers);
+            LoadUnzippedMod(unzippedMod, globalLooseMod, unzippedModCount, resourceModFiles, soundModFiles, streamDBModFiles, notFoundContainers);
         }
     }
 
@@ -258,27 +260,37 @@ int main(int argc, char **argv)
 
         if (!LoadOnlineSafeModsOnly) {
             // Inject online disabler mods
-            for (auto &resourceMod : resourceModFiles) {
+            for (const auto &resourceMod : resourceModFiles) {
                 ResourceContainer &resourceContainer = ResourceContainerList[resourceMod.first];
                 resourceContainer.ModFileList.insert(resourceContainer.ModFileList.end(), resourceMod.second.begin(), resourceMod.second.end());
             }
 
-            for (auto &soundMod : soundModFiles) {
+            for (const auto &soundMod : soundModFiles) {
                 SoundContainer &soundContainer = SoundContainerList[soundMod.first];
                 soundContainer.ModFileList.insert(soundContainer.ModFileList.end(), soundMod.second.begin(), soundMod.second.end());
+            }
+
+            for (const auto &streamDBMod : streamDBModFiles) {
+                auto &streamDBContainer = StreamDBContainerList[streamDBMod.first];
+                streamDBContainer.ModFiles.insert(streamDBContainer.ModFiles.end(), streamDBMod.second.begin(), streamDBMod.second.end());
             }
         }
     }
     else {
         // Inject mods
-        for (auto &resourceMod : resourceModFiles) {
+        for (const auto &resourceMod : resourceModFiles) {
             ResourceContainer &resourceContainer = ResourceContainerList[resourceMod.first];
             resourceContainer.ModFileList.insert(resourceContainer.ModFileList.end(), resourceMod.second.begin(), resourceMod.second.end());
         }
 
-        for (auto &soundMod : soundModFiles) {
+        for (const auto &soundMod : soundModFiles) {
             SoundContainer &soundContainer = SoundContainerList[soundMod.first];
             soundContainer.ModFileList.insert(soundContainer.ModFileList.end(), soundMod.second.begin(), soundMod.second.end());
+        }
+
+        for (const auto &streamDBMod : streamDBModFiles) {
+            auto &streamDBContainer = StreamDBContainerList[streamDBMod.first];
+            streamDBContainer.ModFiles.insert(streamDBContainer.ModFiles.end(), streamDBMod.second.begin(), streamDBMod.second.end());
         }
     }
 
@@ -340,7 +352,9 @@ int main(int argc, char **argv)
 
     // List resources to be modified and exit
     if (ListResources) {
-        bool printPackageMapSpecJsonPath = false;
+        // Print the packagemapspec path if the modded streamdb was added
+        bool printPackageMapSpecJsonPath = std::find_if(StreamDBContainerList.begin(), StreamDBContainerList.end(),
+            [](const StreamDBContainer &streamDBContainer) { return streamDBContainer.Name == "EternalMod.streamdb"; }) != StreamDBContainerList.end();
 
         for (auto &resourceContainer : ResourceContainerList) {
             if (resourceContainer.Path.empty()) {
@@ -401,6 +415,14 @@ int main(int argc, char **argv)
             std::cout << soundContainer.Path << '\n';
         }
 
+        for (auto &streamDBContainer : StreamDBContainerList) {
+            if (streamDBContainer.Path.empty()) {
+                continue;
+            }
+
+            std::cout << streamDBContainer.Path << '\n';
+        }
+
         std::cout.flush();
         return 0;
     }
@@ -432,7 +454,7 @@ int main(int argc, char **argv)
     // Load mods
     chrono::steady_clock::time_point modLoadingBegin = chrono::steady_clock::now();
 
-    stringStreams.resize(ResourceContainerList.size() + SoundContainerList.size());
+    stringStreams.resize(ResourceContainerList.size() + SoundContainerList.size() + StreamDBContainerList.size());
 
     if (MultiThreading) {
         std::vector<std::thread> modLoadingThreads;
@@ -444,6 +466,10 @@ int main(int argc, char **argv)
 
         for (auto &soundContainer : SoundContainerList) {
             modLoadingThreads.push_back(std::thread(LoadSoundMods, std::ref(soundContainer)));
+        }
+
+        for (auto &streamDBContainer : StreamDBContainerList) {
+            modLoadingThreads.push_back(std::thread(LoadStreamDBMods, std::ref(streamDBContainer)));
         }
 
         for (int32_t i = 0; i < modLoadingThreads.size(); i++) {
@@ -459,6 +485,10 @@ int main(int argc, char **argv)
         for (auto &soundContainer : SoundContainerList) {
             LoadSoundMods(soundContainer);
         }
+
+        for (auto &streamDBContainer : StreamDBContainerList) {
+            LoadStreamDBMods(streamDBContainer);
+        }
     }
 
     // Modify PackageMapSpec JSON file in disk
@@ -468,7 +498,6 @@ int main(int argc, char **argv)
     else {
         std::cout << "Modified "<< YELLOW << PackageMapSpecInfo.PackageMapSpecPath << RESET << '\n';
     }
-
 
     // Delete buffer
     delete[] Buffer;

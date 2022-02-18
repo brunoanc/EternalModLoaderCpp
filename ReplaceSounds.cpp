@@ -154,7 +154,7 @@ void ReplaceSounds(MemoryMappedFile &memoryMappedFile, SoundContainer &soundCont
 {
     // Sort sound mod file list by priority
     std::stable_sort(soundContainer.ModFileList.begin(), soundContainer.ModFileList.end(),
-                     [](const SoundModFile &sound1, const SoundModFile &sound2) { return sound1.Parent.LoadPriority > sound2.Parent.LoadPriority; });
+        [](const SoundModFile &sound1, const SoundModFile &sound2) { return sound1.Parent.LoadPriority > sound2.Parent.LoadPriority; });
 
     int32_t fileCount = 0;
 
@@ -225,7 +225,7 @@ void ReplaceSounds(MemoryMappedFile &memoryMappedFile, SoundContainer &soundCont
                 }
 
                 mtx.unlock();
-                
+
                 if (soundModFile.FileBytes.size() > 0) {
                     encodedSize = soundModFile.FileBytes.size();
                     format = 2;
@@ -271,7 +271,7 @@ void ReplaceSounds(MemoryMappedFile &memoryMappedFile, SoundContainer &soundCont
             os << RED << "ERROR: " << RESET << "Failed to resize " << soundContainer.Path << '\n';
             return;
         }
-        
+
         std::copy(soundModFile.FileBytes.begin(), soundModFile.FileBytes.end(), memoryMappedFile.Mem + soundModOffset);
 
         // Replace the sound info for this sound id
