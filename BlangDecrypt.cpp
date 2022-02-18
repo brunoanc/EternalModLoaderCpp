@@ -26,7 +26,6 @@
 #include <openssl/hmac.h>
 #include "EternalModLoader.hpp"
 
-
 /**
  * @brief Hash data using HMAC SHA256 algorithm
  * 
@@ -236,7 +235,7 @@ std::vector<std::byte> IdCrypt(const std::vector<std::byte> &fileData, const std
         }
 
         // Make sure the file HMAC and the new HMAC are the same
-        if (std::memcmp(hmac, fileHmac, 0x20)) {
+        if (std::memcmp(hmac, fileHmac, 0x20) != 0) {
             return std::vector<std::byte>();
         }
     }

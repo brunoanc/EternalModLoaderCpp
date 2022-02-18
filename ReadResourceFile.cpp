@@ -82,7 +82,7 @@ void ReadResource(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourc
 
             ResourceName resourceName(fullFileName, normalizedFileName);
             namesList.push_back(resourceName);
-            
+
             currentNameBytes.clear();
             continue;
         }

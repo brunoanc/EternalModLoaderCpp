@@ -24,7 +24,6 @@ typedef int32_t OodLZ_CompressFunc(
     int32_t codec, uint8_t *src_buf, size_t src_len, uint8_t *dst_buf, int32_t level,
     void *opts, size_t offs, size_t unused, void *scratch, size_t scratch_size);
 
-
 // Oodle decompress function type
 typedef int32_t OodLZ_DecompressFunc(uint8_t *src_buf, int32_t src_len, uint8_t *dst, size_t dst_size,
     int32_t fuzz, int32_t crc, int32_t verbose,

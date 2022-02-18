@@ -30,7 +30,7 @@ jobs:
 
     - name: Build
       run: cmake --build ${{github.workspace}}\build --config ${{env.BUILD_TYPE}}
-    
+
     - name: Upload Exe
       uses: svenstaro/upload-release-action@v2
       with:
@@ -38,7 +38,7 @@ jobs:
         file_glob: true
         file: "**/DEternal_loadMods.exe"
         tag: ${{ github.ref }}
-  
+
   linux-build:
     runs-on: ubuntu-18.04
 

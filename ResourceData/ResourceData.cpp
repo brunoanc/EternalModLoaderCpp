@@ -47,7 +47,7 @@ std::map<uint64_t, ResourceDataEntry> ParseResourceData(const std::string &fileN
     if (!resourceDataFile) {
         return resourceDataMap;
     }
-    
+
     if (fread(&decompressedSize, 8, 1, resourceDataFile) != 1) {
         return resourceDataMap;
     }
@@ -83,7 +83,7 @@ std::map<uint64_t, ResourceDataEntry> ParseResourceData(const std::string &fileN
     // Read each entry
     for (uint64_t i = 0; i < amount; i++) {
         ResourceDataEntry resourceDataEntry;
-        
+
         uint64_t fileNameHash;
         std::copy(decompressedData.begin() + pos, decompressedData.begin() + pos + 8, (std::byte*)&fileNameHash);
         pos += 8;

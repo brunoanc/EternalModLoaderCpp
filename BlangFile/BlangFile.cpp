@@ -55,7 +55,7 @@ BlangFile::BlangFile(const std::vector<std::byte> &blangBytes)
     std::vector<std::byte> unknown;
 
     Strings.reserve(stringAmount);
-    
+
     for (uint32_t i = 0; i < stringAmount; i++) {
         // Read string hash
         uint32_t hash;

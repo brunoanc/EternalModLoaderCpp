@@ -231,7 +231,7 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
 
         if (modFile.Name.find(".tga") != std::string::npos || modFile.Name.find(".png") != std::string::npos) {
             // Check if it's a DIVINITY compressed texture
-            if (!std::memcmp(modFile.FileBytes.data(), DivinityMagic, 8)) {
+            if (std::memcmp(modFile.FileBytes.data(), DivinityMagic, 8) == 0) {
                 // This is a compressed texture, read the uncompressed size
                 std::copy(modFile.FileBytes.begin() + 8, modFile.FileBytes.begin() + 16, (std::byte*)&uncompressedSize);
 

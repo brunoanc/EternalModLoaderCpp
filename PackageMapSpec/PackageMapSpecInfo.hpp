@@ -27,10 +27,12 @@ class PackageMapSpecInfo {
 public:
     class PackageMapSpec *PackageMapSpec = nullptr;
     std::string PackageMapSpecPath;
-    bool invalidPackageMapSpec;
+    bool InvalidPackageMapSpec;
     bool WasPackageMapSpecModified;
 
-    bool ModifyPackageMapSpec() const;
+    bool ReadPackageMapSpec();
+    bool ModifyPackageMapSpec();
+    void AddCustomStreamDB(std::string fileName);
 };
 
 #endif

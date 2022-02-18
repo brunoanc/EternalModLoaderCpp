@@ -72,3 +72,38 @@ void LoadSoundMods(SoundContainer &soundContainer)
 
     delete memoryMappedFile;
 }
+
+/**
+ * @brief Load streamdb mods to the given streamdb container
+ *
+ * @param streamDBContainer StreamDBContainer containing the streamdb container to load the mods into
+ */
+void LoadStreamDBMods(StreamDBContainer &streamDBContainer)
+{
+    // Get stringstream to store output
+    mtx.lock();
+    std::stringstream &os = stringStreams[streamIndex++];
+    mtx.unlock();
+
+    if (!MultiThreading) {
+        // Redirect output to stdout directly
+        ((std::ostream&)os).rdbuf(std::cout.rdbuf());
+    }
+
+    // Construct StreamDBHeader and StreamDBEntries list in memory
+    BuildStreamDBIndex(streamDBContainer, os);
+
+    // Open streamdb file
+    FILE *streamDBFile = fopen(streamDBContainer.Path.c_str(), "wb+");
+
+    if (streamDBFile == nullptr) {
+        os << RED << "ERROR: " << RESET << "Failed to open " << YELLOW << streamDBContainer.Path << RESET << " for writing!" << std::endl;
+        return;
+    }
+
+    // Write the custom streamdb file
+    WriteStreamDBFile(streamDBFile, streamDBContainer, os);
+
+    // Close file
+    fclose(streamDBFile);
+}
