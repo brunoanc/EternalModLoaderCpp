@@ -139,7 +139,7 @@ void LoadZippedMod(std::string zippedMod, std::vector<std::string> &notFoundCont
 
             auto streamDBContainerIndex = std::distance(StreamDBContainerList.begin(), x);
 
-            mtx.lock();
+            mtx.unlock();
 
             if (!ListResources) {
                 // Load the streamdb mod
@@ -437,7 +437,7 @@ void LoadUnzippedMod(std::string unzippedMod, Mod &globalLooseMod, std::atomic<i
 
         auto streamDBContainerIndex = std::distance(StreamDBContainerList.begin(), x);
 
-        mtx.lock();
+        mtx.unlock();
 
         if (!ListResources) {
             // Load the streamdb mod

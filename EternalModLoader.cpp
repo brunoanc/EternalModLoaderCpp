@@ -260,27 +260,37 @@ int main(int argc, char **argv)
 
         if (!LoadOnlineSafeModsOnly) {
             // Inject online disabler mods
-            for (auto &resourceMod : resourceModFiles) {
+            for (const auto &resourceMod : resourceModFiles) {
                 ResourceContainer &resourceContainer = ResourceContainerList[resourceMod.first];
                 resourceContainer.ModFileList.insert(resourceContainer.ModFileList.end(), resourceMod.second.begin(), resourceMod.second.end());
             }
 
-            for (auto &soundMod : soundModFiles) {
+            for (const auto &soundMod : soundModFiles) {
                 SoundContainer &soundContainer = SoundContainerList[soundMod.first];
                 soundContainer.ModFileList.insert(soundContainer.ModFileList.end(), soundMod.second.begin(), soundMod.second.end());
+            }
+
+            for (const auto &streamDBMod : streamDBModFiles) {
+                auto &streamDBContainer = StreamDBContainerList[streamDBMod.first];
+                streamDBContainer.ModFiles.insert(streamDBContainer.ModFiles.end(), streamDBMod.second.begin(), streamDBMod.second.end());
             }
         }
     }
     else {
         // Inject mods
-        for (auto &resourceMod : resourceModFiles) {
+        for (const auto &resourceMod : resourceModFiles) {
             ResourceContainer &resourceContainer = ResourceContainerList[resourceMod.first];
             resourceContainer.ModFileList.insert(resourceContainer.ModFileList.end(), resourceMod.second.begin(), resourceMod.second.end());
         }
 
-        for (auto &soundMod : soundModFiles) {
+        for (const auto &soundMod : soundModFiles) {
             SoundContainer &soundContainer = SoundContainerList[soundMod.first];
             soundContainer.ModFileList.insert(soundContainer.ModFileList.end(), soundMod.second.begin(), soundMod.second.end());
+        }
+
+        for (const auto &streamDBMod : streamDBModFiles) {
+            auto &streamDBContainer = StreamDBContainerList[streamDBMod.first];
+            streamDBContainer.ModFiles.insert(streamDBContainer.ModFiles.end(), streamDBMod.second.begin(), streamDBMod.second.end());
         }
     }
 

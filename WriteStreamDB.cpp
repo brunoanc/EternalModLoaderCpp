@@ -43,9 +43,9 @@ void BuildStreamDBIndex(StreamDBContainer &streamDBContainer, std::stringstream 
         auto idString = splitName[splitName.size() - 1];
         auto idStringData = SplitString(idString, '#');
 
-        if (idString.length() == 2 && idStringData[0] == "id") {
+        if (idStringData.size() == 2 && idStringData[0] == "id") {
             try {
-                streamDBModId = std::stoi(idStringData[1]);
+                streamDBModId = std::stoull(idStringData[1]);
             }
             catch (...) {
                 streamDBModId = 0;
@@ -53,7 +53,7 @@ void BuildStreamDBIndex(StreamDBContainer &streamDBContainer, std::stringstream 
         }
 
         if (streamDBModId == 0) {
-            os << RED << "WARNING: " << YELLOW << "Bad filename for streamdb mod " << streamDBMod.Name << " - streamdb mod files should have the streamdb file id at the end of the filename with format \"_id#{{id here}}\", skipping\n";
+            os << RED << "WARNING: " << RESET << "Bad filename for streamdb mod " << streamDBMod.Name << " - streamdb mod files should have the streamdb file id at the end of the filename with format \"_id#{{id here}}\", skipping\n";
             continue;
         }
 
@@ -242,7 +242,7 @@ void WriteStreamDBFile(FILE *&streamDBFile, const StreamDBContainer &streamDBCon
 
     if (fileCount > 0) {
         os << "Number of streamdb entries replaced: " << GREEN << fileCount
-            << "streamdb entries" << RESET << " in " << YELLOW << streamDBContainer.Path << RESET << '\n';
+            << " streamdb entries" << RESET << " in " << YELLOW << streamDBContainer.Path << RESET << '\n';
     }
 
     os.flush();
