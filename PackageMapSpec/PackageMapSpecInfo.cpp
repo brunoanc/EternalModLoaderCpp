@@ -18,6 +18,7 @@
 
 #include <iostream>
 #include <vector>
+#include <algorithm>
 #include <filesystem>
 #include "EternalModLoader.hpp"
 
@@ -75,7 +76,7 @@ bool PackageMapSpecInfo::ModifyPackageMapSpec()
 
     if (x != StreamDBContainerList.end()) {
         // Get custom streamdb
-        int streamDBContainerIndex = std::distance(StreamDBContainerList.begin(), x);
+        int32_t streamDBContainerIndex = std::distance(StreamDBContainerList.begin(), x);
         auto streamDBContainer = StreamDBContainerList[streamDBContainerIndex];
 
         if (!streamDBContainer.StreamDBEntries.empty()) {
@@ -140,7 +141,7 @@ void PackageMapSpecInfo::AddCustomStreamDB(std::string fileName)
         x = PackageMapSpec->Files.end() - 1;
     }
 
-    int firstStreamDBIndex = std::distance(PackageMapSpec->Files.begin(), x);
+    int32_t firstStreamDBIndex = std::distance(PackageMapSpec->Files.begin(), x);
 
     // Insert the modded streamdb file before the rest
     PackageMapSpecFile streamDBFile;
@@ -155,9 +156,9 @@ void PackageMapSpecInfo::AddCustomStreamDB(std::string fileName)
     }
 
     // Get common map index
-    int commonMapIndex = -1;
+    int32_t commonMapIndex = -1;
 
-    for (int i = 0; i < PackageMapSpec->Maps.size(); i++) {
+    for (int32_t i = 0; i < PackageMapSpec->Maps.size(); i++) {
         if (PackageMapSpec->Maps[i].Name == "common") {
             commonMapIndex = i;
             break;

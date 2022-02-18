@@ -17,6 +17,8 @@
 */
 
 #include <sstream>
+#include <algorithm>
+#include <cstring>
 #include "EternalModLoader.hpp"
 
 const std::byte *StreamDBMagic = (std::byte*)"STREAMDB";
