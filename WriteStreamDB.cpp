@@ -65,7 +65,6 @@ void BuildStreamDBIndex(StreamDBContainer &streamDBContainer, std::stringstream 
         [](const StreamDBModFile &streamDbModFile) { return streamDbModFile.FileId == 0; }), streamDBContainer.ModFiles.end());
 
     if (streamDBContainer.ModFiles.empty()) {
-        os.flush();
         return;
     }
 
@@ -126,7 +125,6 @@ void BuildStreamDBIndex(StreamDBContainer &streamDBContainer, std::stringstream 
         [](const StreamDBModFile &streamDbModFile) { return streamDbModFile.LODcount == 0; }), streamDBContainer.ModFiles.end());
 
     if (streamDBContainer.ModFiles.empty()) {
-        os.flush();
         return;
     }
 
@@ -225,7 +223,6 @@ void WriteStreamDBFile(FILE *&streamDBFile, const StreamDBContainer &streamDBCon
                 [&](const StreamDBContainer &streamDBContainer2) { return streamDBContainer2.Name == streamDBContainer.Name; }));
 
             os << RED << "ERROR: " << RESET << "Failed to build \"" << streamDBContainer.Name << "\" file.\n";
-            os.flush();
             break;
         }
 
@@ -245,5 +242,7 @@ void WriteStreamDBFile(FILE *&streamDBFile, const StreamDBContainer &streamDBCon
             << " streamdb entries" << RESET << " in " << YELLOW << streamDBContainer.Path << RESET << '\n';
     }
 
-    os.flush();
+    if (SlowMode) {
+        os.flush();
+    }
 }
