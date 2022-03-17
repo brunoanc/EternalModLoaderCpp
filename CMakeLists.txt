@@ -15,6 +15,8 @@ file(GLOB SOURCES
         ./MemoryMappedFile/MemoryMappedFile.hpp
         ./Mod/Mod.cpp
         ./Mod/Mod.hpp
+        ./OnlineSafety/OnlineSafety.cpp
+        ./OnlineSafety/OnlineSafetySWF.hpp
         ./Oodle/Oodle.cpp
         ./Oodle/Oodle.hpp
         ./PackageMapSpec/PackageMapSpec.cpp
@@ -32,7 +34,6 @@ file(GLOB SOURCES
         ./GetObject.cpp
         ./LoadModFiles.cpp
         ./LoadMods.cpp
-        ./OnlineSafety.cpp
         ./PathToRes.cpp
         ./ReadChunkInfo.cpp
         ./ReadResourceFile.cpp
