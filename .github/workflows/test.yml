@@ -11,7 +11,7 @@ env:
   BUILD_TYPE: Debug
 
 jobs:
-  windows-build:
+  windows-test:
     runs-on: windows-2019
 
     defaults:
@@ -33,10 +33,7 @@ jobs:
     - name: Build
       run: cmake --build ${{github.workspace}}\build --config ${{env.BUILD_TYPE}}
 
-    - name: Test executable
-      run: .\build\Debug\DEternal_loadMods.exe --version
-
-  linux-build:
+  linux-test:
     runs-on: ubuntu-18.04
 
     steps:
@@ -50,6 +47,3 @@ jobs:
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-
-    - name: Test binary
-      run: ./build/DEternal_loadMods --version
