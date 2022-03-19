@@ -296,13 +296,13 @@ int main(int argc, char **argv)
 
     if (unzippedModCount > 0 && !ListResources) {
         if (LoadOnlineSafeModsOnly && !globalLooseMod.IsSafeForOnline) {
-            std::cout << RED << "WARNING: " << RESET << "Loose mod files are not safe for online play, skipping" << '\n';
+            std::cout << RED << "WARNING: " << RESET << "Loose mod files are not safe for public matchmaking, skipping" << '\n';
         }
         else {
             std::cout << "Found " << BLUE << unzippedModCount << " file(s) " << RESET << "in " << YELLOW << "'Mods' " << RESET << "folder..." << '\n';
 
             if (!globalLooseMod.IsSafeForOnline) {
-                std::cout << YELLOW << "WARNING: Loose mod files are not safe for online play, multiplayer will be disabled" << RESET << '\n';
+                std::cout << YELLOW << "WARNING: Loose mod files are not safe for online play, public matchmaking will be disabled" << RESET << '\n';
             }
         }
     }
