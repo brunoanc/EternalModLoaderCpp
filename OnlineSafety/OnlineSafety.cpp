@@ -160,12 +160,28 @@ std::vector<ResourceModFile> GetMultiplayerDisablerMods()
  */
 bool IsModSafeForOnline(const std::map<int32_t, std::vector<ResourceModFile>> &resourceModFiles)
 {
-    bool isSafe = true;
-    bool isModifyingUnsafeResource = false;
     std::vector<ResourceModFile> assetsInfoJsons;
 
     for (const auto &resource : resourceModFiles) {
+        // Skip resources with no mods
+        // Shouldn't happen, just a failsafe
+        if (resource.second.empty()) {
+            continue;
+        }
+
+        // Check if current resource is unsafe for modifications
+        bool isUnsafeResource = false;
+
+        for (const auto &keyword : UnsafeResourceNameKeywords) {
+            if (StartsWith(ToLower(resource.second[0].ResourceName), keyword)) {
+                isUnsafeResource = true;
+                break;
+            }
+        }
+
+        // Iterate through mod files to check safety
         for (const auto &modFile : resource.second) {
+            // Skip accidentally included OS files
             if (EndsWith(ToLower(modFile.Name), "desktop.ini") || EndsWith(ToLower(modFile.Name), ".ds_store")) {
                 continue;
             }
@@ -176,16 +192,9 @@ bool IsModSafeForOnline(const std::map<int32_t, std::vector<ResourceModFile>> &r
                 continue;
             }
 
-            for (const auto &keyword : UnsafeResourceNameKeywords) {
-                if (StartsWith(ToLower(modFile.ResourceName), keyword)) {
-                    isModifyingUnsafeResource = true;
-                    break;
-                }
-            }
-
             // Files with .lwo extension are unsafe
-            if (fs::path(modFile.Name).string().find(".lwo") != std::string::npos) {
-                isSafe = false;
+            if (fs::path(modFile.Name).string().find(".lwo") != std::string::npos && isUnsafeResource) {
+                return false;
             }
 
             // Allow modification of anything outside of "generated/decls/"
@@ -193,26 +202,21 @@ bool IsModSafeForOnline(const std::map<int32_t, std::vector<ResourceModFile>> &r
                 continue;
             }
 
-            if (isSafe) {
-                bool found = false;
+            // Check if mod file is on whitelist
+            bool found = false;
 
-                for (const auto &keyword : OnlineSafeModNameKeywords) {
-                    if (ToLower(modFile.Name).find(keyword) != std::string::npos) {
-                        found = true;
-                        break;
-                    }
+            for (const auto &keyword : OnlineSafeModNameKeywords) {
+                if (ToLower(modFile.Name).find(keyword) != std::string::npos) {
+                    found = true;
+                    break;
                 }
+            }
 
-                isSafe = found;
+            // Do not allow mods to modify non-whitelisted files in unsafe resources
+            if (!found && isUnsafeResource) {
+                return false;
             }
         }
-    }
-
-    if (isSafe) {
-        return true;
-    }
-    else if (isModifyingUnsafeResource) {
-        return false;
     }
 
     // Don't allow adding unsafe mods in safe resource files into unsafe resources files
