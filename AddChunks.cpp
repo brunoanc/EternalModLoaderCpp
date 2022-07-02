@@ -249,7 +249,7 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
                 std::vector<std::byte> compressedData;
 
                 try {
-                    compressedData = OodleCompress(modFile.FileBytes, OodleFormat::Kraken, OodleCompressionLevel::Normal);
+                    compressedData = OodleInstance.Compress(modFile.FileBytes, OodleFormat::Kraken, OodleCompressionLevel::Normal);
 
                     if (compressedData.empty()) {
                         throw std::exception();

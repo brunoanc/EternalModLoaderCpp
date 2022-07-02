@@ -62,7 +62,27 @@ enum class OodleFormat
     Akkorokamui
 };
 
-std::vector<std::byte> OodleDecompress(const std::vector<std::byte> &compressedData, const size_t decompressedSize);
-std::vector<std::byte> OodleCompress(const std::vector<std::byte> &compressedData, const OodleFormat format, const OodleCompressionLevel compressionLevel);
+/**
+ * @brief Oodle compression class
+ * 
+ */
+class Oodle {
+public:
+    std::vector<std::byte> Decompress(const std::vector<std::byte> &compressedData, const size_t decompressedSize);
+    std::vector<std::byte> Compress(const std::vector<std::byte> &compressedData, const OodleFormat format, const OodleCompressionLevel compressionLevel);
+
+    Oodle(const std::string &basePath);
+    Oodle() { }
+private:
+    // Oodle compression function pointers
+    OodLZ_CompressFunc* OodLZ_Compress = nullptr;
+    OodLZ_DecompressFunc* OodLZ_Decompress = nullptr;
+
+    // Path to get oodle dll from
+    std::string BasePath;
+};
+
+// Oodle instance
+extern Oodle OodleInstance;
 
 #endif

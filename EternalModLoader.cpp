@@ -150,6 +150,15 @@ int main(int argc, char **argv)
         std::cout.flush();
     }
 
+    // Init oodle
+    try {
+        OodleInstance = Oodle(BasePath);
+    }
+    catch (...) {
+        std::cout << RED << "ERROR: " << RESET << "Failed to initialize oodle." << std::endl;
+        return 1;
+    }
+
     // Reserve enough space for all resource/sound containers
     ResourceContainerList.reserve(100);
     SoundContainerList.reserve(30);

@@ -62,7 +62,7 @@ std::map<uint64_t, ResourceDataEntry> ParseResourceData(const std::string &fileN
     std::vector<std::byte> decompressedData;
 
     try {
-        decompressedData = OodleDecompress(compressedData, decompressedSize);
+        decompressedData = OodleInstance.Decompress(compressedData, decompressedSize);
 
         if (decompressedData.empty()) {
             throw std::exception();
