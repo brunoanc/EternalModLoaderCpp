@@ -1,14 +1,12 @@
-name: Test
+name: Release
 
 on:
   push:
-    branches:
-      - '**'
-    tags-ignore:
-      - '**'
+    tags:
+      - "v*"
 
 env:
-  BUILD_TYPE: Debug
+  BUILD_TYPE: Release
 
 jobs:
   test:
@@ -28,16 +26,20 @@ jobs:
     - name: Build
       run: cmake --build ${{ github.workspace }}/build --config ${{ env.BUILD_TYPE }}
 
-    - name: Upload artifact
+    - name: Upload binary
       if: ${{ matrix.os != 'windows-latest' }}
-      uses: actions/upload-artifact@v3
+      uses: marvinpinto/action-automatic-releases@latest
       with:
-        name: ${{ matrix.os }}
-        path: ${{ github.workspace }}/build/DEternal_loadMods
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        prerelease: false
+        files: |
+          **/DEternal_loadMods
 
-    - name: Upload artifact
+    - name: Upload exe
       if: ${{ matrix.os == 'windows-latest' }}
-      uses: actions/upload-artifact@v3
+      uses: svenstaro/upload-release-action@v2
       with:
-        name: ${{ matrix.os }}
-        path: ${{ github.workspace }}/build/DEternal_loadMods.exe
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file_glob: true
+        file: "**/DEternal_loadMods.exe"
+        tag: ${{ github.ref }}

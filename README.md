@@ -1,5 +1,5 @@
 # EternalModLoaderCpp
-![Build Status](https://github.com/PowerBall253/EternalModLoaderCpp/actions/workflows/build.yml/badge.svg)
+![Build Status](https://github.com/PowerBall253/EternalModLoaderCpp/actions/workflows/test.yml/badge.svg)
 
 C++ port of EternalModLoader by proteh, coded specifically for Linux users, but also Windows compatible.
 
