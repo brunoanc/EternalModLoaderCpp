@@ -68,7 +68,10 @@ endif(MSVC)
 add_executable(DEternal_loadMods ${SOURCES})
 
 # Link to OpenSSL
-set(OPENSSL_USE_STATIC_LIBS TRUE)
+if(MSVC)
+        set(OPENSSL_USE_STATIC_LIBS TRUE)
+endif(MSVC)
+
 find_package(OpenSSL REQUIRED)
 
 if(MSVC)

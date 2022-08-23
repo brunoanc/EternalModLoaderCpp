@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-22.04, windows-latest]
 
     runs-on: ${{ matrix.os }}
 
@@ -34,6 +34,7 @@ jobs:
         prerelease: false
         files: |
           **/DEternal_loadMods
+          /usr/lib/x86_64-linux-gnu/libcrypto.so
 
     - name: Upload exe
       if: ${{ matrix.os == 'windows-latest' }}
