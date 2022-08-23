@@ -40,4 +40,4 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: ${{ matrix.os }}
-        path: ${{ github.workspace }}/build/DEternal_loadMods.exe
+        path: ${{ github.workspace }}\build\Debug\DEternal_loadMods.exe
