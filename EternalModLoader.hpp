@@ -46,13 +46,6 @@
 #include "ResourceData/ResourceData.hpp"
 #include "Utils/Utils.hpp"
 
-// Colors for cout
-#define RESET "\033[0m"
-#define RED "\033[31m"
-#define GREEN "\033[32m"
-#define YELLOW "\033[33m"
-#define BLUE "\033[34m"
-
 namespace fs = std::filesystem;
 
 /**
@@ -447,6 +440,12 @@ inline bool operator==(ResourceChunk& chunk1, const ResourceChunk& chunk2)
 
 // Global variables
 inline constexpr int32_t Version = 21;
+
+extern std::string RESET;
+extern std::string RED;
+extern std::string GREEN;
+extern std::string YELLOW;
+extern std::string BLUE;
 
 extern char Separator;
 extern std::string BasePath;

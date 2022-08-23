@@ -28,6 +28,12 @@
 
 namespace chrono = std::chrono;
 
+std::string RESET = "";
+std::string RED = "";
+std::string GREEN = "";
+std::string YELLOW = "";
+std::string BLUE = "";
+
 const std::string ResourceDataFileName = "rs_data";
 const std::string PackageMapSpecJsonFileName = "packagemapspec.json";
 
@@ -71,6 +77,15 @@ int main(int argc, char **argv)
     std::cout.rdbuf()->pubsetbuf(coutBuf, 8192);
 
     Separator = fs::path::preferred_separator;
+
+    // Set colors
+    if (std::getenv("ETERNALMODLOADER_NO_COLORS") == NULL) {
+        RESET = "\033[0m";
+        RED = "\033[31m";
+        GREEN = "\033[32m";
+        YELLOW = "\033[33m";
+        BLUE = "\033[34m";
+    }
 
     // Enable colored output
 #ifdef _WIN32
