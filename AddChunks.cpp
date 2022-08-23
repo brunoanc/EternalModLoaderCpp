@@ -229,7 +229,7 @@ void AddChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resourceCo
         uint64_t uncompressedSize = compressedSize;
         std::byte compressionMode = (std::byte)0;
 
-        if (modFile.Name.find(".tga") != std::string::npos || modFile.Name.find(".png") != std::string::npos) {
+        if (modFile.Name.find(".tga") != std::string::npos || modFile.Name.find(".png") != std::string::npos && compressedSize != 0) {
             // Check if it's a DIVINITY compressed texture
             if (std::memcmp(modFile.FileBytes.data(), DivinityMagic, 8) == 0) {
                 // This is a compressed texture, read the uncompressed size

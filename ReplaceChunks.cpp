@@ -685,7 +685,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
         std::byte compressionMode = (std::byte)0;
 
         // If this is a texture, check if it's compressed, or compress it if necessary
-        if (EndsWith(chunk->ResourceName.NormalizedFileName, ".tga") || EndsWith(chunk->ResourceName.NormalizedFileName, ".png")) {
+        if (EndsWith(chunk->ResourceName.NormalizedFileName, ".tga") || EndsWith(chunk->ResourceName.NormalizedFileName, ".png") && compressedSize != 0) {
             // Check if it's a DIVINITY compressed texture
             if (std::memcmp(modFile.FileBytes.data(), DivinityMagic, 8) == 0) {
                 // This is a compressed texture, read the uncompressed size
