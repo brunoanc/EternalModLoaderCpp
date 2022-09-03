@@ -39,6 +39,7 @@ jobs:
         files: |
           **/DEternal_loadMods
           /usr/lib/x86_64-linux-gnu/libcrypto.so
+          /usr/lib/x86_64-linux-gnu/libssl.so
 
     - name: Upload exe
       if: ${{ matrix.os == 'windows-latest' }}
