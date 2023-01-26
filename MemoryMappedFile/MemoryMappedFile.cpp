@@ -20,6 +20,10 @@
 #include <filesystem>
 #include "MemoryMappedFile/MemoryMappedFile.hpp"
 
+#ifdef __linux__
+#include <fcntl.h>
+#endif
+
 namespace fs = std::filesystem;
 
 /**
@@ -147,7 +151,7 @@ bool MemoryMappedFile::ResizeFile(const uint64_t newSize)
         munmap(Mem, Size);
 
         // Resize file
-        fs::resize_file(FilePath, newSize);
+        fallocate(FileDescriptor, 0, 0, newSize);
 
         // Remap file
         Mem = (std::byte*)mmap(0, newSize, PROT_READ | PROT_WRITE, MAP_SHARED, FileDescriptor, 0);
