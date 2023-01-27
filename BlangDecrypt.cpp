@@ -21,10 +21,10 @@
 #include <string>
 #include <cstring>
 #include <ctime>
-#include <openssl/sha.h>
 #include <openssl/evp.h>
-#include <openssl/hmac.h>
 #include "EternalModLoader.hpp"
+
+#define SHA256_DIGEST_LENGTH 32
 
 /**
  * @brief Hash data using HMAC SHA256 algorithm
@@ -45,34 +45,41 @@ std::byte *HashData(const std::byte *data1, const size_t data1Len, const std::by
     // Check if hmacKey was passed
     if (hmacKey == nullptr) {
         // No HMAC key, use regular SHA256
-        SHA256_CTX sha256;
-        SHA256_Init(&sha256);
-
+        uint32_t sha256_length;
         std::byte *md = new std::byte[SHA256_DIGEST_LENGTH];
 
-        SHA256_Update(&sha256, (uint8_t*)data1, data1Len);
-        SHA256_Update(&sha256, (uint8_t*)data2, data2Len);
-        SHA256_Update(&sha256, (uint8_t*)data3, data3Len);
-        SHA256_Final((uint8_t*)md, &sha256);
+        EVP_MD_CTX *ctx = EVP_MD_CTX_new();
+        EVP_DigestInit_ex(ctx, EVP_sha256(), NULL);
+
+        EVP_DigestUpdate(ctx, data1, data1Len);
+        EVP_DigestUpdate(ctx, data2, data2Len);
+        EVP_DigestUpdate(ctx, data3, data3Len);
+
+        EVP_DigestFinal_ex(ctx, (uint8_t*)md, &sha256_length);
+        EVP_MD_CTX_free(ctx);
 
         return md;
     }
     else {
         // Use SHA256 HMAC
-        uint32_t md_len;
+        EVP_MAC *mac = EVP_MAC_fetch(nullptr, "HMAC", "provider=default");
+        EVP_MAC_CTX *ctx = EVP_MAC_CTX_new(mac);
 
-        HMAC_CTX *ctx = HMAC_CTX_new();
-        HMAC_Init_ex(ctx, hmacKey, hmacKeyLen, EVP_sha256(), nullptr);
+        OSSL_PARAM param[] { OSSL_PARAM_utf8_string("digest", (void*)"SHA256", 7), OSSL_PARAM_END };
+        EVP_MAC_init(ctx, (uint8_t*)hmacKey, hmacKeyLen, param);
 
-        std::byte *md = new std::byte[HMAC_size(ctx)];
+        size_t hmacSize = EVP_MAC_CTX_get_mac_size(ctx);
+        std::byte *md = new std::byte[hmacSize];
 
-        HMAC_Update(ctx, (uint8_t*)data1, data1Len);
-        HMAC_Update(ctx, (uint8_t*)data2, data2Len);
-        HMAC_Update(ctx, (uint8_t*)data3, data3Len);
-        HMAC_Final(ctx, (uint8_t*)md, &md_len);
+        EVP_MAC_update(ctx, (uint8_t*)data1, data1Len);
+        EVP_MAC_update(ctx, (uint8_t*)data2, data2Len);
+        EVP_MAC_update(ctx, (uint8_t*)data3, data3Len);
 
-        HMAC_CTX_free(ctx);
+        size_t written;
+        EVP_MAC_final(ctx, (uint8_t*)md, &written, hmacSize);
 
+        EVP_MAC_CTX_free(ctx);
+        EVP_MAC_free(mac);
         return md;
     }
 }
