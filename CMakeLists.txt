@@ -72,7 +72,7 @@ if(MSVC)
         set(OPENSSL_USE_STATIC_LIBS TRUE)
 endif(MSVC)
 
-find_package(OpenSSL REQUIRED)
+find_package(OpenSSL "3.0" REQUIRED)
 
 if(MSVC)
         target_link_options(DEternal_loadMods PUBLIC "/LTCG")

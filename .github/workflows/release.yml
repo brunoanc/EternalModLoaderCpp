@@ -22,7 +22,7 @@ jobs:
 
     - name: Install OpenSSL
       if: ${{ matrix.os == 'windows-latest' }}
-      run: choco install openssl.light
+      run: choco upgrade openssl.light
 
     - name: Configure CMake
       run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}
