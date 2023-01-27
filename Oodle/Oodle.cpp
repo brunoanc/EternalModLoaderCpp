@@ -27,6 +27,8 @@
 #include <dlfcn.h>
 #endif
 
+#define SAFE_SPACE 64
+
 // Oodle instance
 Oodle OodleInstance;
 
@@ -39,32 +41,32 @@ Oodle::Oodle(const std::string &basePath)
     BasePath = basePath;
 
 #ifdef _WIN32
-    // Load oodle dll
-    std::string oo2corePath = BasePath + "..\\oo2core_8_win64.dll";
-    HMODULE oodle = LoadLibraryA(oo2corePath.c_str());
+    // Load ooz dll
+    std::string oozPath = BasePath + "ooz.dll";
+    HMODULE ooz = LoadLibraryA(oozPath.c_str());
 
-    if (!oodle) {
+    if (!ooz) {
         throw std::exception();
     }
 
     // Get oodle compression functions
-    OodLZ_Compress = (OodLZ_CompressFunc*)GetProcAddress(oodle, "OodleLZ_Compress");
-    OodLZ_Decompress = (OodLZ_DecompressFunc*)GetProcAddress(oodle, "OodleLZ_Decompress");
+    KrakenCompress = (Kraken_Compress*)GetProcAddress(ooz, "Kraken_Compress");
+    KrakenDecompress = (Kraken_Decompress*)GetProcAddress(ooz, "Kraken_Decompress");
 #else
     // Load linoodle library
-    std::string linoodlePath = BasePath + "liblinoodle.so";
-    void *oodle = dlopen(linoodlePath.c_str(), RTLD_LAZY);
+    std::string oozPath = BasePath + "libooz.so";
+    void *ooz = dlopen(oozPath.c_str(), RTLD_LAZY);
 
-    if (!oodle) {
+    if (!ooz) {
         throw std::exception();
     }
 
     // Get oodle compression functions
-    OodLZ_Compress = (OodLZ_CompressFunc*)dlsym(oodle, "OodleLZ_Compress");
-    OodLZ_Decompress = (OodLZ_DecompressFunc*)dlsym(oodle, "OodleLZ_Decompress");
+    KrakenCompress = (Kraken_Compress*)dlsym(ooz, "Kraken_Compress");
+    KrakenDecompress = (Kraken_Decompress*)dlsym(ooz, "Kraken_Decompress");
 #endif
 
-    if (!OodLZ_Compress || !OodLZ_Decompress) {
+    if (!KrakenCompress || !KrakenDecompress) {
         throw std::exception();
     }
 }
@@ -79,14 +81,14 @@ Oodle::Oodle(const std::string &basePath)
 std::vector<std::byte> Oodle::Decompress(const std::vector<std::byte> &compressedData, const size_t decompressedSize)
 {
     // Init oodle if needed
-    if (!OodLZ_Decompress) {
+    if (!KrakenDecompress) {
         throw std::exception();
     }
 
     // Decompress data with oodle
-    std::vector<std::byte> decompressedData(decompressedSize);
+    std::vector<std::byte> decompressedData(decompressedSize + SAFE_SPACE);
 
-    if (OodLZ_Decompress((uint8_t*)compressedData.data(), compressedData.size(), (uint8_t*)decompressedData.data(), decompressedSize, 1, 1, 0, nullptr, 0, nullptr, nullptr, nullptr, 0, 0) == 0) {
+    if (KrakenDecompress((uint8_t*)compressedData.data(), compressedData.size(), (uint8_t*)decompressedData.data(), decompressedSize) == 0) {
         decompressedData.resize(0);
     }
 
@@ -101,10 +103,10 @@ std::vector<std::byte> Oodle::Decompress(const std::vector<std::byte> &compresse
  * @param compressionLevel Oodle compression level to use for compression
  * @return A byte vector containing the compressed data, or an empty byte vector on failure
  */
-std::vector<std::byte> Oodle::Compress(const std::vector<std::byte> &decompressedData, const OodleFormat format, const OodleCompressionLevel compressionLevel)
+std::vector<std::byte> Oodle::Compress(const std::vector<std::byte> &decompressedData)
 {
     // Init oodle if needed
-    if (!OodLZ_Compress) {
+    if (!KrakenCompress) {
         throw std::exception();
     }
 
@@ -113,8 +115,7 @@ std::vector<std::byte> Oodle::Compress(const std::vector<std::byte> &decompresse
     std::vector<std::byte> compressedData(compressedBufferSize);
 
     // Compress data with oodle
-    int32_t compressedSize = OodLZ_Compress(std::underlying_type<OodleFormat>::type(format), (uint8_t*)decompressedData.data(), decompressedData.size(),
-        (uint8_t*)compressedData.data(), std::underlying_type<OodleCompressionLevel>::type(compressionLevel), nullptr, 0, 0, nullptr, 0);
+    int32_t compressedSize = KrakenCompress((uint8_t*)decompressedData.data(), decompressedData.size(), (uint8_t*)compressedData.data(), 4);
 
     if (compressedSize <= 0) {
         compressedData.resize(0);

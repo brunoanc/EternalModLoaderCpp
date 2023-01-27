@@ -705,7 +705,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
                 std::vector<std::byte> compressedData;
 
                 try {
-                    compressedData = OodleInstance.Compress(modFile.FileBytes, OodleFormat::Kraken, OodleCompressionLevel::Normal);
+                    compressedData = OodleInstance.Compress(modFile.FileBytes);
 
                     if (compressedData.empty()) {
                         throw std::exception();
@@ -783,7 +783,7 @@ void ReplaceChunks(MemoryMappedFile &memoryMappedFile, ResourceContainer &resour
         // Only modify the .mapresources file if it has changed
         if (decompressedMapResourcesData != originalDecompressedMapResources) {
             // Compress the data
-            std::vector<std::byte> compressedMapResourcesData = OodleInstance.Compress(decompressedMapResourcesData, OodleFormat::Kraken, OodleCompressionLevel::Normal);
+            std::vector<std::byte> compressedMapResourcesData = OodleInstance.Compress(decompressedMapResourcesData);
 
             if (compressedMapResourcesData.empty()) {
                 os << "ERROR: " << RESET << "Failed to compress " << mapResourcesChunk->ResourceName.NormalizedFileName << '\n';

@@ -19,48 +19,9 @@
 #ifndef OODLE_HPP
 #define OODLE_HPP
 
-// Oodle compress function type
-typedef int32_t OodLZ_CompressFunc(
-    int32_t codec, uint8_t *src_buf, size_t src_len, uint8_t *dst_buf, int32_t level,
-    void *opts, size_t offs, size_t unused, void *scratch, size_t scratch_size);
-
-// Oodle decompress function type
-typedef int32_t OodLZ_DecompressFunc(uint8_t *src_buf, int32_t src_len, uint8_t *dst, size_t dst_size,
-    int32_t fuzz, int32_t crc, int32_t verbose,
-    uint8_t *dst_base, size_t e, void *cb, void *cb_ctx, void *scratch, size_t scratch_size, int32_t threadPhase);
-
-// Oodle compression levels enum
-enum class OodleCompressionLevel
-{
-    None,
-    SuperFast,
-    VeryFast,
-    Fast,
-    Normal,
-    Optimal1,
-    Optimal2,
-    Optimal3,
-    Optimal4,
-    Optimal5
-};
-
-// Oodle formats enum
-enum class OodleFormat
-{
-    LZH,
-    LZHLW,
-    LZNIB,
-    None,
-    LZB16,
-    LZBLW,
-    LZA,
-    LZNA,
-    Kraken,
-    Mermaid,
-    BitKnit,
-    Selkie,
-    Akkorokamui
-};
+// Kraken compression function types
+typedef int Kraken_Compress(uint8_t* src, size_t src_len, uint8_t* dst, int level);
+typedef int Kraken_Decompress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t dst_len);
 
 /**
  * @brief Oodle compression class
@@ -69,14 +30,14 @@ enum class OodleFormat
 class Oodle {
 public:
     std::vector<std::byte> Decompress(const std::vector<std::byte> &compressedData, const size_t decompressedSize);
-    std::vector<std::byte> Compress(const std::vector<std::byte> &compressedData, const OodleFormat format, const OodleCompressionLevel compressionLevel);
+    std::vector<std::byte> Compress(const std::vector<std::byte> &compressedData);
 
     Oodle(const std::string &basePath);
     Oodle() { }
 private:
     // Oodle compression function pointers
-    OodLZ_CompressFunc* OodLZ_Compress = nullptr;
-    OodLZ_DecompressFunc* OodLZ_Decompress = nullptr;
+    Kraken_Compress *KrakenCompress = nullptr;
+    Kraken_Decompress *KrakenDecompress = nullptr;
 
     // Path to get oodle dll from
     std::string BasePath;
