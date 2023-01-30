@@ -22,14 +22,12 @@ git clone https://github.com/PowerBall253/EternalModLoaderCpp.git
 Then, generate the makefile by running:
 ```
 cd EternalModLoaderCpp
-mkdir build
-cd build
-cmake .. # Append "-G 'MSYS Makefiles'" on MSYS
+cmake -B build .. # Append "-G 'MSYS Makefiles'" on MSYS
 ```
 
 Finally, build with:
 ```
-cmake --build . --config Release
+cmake --build build --config Release
 ```
 
 The DEternal_loadMods executable will be in the "build" folder in Linux/MinGW and in the "build/Release" folder in MSVC.
