@@ -19,18 +19,21 @@ if(MSVC)
                 set(OPENSSL_USE_STATIC_LIBS TRUE)
         endif()
         add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
-        set(CMAKE_CXX_FLAGS "/O2 /Oi /Ot /GL /EHsc /I \"${CMAKE_CURRENT_SOURCE_DIR}\\include\\\" /I \"${CMAKE_CURRENT_SOURCE_DIR}\\vendor\\\"")
+        set(CMAKE_CXX_FLAGS "/O2 /Oi /Ot /GL /EHsc")
 else()
         if(DEFINED ENV{ETERNALMODLOADERCPP_STATIC})
                 set(OPENSSL_USE_STATIC_LIBS TRUE)
-                set(CMAKE_CXX_FLAGS "-Wall -Werror -pthread -Ofast -static -I${CMAKE_CURRENT_SOURCE_DIR}/include -I${CMAKE_CURRENT_SOURCE_DIR}/vector")
+                set(CMAKE_CXX_FLAGS "-Wall -Werror -pthread -Ofast -static")
         else()
-                set(CMAKE_CXX_FLAGS "-Wall -Werror -pthread -Ofast -I${CMAKE_CURRENT_SOURCE_DIR}/include -I${CMAKE_CURRENT_SOURCE_DIR}/vendor")
+                set(CMAKE_CXX_FLAGS "-Wall -Werror -pthread -Ofast")
         endif()
 endif(MSVC)
 
 # Add executable to build
 add_executable(DEternal_loadMods ${SOURCES})
+
+# Add include directories
+target_include_directories(DEternal_loadMods PRIVATE ./include ./vendor)
 
 # Link to OpenSSL
 if(MSVC)
