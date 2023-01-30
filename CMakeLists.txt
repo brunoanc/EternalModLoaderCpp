@@ -36,10 +36,6 @@ add_executable(DEternal_loadMods ${SOURCES})
 target_include_directories(DEternal_loadMods PRIVATE ./include ./vendor)
 
 # Link to OpenSSL
-if(MSVC)
-        set(OPENSSL_USE_STATIC_LIBS TRUE)
-endif(MSVC)
-
 find_package(OpenSSL "3.0" REQUIRED)
 
 if(MSVC)
