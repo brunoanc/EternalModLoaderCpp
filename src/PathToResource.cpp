@@ -29,7 +29,7 @@ std::vector<fs::path> ResourceContainerPathList;
 
 void GetResourceContainerPathList()
 {
-    for (auto& file : fs::recursive_directory_iterator(ProgramOptions::BasePath + "game" + fs::path::preferred_separator)) {
+    for (auto& file : fs::recursive_directory_iterator(ProgramOptions::BasePath + "game" + SEPARATOR)) {
         if (file.path().extension().string() == ".resources") {
             ResourceContainerPathList.push_back(file.path());
         }
@@ -42,12 +42,12 @@ std::string PathToResourceContainer(const std::string& name)
     if (StartsWith(name, "dlc_hub")) {
         // dlc hub, remove the "dlc_" prefix, build the path and return it
         std::string resourcePath = name.substr(4, name.size() - 4);
-        resourcePath = ProgramOptions::BasePath + "game" + fs::path::preferred_separator + "dlc" + fs::path::preferred_separator + "hub" + fs::path::preferred_separator + resourcePath;
+        resourcePath = ProgramOptions::BasePath + "game" + SEPARATOR + "dlc" + SEPARATOR + "hub" + SEPARATOR + resourcePath;
         return fs::is_regular_file(resourcePath) ? resourcePath : "";
     }
     else if (StartsWith(name, "hub")) {
         // Regular hub, build the path and return it
-        std::string resourcePath = ProgramOptions::BasePath + "game" + fs::path::preferred_separator + "hub" + fs::path::preferred_separator + name;
+        std::string resourcePath = ProgramOptions::BasePath + "game" + SEPARATOR + "hub" + SEPARATOR + name;
         return fs::is_regular_file(resourcePath) ? resourcePath : "";
     }
     else if (StartsWith(name, "gameresources")
@@ -58,7 +58,7 @@ std::string PathToResourceContainer(const std::string& name)
     }
 
     // Find resource iterating through directories
-    std::string searchPath = ProgramOptions::BasePath + "game" + fs::path::preferred_separator;
+    std::string searchPath = ProgramOptions::BasePath + "game" + SEPARATOR;
 
     if (fs::is_regular_file(searchPath + name)) {
         return searchPath + name;
@@ -76,6 +76,6 @@ std::string PathToResourceContainer(const std::string& name)
 std::string PathToSoundContainer(const std::string& name)
 {
     // Assemble snd path and return it
-    std::string sndPath = ProgramOptions::BasePath + "sound" + fs::path::preferred_separator + "soundbanks" + fs::path::preferred_separator + "pc" + fs::path::preferred_separator + name + ".snd";
+    std::string sndPath = ProgramOptions::BasePath + "sound" + SEPARATOR + "soundbanks" + SEPARATOR + "pc" + SEPARATOR + name + ".snd";
     return fs::is_regular_file(sndPath) ? sndPath : "";
 }

@@ -20,8 +20,20 @@
 #define PROGRAMOPTIONS_HPP
 
 #include <string>
+#include <sstream>
 
 #define VERSION 21
+
+#ifdef _WIN32
+#define SEPARATOR static_cast<char>(fs::path::preferred_separator)
+#else
+#define SEPARATOR fs::path::preferred_separator
+#endif
+
+#if defined(_MSC_VER)
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#endif
 
 class ProgramOptions
 {

@@ -24,6 +24,7 @@
 #include <optional>
 #include "AssetsInfo.hpp"
 #include "Mod.hpp"
+#include "ProgramOptions.hpp"
 
 class ResourceModFile
 {

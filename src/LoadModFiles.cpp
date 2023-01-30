@@ -391,7 +391,7 @@ void LoadUnzippedMod(std::string unzippedMod, Mod& globalLooseMod, std::atomic<s
     std::vector<ResourceContainer>& resourceContainerList, std::vector<SoundContainer>& soundContainerList,
     std::vector<StreamDBContainer>& streamDBContainerList, std::vector<std::string>& notFoundContainers)
 {
-    std::replace(unzippedMod.begin(), unzippedMod.end(), fs::path::preferred_separator, '/');
+    std::replace(unzippedMod.begin(), unzippedMod.end(), SEPARATOR, '/');
     std::vector<std::string> modFilePathParts = SplitString(unzippedMod, '/');
 
     if (modFilePathParts.size() < 4) {

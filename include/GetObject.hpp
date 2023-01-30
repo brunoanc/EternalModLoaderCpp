@@ -20,6 +20,7 @@
 #define GETOBJECT_HPP
 
 #include <string>
+#include "ProgramOptions.hpp"
 #include "ResourceContainer.hpp"
 #include "SoundContainer.hpp"
 

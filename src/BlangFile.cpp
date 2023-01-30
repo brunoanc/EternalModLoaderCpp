@@ -17,6 +17,7 @@
 */
 
 #include <algorithm>
+#include "ProgramOptions.hpp"
 #include "Utils.hpp"
 #include "BlangFile.hpp"
 

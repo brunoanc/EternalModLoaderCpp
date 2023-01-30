@@ -87,7 +87,7 @@ void ReplaceChunks(MemoryMappedFile& memoryMappedFile, ResourceContainer& resour
 
                         // Check if there is a resource with the map's name, if so, build the map name using the path of the resource container
                         if (!PathToResourceContainer(modFileMapName + ".resources").empty()) {
-                            const std::string baseFolder = std::string(2, fs::path::preferred_separator).insert(1, "base"); // "/base/"
+                            const std::string baseFolder = std::string(2, SEPARATOR).insert(1, "base"); // "/base/"
                             modFileMapName = fs::path(resourceContainer.Path.substr(resourceContainer.Path.find(baseFolder) + 6)).parent_path().make_preferred().append(modFileMapName).string();
                         }
 

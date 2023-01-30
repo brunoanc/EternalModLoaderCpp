@@ -19,10 +19,7 @@
 #include <filesystem>
 #include "MemoryMappedFile.hpp"
 
-#ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#else
+#ifndef _WIN32
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -120,7 +117,7 @@ bool MemoryMappedFile::ResizeFile(const size_t newSize)
         CloseHandle(FileMapping);
 
         // Create new file mapping with bigger size
-        FileMapping = CreateFileMappingA(FileHandle, nullptr, PAGE_READWRITE, *(reinterpret_cast<DWORD*>(&newSize) + 1), *reinterpret_cast<DWORD*>(&newSize), nullptr);
+        FileMapping = CreateFileMappingA(FileHandle, nullptr, PAGE_READWRITE, *(reinterpret_cast<const DWORD*>(&newSize) + 1), *reinterpret_cast<const DWORD*>(&newSize), nullptr);
 
         if (GetLastError() != ERROR_SUCCESS || FileMapping == nullptr) {
             return false;

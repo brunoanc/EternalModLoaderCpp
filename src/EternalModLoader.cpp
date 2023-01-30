@@ -130,12 +130,12 @@ int main(int argc, char **argv)
     std::vector<std::string> unzippedMods;
     std::vector<std::string> notFoundContainers;
 
-    for (const auto& file : fs::recursive_directory_iterator(std::string(argv[1]) + fs::path::preferred_separator + "Mods")) {
+    for (const auto& file : fs::recursive_directory_iterator(std::string(argv[1]) + SEPARATOR + "Mods")) {
         if (!fs::is_regular_file(file.path())) {
             continue;
         }
 
-        if (file.path().extension() == ".zip" && file.path() == std::string(argv[1]) + fs::path::preferred_separator + "Mods" + fs::path::preferred_separator + file.path().filename().string()) {
+        if (file.path().extension() == ".zip" && file.path() == std::string(argv[1]) + SEPARATOR + "Mods" + SEPARATOR + file.path().filename().string()) {
             zippedMods.push_back(file.path().string());
         }
         else if (file.path().extension() != ".zip") {

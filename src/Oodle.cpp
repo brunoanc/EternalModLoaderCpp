@@ -39,8 +39,8 @@ bool Oodle::Init(const std::string& basePath)
     }
 
     // Get oodle compression functions
-    KrakenCompress = static_cast<Kraken_Compress*>(GetProcAddress(ooz, "Kraken_Compress"));
-    KrakenDecompress = static_cast<Kraken_Decompress*>(GetProcAddress(ooz, "Kraken_Decompress"));
+    KrakenCompress = reinterpret_cast<Kraken_Compress*>(GetProcAddress(ooz, "Kraken_Compress"));
+    KrakenDecompress = reinterpret_cast<Kraken_Decompress*>(GetProcAddress(ooz, "Kraken_Decompress"));
 #else
     // Load linoodle library
     std::string oozPath = basePath + "libooz.so";

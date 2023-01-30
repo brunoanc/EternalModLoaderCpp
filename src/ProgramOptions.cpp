@@ -30,7 +30,7 @@ std::stringstream ProgramOptions::GetProgramOptions(char **arguments, int count)
     std::stringstream output;
 
     // Get base path
-    BasePath = std::string(arguments[1]) + fs::path::preferred_separator + "base" + fs::path::preferred_separator;
+    BasePath = std::string(arguments[1]) + SEPARATOR + "base" + SEPARATOR;
 
     if (!fs::exists(BasePath)) {
         std::cout << Colors::Red << "ERROR: " << Colors::Reset << "Game directory does not exist!" << std::endl;
