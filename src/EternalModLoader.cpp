@@ -94,12 +94,6 @@ int main(int argc, char **argv)
         std::cout.flush();
     }
 
-    // Init oodle
-    if (!Oodle::Init(ProgramOptions::BasePath)) {
-        std::cout << Colors::Red << "ERROR: " << Colors::Reset << "Failed to initialize oodle." << std::endl;
-        return 1;
-    }
-
     // Parse rs_data
     std::map<uint64_t, ResourceDataEntry> resourceDataMap;
 

@@ -15,14 +15,10 @@ file(GLOB SOURCES
 
 # Compiler arguments
 if(MSVC)
-        if(DEFINED ENV{ETERNALMODLOADERCPP_STATIC})
-                set(OPENSSL_USE_STATIC_LIBS TRUE)
-        endif()
         add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
         set(CMAKE_CXX_FLAGS "/O2 /Oi /Ot /GL /EHsc")
 else()
         if(DEFINED ENV{ETERNALMODLOADERCPP_STATIC})
-                set(OPENSSL_USE_STATIC_LIBS TRUE)
                 set(CMAKE_CXX_FLAGS "-Wall -Werror -pthread -Ofast -static -s")
         else()
                 set(CMAKE_CXX_FLAGS "-Wall -Werror -pthread -Ofast -s")
@@ -35,16 +31,20 @@ add_executable(DEternal_loadMods ${SOURCES})
 # Add include directories
 target_include_directories(DEternal_loadMods PRIVATE ./include ./vendor)
 
-# Link to OpenSSL
+# Find OpenSSL
+if(DEFINED ENV{ETERNALMODLOADERCPP_STATIC})
+        set(OPENSSL_USE_STATIC_LIBS TRUE)
+endif()
+
 find_package(OpenSSL "3.0" REQUIRED)
 
 if(MSVC)
         target_link_options(DEternal_loadMods PUBLIC "/LTCG")
 endif(MSVC)
 
-target_link_libraries(
-        DEternal_loadMods
-        PUBLIC
-        OpenSSL::Crypto
-        ${CMAKE_DL_LIBS}
-)
+# Link OpenSSL and ooz static lib
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+        target_link_libraries(DEternal_loadMods OpenSSL::Crypto ${CMAKE_SOURCE_DIR}/vendor/ooz/ooz.lib)
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+        target_link_libraries(DEternal_loadMods OpenSSL::Crypto ${CMAKE_DL_LIBS} ${CMAKE_SOURCE_DIR}/vendor/ooz/libooz.a)
+endif()

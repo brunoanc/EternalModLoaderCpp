@@ -22,20 +22,17 @@
 #include <string>
 #include <vector>
 
-// Kraken compression function types
-typedef int Kraken_Compress(uint8_t* src, size_t src_len, uint8_t* dst, int level);
-typedef int Kraken_Decompress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t dst_len);
+// Kraken compression functions
+extern "C" {
+    int Kraken_Compress(uint8_t* src, size_t src_len, uint8_t* dst, int level);
+    int Kraken_Decompress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t dst_len);
+}
 
 class Oodle
 {
 public:
-    static bool Init(const std::string& basePath);
     static std::vector<std::byte> Decompress(std::vector<std::byte>& compressedData, const size_t decompressedSize);
     static std::vector<std::byte> Compress(std::vector<std::byte>& compressedData);
-private:
-    // Oodle compression function pointers
-    inline static Kraken_Compress *KrakenCompress;
-    inline static Kraken_Decompress *KrakenDecompress;
 };
 
 #endif
