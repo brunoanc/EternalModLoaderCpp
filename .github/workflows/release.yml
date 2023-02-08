@@ -22,9 +22,45 @@ jobs:
       run: cmake --build ${{ github.workspace }}/build --config ${{ env.BUILD_TYPE }}
 
     - name: Upload binary
-      uses: marvinpinto/action-automatic-releases@latest
+      uses: svenstaro/upload-release-action@v2
       with:
-        repo_token: "${{ secrets.GITHUB_TOKEN }}"
-        prerelease: false
-        files: |
-          **/DEternal_loadMods
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file_glob: true
+        file: "**/DEternal_loadMods"
+        tag: ${{ github.ref }}
+
+  release-static:
+    runs-on: ubuntu-latest
+    env:
+      ETERNALMODLOADERCPP_STATIC: '1'
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Alpine
+      uses: jirutka/setup-alpine@v1
+      with:
+        branch: v3.17
+
+    - name: Install dependencies
+      run: apk add build-base cmake openssl-dev openssl-libs-static
+      shell: alpine.sh --root {0}
+
+    - name: Configure CMake
+      run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}
+      shell: alpine.sh {0}
+
+    - name: Build
+      run: cmake --build ${{ github.workspace }}/build --config ${{ env.BUILD_TYPE }}
+      shell: alpine.sh {0}
+
+    - name: Rename
+      run: mv ${{ github.workspace }}/build/DEternal_loadMods ${{ github.workspace }}/build/DEternal_loadMods-static
+
+    - name: Upload static binary
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file_glob: true
+        file: "**/DEternal_loadMods-static"
+        tag: ${{ github.ref }}
