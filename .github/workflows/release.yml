@@ -43,7 +43,7 @@ jobs:
         branch: v3.17
 
     - name: Install dependencies
-      run: apk add build-base cmake openssl-dev openssl-libs-static
+      run: apk add build-base cmake openssl-dev openssl-libs-static upx
       shell: alpine.sh --root {0}
 
     - name: Configure CMake
@@ -56,6 +56,10 @@ jobs:
 
     - name: Rename
       run: mv ${{ github.workspace }}/build/DEternal_loadMods ${{ github.workspace }}/build/DEternal_loadMods-static
+
+    - name: Pack with UPX
+      run: upx --best ${{ github.workspace }}/build/DEternal_loadMods-static
+      shell: alpine.sh {0}
 
     - name: Upload static binary
       uses: svenstaro/upload-release-action@v2
