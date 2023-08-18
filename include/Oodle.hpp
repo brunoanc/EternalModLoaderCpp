@@ -21,6 +21,7 @@
 
 #include <string>
 #include <vector>
+#include <cstdint>
 
 // Kraken compression functions
 extern "C" {
