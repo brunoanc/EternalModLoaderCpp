@@ -640,17 +640,17 @@ void ReplaceChunks(MemoryMappedFile& memoryMappedFile, ResourceContainer& resour
 
             // Read the blang JSON and add the strings to the .blang file
             jsonxx::Object blangJson;
+            jsonxx::Array blangJsonStrings;
 
             try {
                 std::string blangJsonString(reinterpret_cast<char*>(modFile.FileBytes.data()), modFile.FileBytes.size());
                 blangJson.parse(blangJsonString);
+                blangJsonStrings = blangJson.get<jsonxx::Array>("strings");
             }
             catch (...) {
                 os << Colors::Red << "ERROR: " << Colors::Reset << "Failed to parse EternalMod/strings/" << fs::path(modFile.Name).replace_extension(".json").string() << '\n';
                 continue;
             }
-
-            jsonxx::Array blangJsonStrings = blangJson.get<jsonxx::Array>("strings");
 
             for (size_t i = 0; i < blangJsonStrings.size(); i++) {
                 jsonxx::Object blangJsonString = blangJsonStrings.get<jsonxx::Object>(i);
