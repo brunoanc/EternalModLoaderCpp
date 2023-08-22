@@ -450,7 +450,7 @@ int main(int argc, char **argv)
     if (!PackageMapSpecInfo::ModifyPackageMapSpec(ProgramOptions::BasePath, streamDBContainerList)) {
         std::cout << Colors::Red << "ERROR: " << Colors::Reset << "Failed to write " << PackageMapSpecInfo::PackageMapSpecPath << std::endl;
     }
-    else {
+    else if (PackageMapSpecInfo::WasPackageMapSpecModified) {
         std::cout << "Modified "<< Colors::Yellow << PackageMapSpecInfo::PackageMapSpecPath << Colors::Reset << '\n';
     }
 

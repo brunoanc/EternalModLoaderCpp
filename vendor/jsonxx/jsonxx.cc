@@ -11,6 +11,7 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+#include <stdexcept>
 #include <vector>
 #include <limits>
 #include <mutex>
@@ -26,8 +27,7 @@
 #include <cassert>
 void jsonxx::assertion( const char *file, int line, const char *expression, bool result ) {
     if( !result ) {
-        fprintf( stderr, "[JSONXX] expression '%s' failed at %s:%d -> ", expression, file, line );
-        assert( 0 );
+        throw std::runtime_error("Failed to parse JSON");
     }
 }
 #if defined(JSONXX_REENABLE_NDEBUG)
