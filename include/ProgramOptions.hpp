@@ -22,7 +22,7 @@
 #include <string>
 #include <sstream>
 
-#define VERSION 21
+#define VERSION 22
 
 #ifdef _WIN32
 #define SEPARATOR static_cast<char>(fs::path::preferred_separator)
@@ -46,6 +46,7 @@ public:
     inline static bool CompressTextures{false};
     inline static bool MultiThreading{true};
     inline static bool AreModsSafeForOnline{true};
+    inline static std::string BlangFileContainerRedirect;
 
     static std::stringstream GetProgramOptions(char **arguments, int count);
 };

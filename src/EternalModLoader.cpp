@@ -72,7 +72,8 @@ int main(int argc, char **argv)
         std::cout << "\t--slow - Slow mod loading mode that produces lighter files.\n";
         std::cout << "\t--online-safe - Only load online-safe mods.\n";
         std::cout << "\t--compress-textures - Compress texture files during the mod loading process.\n";
-        std::cout << "\t--disable-multithreading - Disables multi-threaded mod loading." << std::endl;
+        std::cout << "\t--disable-multithreading - Disables multi-threaded mod loading.\n";
+        std::cout << "\t--redirectBlangContainer [container name] - Redirects the injection of EternalMod string mods to the specified container." << std::endl;
         return 1;
     }
 

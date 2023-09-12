@@ -124,6 +124,11 @@ void LoadZippedMod(std::string zippedMod,
             modFileName = modFileName.substr(resourceName.size() + 1, modFileName.size() - resourceName.size() - 1);
         }
 
+        // Redirect .blang files to a different container if specified
+        if (!ProgramOptions::BlangFileContainerRedirect.empty() && modFilePathParts[1] == "EternalMod" && modFilePathParts[2] == "strings") {
+            resourceName = ProgramOptions::BlangFileContainerRedirect;
+        }
+
         // Get path to resource file
         std::string resourcePath = PathToResourceContainer(resourceName + ".resources");
 
@@ -412,6 +417,11 @@ void LoadUnzippedMod(std::string unzippedMod, Mod& globalLooseMod, std::atomic<s
     else {
         // Remove the resource name from the path
         fileName = unzippedMod.substr(modFilePathParts[1].size() + resourceName.size() + 4, unzippedMod.size() - resourceName.size() - 4);
+    }
+
+    // Redirect .blang files to a different container if specified
+    if (!ProgramOptions::BlangFileContainerRedirect.empty() && modFilePathParts[3] == "EternalMod" && modFilePathParts[4] == "strings") {
+        resourceName = ProgramOptions::BlangFileContainerRedirect;
     }
 
     // Get path to resource file

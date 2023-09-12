@@ -18,6 +18,7 @@
 
 #include <filesystem>
 #include <climits>
+#include "ProgramOptions.hpp"
 #include "Utils.hpp"
 #include "OnlineSafetySWF.hpp"
 #include "OnlineSafety.hpp"
@@ -154,7 +155,16 @@ std::vector<ResourceModFile> GetMultiplayerDisablerMods()
 
     // Localization for "Public Match" menu label and "Private Match" menu description
     for (auto& language : Languages) {
-        ResourceModFile multiplayerDisablerBlang(parentMod, "EternalMod/strings/" + language.first + ".json", "gameresources_patch1", false);
+        std::string resourceName;
+
+        if (!ProgramOptions::BlangFileContainerRedirect.empty()) {
+            resourceName = ProgramOptions::BlangFileContainerRedirect;
+        }
+        else {
+            resourceName = "gameresources_patch3";
+        }
+
+        ResourceModFile multiplayerDisablerBlang(parentMod, "EternalMod/strings/" + language.first + ".json", resourceName, false);
         multiplayerDisablerBlang.IsBlangJson = true;
 
         auto [publicMatchText, privateMatchText] = language.second;

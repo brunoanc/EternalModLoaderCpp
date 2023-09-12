@@ -64,6 +64,10 @@ std::stringstream ProgramOptions::GetProgramOptions(char **arguments, int count)
                 MultiThreading = false;
                 output << Colors::Yellow << "INFO: Multi-threading is disabled." << Colors::Reset << '\n';
             }
+            else if (!strcmp(arguments[i], "--redirectBlangContainer") && count > i + 1) {
+                BlangFileContainerRedirect = arguments[++i];
+                output << Colors::Yellow << "INFO: BLang file modifications will be redirected to container " <<  BlangFileContainerRedirect << " (if it exists)." << Colors::Reset << '\n';
+            }
             else {
                 output << Colors::Red << "WARNING: " << Colors::Reset << "Unknown argument: " << arguments[i] << '\n';
             }
