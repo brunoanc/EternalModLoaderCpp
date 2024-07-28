@@ -24,6 +24,7 @@
 #include "ProgramOptions.hpp"
 #include "Utils.hpp"
 #include "AddChunks.hpp"
+#include "murmur2/MurmurHash2.h"
 
 void AddChunks(MemoryMappedFile& memoryMappedFile, ResourceContainer& resourceContainer,
     std::map<uint64_t, ResourceDataEntry>& resourceDataMap, std::stringstream& os)
@@ -305,8 +306,9 @@ void AddChunks(MemoryMappedFile& memoryMappedFile, ResourceContainer& resourceCo
             reinterpret_cast<std::byte*>(&uncompressedSize) + 8, newFileInfo + sizeof(newFileInfo) - 0x48);
 
         // Set the DataMurmurHash
-        std::copy(reinterpret_cast<std::byte*>(&modFile.StreamDbHash.value()),
-            reinterpret_cast<std::byte*>(&modFile.StreamDbHash.value()) + 8, newFileInfo + sizeof(newFileInfo) - 0x40);
+	uint64_t hash = MurmurHash64B(modFile.FileBytes.data(), modFile.FileBytes.size(), 0xdeadbeef);
+        std::copy(reinterpret_cast<std::byte*>(&hash),
+            reinterpret_cast<std::byte*>(&hash) + 8, newFileInfo + sizeof(newFileInfo) - 0x40);
 
         // Set the StreamDB resource hash
         std::copy(reinterpret_cast<std::byte*>(&modFile.StreamDbHash.value()),

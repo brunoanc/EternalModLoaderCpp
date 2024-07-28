@@ -11,6 +11,8 @@ file(GLOB SOURCES
         ./vendor/jsonxx/jsonxx.h
         ./vendor/miniz/miniz.c
         ./vendor/miniz/miniz.h
+	./vendor/murmur2/MurmurHash2.c
+	./vendor/murmur2/MurmurHash2.h
         )
 
 # Compiler arguments

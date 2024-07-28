@@ -21,6 +21,7 @@
 #include <mutex>
 #include "ProgramOptions.hpp"
 #include "SetModDataForChunk.hpp"
+#include "murmur2/MurmurHash2.h"
 
 extern std::mutex mtx;
 
@@ -124,6 +125,11 @@ bool SetModDataForChunk(
         reinterpret_cast<const std::byte*>(&compressedSize) + 8, memoryMappedFile.Mem + chunk.SizeOffset);
     std::copy(reinterpret_cast<const std::byte*>(&uncompressedSize),
         reinterpret_cast<const std::byte*>(&uncompressedSize) + 8, memoryMappedFile.Mem + chunk.SizeOffset + 8);
+
+    // Set the DataMurmurHash
+    uint64_t hash = MurmurHash64B(modFile.FileBytes.data(), modFile.FileBytes.size(), 0xdeadbeef);
+    std::copy(reinterpret_cast<const std::byte*>(&hash),
+	reinterpret_cast<const std::byte*>(&hash) + 8, memoryMappedFile.Mem + chunk.SizeOffset + 16);
 
     // Clear the compression flag
     if (compressionMode != nullptr) {
