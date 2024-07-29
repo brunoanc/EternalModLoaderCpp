@@ -76,6 +76,10 @@ AssetsInfo::AssetsInfo(const std::string& json)
                 assetsInfoResource.Remove = resource.get<jsonxx::Boolean>("remove");
             }
 
+            if (resource.has<jsonxx::Boolean>("placeFirst")) {
+                assetsInfoResource.PlaceFirst = resource.get<jsonxx::Boolean>("placeFirst");
+            }
+
             if (resource.has<jsonxx::Boolean>("placeBefore")) {
                 assetsInfoResource.PlaceBefore = resource.get<jsonxx::Boolean>("placeBefore");
             }
