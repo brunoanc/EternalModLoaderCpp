@@ -128,9 +128,8 @@ static const std::vector<std::string> OnlineSafeModNameKeywords = {
     "/lightrig/", "/lodgroup/", "/material2/", "/md6def/", "/modelasset/", "/particle/", "/particlestage/", "/renderlayerdefinition/", "/renderparm/",
     "/renderparmmeta/", "/renderprogflag/", "/ribbon2/", "/rumble/", "/soundevent/", "/soundpack/", "/soundrtpc/", "/soundstate/", "/soundswitch/",
     "/speaker/", "/staticimage/", "/swfresources/", "/uianchor/", "/uicolor/", "/weaponreticle/", "/weaponreticleswfinfo/", "/entitydef/light/", "/entitydef/fx",
-    "/entitydef/", "/impacteffect/", "/uiweapon/", "/globalinitialwarehouse/", "/globalshell/", "/warehouseitem/", "/warehouseofflinecontainer/", "/tooltip/",
-    "/livetile/", "/tutorialevent/", "/maps/game/dlc/", "/maps/game/dlc2/", "/maps/game/hub/", "/maps/game/shell/", "/maps/game/sp/", "/maps/game/tutorials/",
-    "/decls/campaign"
+    "/impacteffect/", "/uiweapon/", "/globalinitialwarehouse/", "/globalshell/", "/warehouseitem/", "/warehouseofflinecontainer/", "/tooltip/", "/livetile/",
+    "/tutorialevent/", "/maps/game/dlc/", "/maps/game/dlc2/", "/maps/game/hub/", "/maps/game/shell/", "/maps/game/sp/", "/maps/game/tutorials/", "/decls/campaign/"
 };
 
 // Online unsafe resource names
