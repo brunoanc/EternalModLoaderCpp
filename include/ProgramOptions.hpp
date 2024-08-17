@@ -22,7 +22,7 @@
 #include <string>
 #include <sstream>
 
-#define VERSION 22
+#define VERSION 23
 
 #ifdef _WIN32
 #define SEPARATOR static_cast<char>(fs::path::preferred_separator)

@@ -129,7 +129,8 @@ static const std::vector<std::string> OnlineSafeModNameKeywords = {
     "/renderparmmeta/", "/renderprogflag/", "/ribbon2/", "/rumble/", "/soundevent/", "/soundpack/", "/soundrtpc/", "/soundstate/", "/soundswitch/",
     "/speaker/", "/staticimage/", "/swfresources/", "/uianchor/", "/uicolor/", "/weaponreticle/", "/weaponreticleswfinfo/", "/entitydef/light/", "/entitydef/fx",
     "/impacteffect/", "/uiweapon/", "/globalinitialwarehouse/", "/globalshell/", "/warehouseitem/", "/warehouseofflinecontainer/", "/tooltip/", "/livetile/",
-    "/tutorialevent/", "/maps/game/dlc/", "/maps/game/dlc2/", "/maps/game/hub/", "/maps/game/shell/", "/maps/game/sp/", "/maps/game/tutorials/", "/decls/campaign/"
+    "/tutorialevent/", "maps/game/dlc/", "maps/game/dlc2/", "maps/game/horde/", "maps/game/hub/", "maps/game/shell/", "maps/game/sp/", "maps/game/tutorials/",
+    "/decls/campaign/"
 };
 
 // Online unsafe resource names
@@ -217,8 +218,8 @@ bool IsModSafeForOnline(const std::map<size_t, std::vector<ResourceModFile>>& re
                 return false;
             }
 
-            // Allow modification of anything outside of "generated/decls/"
-            if (!StartsWith(ToLower(modFile.Name), "generated/decls/")) {
+            // Allow modification of anything outside of "generated/decls/", except .entities files
+            if (!StartsWith(ToLower(modFile.Name), "generated/decls/") && !EndsWith(ToLower(modFile.Name), ".entities")) {
                 continue;
             }
 
