@@ -33,6 +33,10 @@ target_include_directories(DEternal_loadMods PRIVATE ./include ./vendor)
 
 # Find OpenSSL
 if(DEFINED ENV{ETERNALMODLOADERCPP_STATIC})
+        if(NOT MSVC)
+                target_link_options(DEternal_loadMods PRIVATE -static)
+        endif(NOT MSVC)
+
         set(OPENSSL_USE_STATIC_LIBS TRUE)
 endif()
 
