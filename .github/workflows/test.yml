@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Install cURL package
       run: |
@@ -26,7 +26,7 @@ jobs:
       run: cmake --build ${{ github.workspace }}/build
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: debug
         path: ${{ github.workspace }}/build/DEternal_loadMods
@@ -37,12 +37,12 @@ jobs:
       ETERNALMODLOADERCPP_STATIC: '1'
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Setup Alpine
       uses: jirutka/setup-alpine@v1
       with:
-        branch: v3.17
+        branch: v3.22
 
     - name: Install dependencies
       run: apk add build-base cmake openssl-dev openssl-libs-static
@@ -57,7 +57,7 @@ jobs:
       shell: alpine.sh {0}
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: debug-static
         path: ${{ github.workspace }}/build/DEternal_loadMods
