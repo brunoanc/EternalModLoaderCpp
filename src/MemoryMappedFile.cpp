@@ -17,6 +17,7 @@
 */
 
 #include <filesystem>
+#include <iostream>
 #include "MemoryMappedFile.hpp"
 
 #ifndef _WIN32
@@ -134,7 +135,13 @@ bool MemoryMappedFile::ResizeFile(const size_t newSize)
         munmap(Mem, Size);
 
         // Resize file
-        fallocate(FileDescriptor, 0, 0, newSize);
+        if (fallocate(FileDescriptor, 0, 0, newSize) != 0) {
+            auto fallocateErrorCode = errno;
+            if (ftruncate(FileDescriptor, newSize) != 0) {
+                std::cerr << "Cannot increase size of file " << FilePath<< ", fallocate failed with code " << fallocateErrorCode << ", ftruncate failed with code " << errno << ". Make sure you have enough disk space and write permissions for game files.\n";
+                return false;
+            }
+        }
 
         // Remap file
         Mem = reinterpret_cast<std::byte*>(mmap(0, newSize, PROT_READ | PROT_WRITE, MAP_SHARED, FileDescriptor, 0));
