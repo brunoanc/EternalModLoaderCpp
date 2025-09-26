@@ -16,12 +16,12 @@ file(GLOB SOURCES
 # Compiler arguments
 if(MSVC)
         add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
-        set(CMAKE_CXX_FLAGS "/O2 /Oi /Ot /GL /EHsc")
+        add_compile_options(/O$<IF:$<CONFIG:Debug>,0,2> /Oi /Ot /GL /EHsc)
 else()
         if(DEFINED ENV{ETERNALMODLOADERCPP_STATIC})
-                set(CMAKE_CXX_FLAGS "-Wall -Werror -pthread -Ofast -static -s")
+            add_compile_options(-Wall -Werror -pthread -O$<IF:$<CONFIG:Debug>,0,fast> -static -s)
         else()
-                set(CMAKE_CXX_FLAGS "-Wall -Werror -pthread -Ofast -s")
+            add_compile_options(-Wall -Werror -pthread -O$<IF:$<CONFIG:Debug>,0,fast> -s)
         endif()
 endif(MSVC)
 
